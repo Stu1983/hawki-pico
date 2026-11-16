@@ -1,7 +1,7 @@
 {
- "version": "1.2.10",
- "ref": "v1.2.10",
- "notes": "Dashboard tank drawing: the windows' holes are outlined like the tank wall.",
+ "version": "1.2.11",
+ "ref": "v1.2.11",
+ "notes": "Fixes 'Update failed: ENOMEM' while installing an update. Includes everything since 1.2.6.",
  "files": {
   "app.py": [
    "fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6",
@@ -48,16 +48,16 @@
    54585
   ],
   "updater.py": [
-   "b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b",
-   9064
+   "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
+   9943
   ],
   "version.py": [
-   "e3caee1fcdbb044b0b9e19827588ca6282a654341ba0a16303fef169cf7e640f",
+   "3faacb69dd7eb7a0dda137cf3057a2fb110c6afcbd0771d837787d0e93a5ec85",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"ad8b47140185d8aa8e647f26ead46ae503e55e4195206a549f0fe1172cf8449b\", 54585], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"e3caee1fcdbb044b0b9e19827588ca6282a654341ba0a16303fef169cf7e640f\", 19]}, \"notes\": \"Dashboard tank drawing: the windows' holes are outlined like the tank wall.\", \"ref\": \"v1.2.10\", \"version\": \"1.2.10\"}",
-  "sig": "2a7ca7da3f693d5248f50b91f300910edda87a5e913ce988bcb74cb0bbbaf2487b5eb19da22978c90ddc45a1baf938fc9d9f3e7b017725c7707a7aa2f688c7090dde0839cebff5cf16cb3ebb747d6105ab50e40ce77dabc24f7b710dabb62c5c5ca060bc96ac109cc1bdbdf2b03ca9576d046bdf02bacff2ef31098def3a19ad4a6c123f53cbf1b0da1cb5bbd813ed5a0eb13afcdb8f8fc7fd03957b5d8212e548bd2bcc3dc7b713bf361eb8a694ee7a382df125db88e600597c68adf2ba096c919b5383a56cdea0fe85f48ff56781d79e61094841afa3cddb75d2c9a42baf3a3375424875739044e0ac90f8c30a00004c48497dfbe32fc3a543281ea6748b85"
+  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"ad8b47140185d8aa8e647f26ead46ae503e55e4195206a549f0fe1172cf8449b\", 54585], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"3faacb69dd7eb7a0dda137cf3057a2fb110c6afcbd0771d837787d0e93a5ec85\", 19]}, \"notes\": \"Fixes 'Update failed: ENOMEM' while installing an update. Includes everything since 1.2.6.\", \"ref\": \"v1.2.11\", \"version\": \"1.2.11\"}",
+  "sig": "259b95f36fb6c3c303055cfef2bc00fe80dce981404bbbf8c0d0e5d8338720ca36d3703cd12be37d6876dcc39437151b07f7759c66751e30b40a1d85569128443b9ea69c505d1cada56ede2598224bb2ca8df29596672f51fe8ad2ac004575e6838480828c6f5ce2f614352515dd29c59bba7fb43a23a074c82fb6cfdfb188de8c0550c119714679695240064887d9ea63c3cebc0687bab3ab35e42c9ddcb56d84a22f3ddf65e427d5c0939321164d473b886027fcda25d10a5db19f7b87496c19aa5c7801158323f0e673b7b92b5805c87e4cb584e8ef886d3c9bdb9eac6ff517e65b8e310c84995e58706703b2d8b66cd26dd2d7b296ba70091f5eb0f14883"
  }
 }
