@@ -20,7 +20,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 dialog::backdrop{background:#0008}
 #viz,#d_tank{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}#d_tank{display:block;max-width:560px;margin:8px auto 0}#d_tank text{font-size:11px}#d_tank .rl{stroke:var(--fg);stroke-width:.6;opacity:.25}#d_tank .tk{fill:none}
 #viz .tk,#d_tank .tk{fill:none;stroke:var(--fg);stroke-width:1.2}#viz .rib,#d_tank .rib{fill:#2f9ee533;stroke:#2f9ee5}#viz .win,#d_tank .win{fill:var(--card);stroke:#e0473f}
-#viz .inn,#d_tank .inn{fill:none;stroke:#f08a24;stroke-dasharray:3 2}#viz .oil,#d_tank .oil{fill:var(--oil);opacity:.35}#viz .oilx,#d_tank .oilx{opacity:.15;stroke:var(--oil);stroke-dasharray:4 3}#viz .gnd,#d_tank .gnd{stroke:var(--mut)}
+#viz .inn,#d_tank .inn{fill:var(--bg);stroke:#f08a24;stroke-width:1.2}#viz .wino,#d_tank .wino{fill:none;stroke:#e0473f;stroke-dasharray:4 3}#viz .oil,#d_tank .oil{fill:var(--oil);opacity:.35}#viz .oilx,#d_tank .oilx{opacity:.15;stroke:var(--oil);stroke-dasharray:4 3}#viz .gnd,#d_tank .gnd{stroke:var(--mut)}
 #viz .dim,#d_tank .dim{stroke:var(--mut);stroke-width:.8;fill:none}#viz text,#d_tank text{font:9px system-ui,sans-serif;fill:var(--mut)}#viz .g,#d_tank .g{stroke-dasharray:4 3;opacity:.6}
 #viz .hl{stroke-width:2.6!important;opacity:1}#viz .lbl,#d_tank .lbl{fill:var(--fg);font-weight:600}.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .lnk{color:var(--acc);font-size:14px;margin-right:8px;text-decoration:none}.empty{color:var(--mut);font-size:14px;padding:6px 2px}.hint{font-size:12px;color:var(--mut);margin-top:3px}
@@ -237,8 +237,10 @@ function tankSvg(p){
  o+=`<rect class="tk" x="${X(0)}" y="${Y(top)}" width="${L*sc}" height="${(top-0)*sc}"/>`}
  if(end)o+=`<rect class="tk" x="${ex(0)}" y="${Y(top)}" width="${W*sc}" height="${top*sc}"/>`;
  for(let i=0;i<nW;i++){const cx=L*(i+1)/(nW+1),wg=wb0==null||wt0==null||wo0==null;
-  o+=`<rect class="${cls('win','win',wg)}" x="${X(cx-wo/2)}" y="${Y(wt)}" width="${wo*sc}" height="${(wt-wb)*sc}"/>`;
-  o+=`<rect class="${cls('inn','inner',false)}" x="${X(cx-wi/2)}" y="${Y((wb+wt)/2+hi/2)}" width="${wi*sc}" height="${hi*sc}"/>`}
+  // seen from the front: the outer opening (dashed) is where the skin starts sloping in; oil fills that slope.
+  // Only the narrowest part (solid) is a real hole through the tank.
+  o+=`<rect class="${cls('wino','win',wg)}" x="${X(cx-wo/2)}" y="${Y(wt)}" width="${wo*sc}" height="${(wt-wb)*sc}"/>`;
+  o+=`<rect class="${cls('inn','inner',p.wi==null||p.hi==null)}" x="${X(cx-wi/2)}" y="${Y((wb+wt)/2+hi/2)}" width="${wi*sc}" height="${hi*sc}"/>`}
  if(nW&&end){const c=(wb+wt)/2,a=ex(0),b=ex(W/2),d=ex(W),wg=wb0==null||wt0==null;  // end view: tunnel taper through the width
   o+=`<path class="${cls('win','win',wg)}" d="M${a} ${Y(wt)} Q${b} ${Y(c+hi/2)} ${d} ${Y(wt)} L${d} ${Y(wb)} Q${b} ${Y(c-hi/2)} ${a} ${Y(wb)} Z"/>`;
   if(!p.plain){o+=`<text class="lbl" x="${d+3}" y="${Y(wt)+3}">${wt0??'?'}</text><text class="lbl" x="${d+3}" y="${Y(wb)+3}">${wb0??'?'}</text>`;
