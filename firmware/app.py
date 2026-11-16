@@ -801,7 +801,8 @@ def state():
             'wifi_rssi': wlan.status('rssi') if wlan.isconnected() else None,
             'ap': AP_NAME if ap.active() else None, 'update': update_info(),
             'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint')),
-            'primary': cfg.get('primary') if cfg.get('primary') in cfg['tanks'] else (tanks[0]['mac'] if tanks else None),
+            'primary': cfg.get('primary') if cfg.get('primary') in cfg['tanks'] or cfg.get('primary') == 'all' and len(tanks) > 1
+                       else (tanks[0]['mac'] if tanks else None),
             'hostname': HOSTNAME, 'scan': scan_mode[0], 'notify': notify_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
 
 
@@ -1132,7 +1133,7 @@ async def handle(r, w):
                 return await send(w, 400, json.dumps(str(ex)))
         if path == '/api/primary' and method == 'POST':
             mac = str(json.loads(body or '{}').get('mac', '')).lower()
-            if mac not in cfg['tanks']:
+            if mac not in cfg['tanks'] and not (mac == 'all' and len(cfg['tanks']) > 1):  # 'all' = both tanks together
                 return await send(w, 400, '"unknown tank"')
             cfg['primary'] = mac
             save_cfg(cfg)

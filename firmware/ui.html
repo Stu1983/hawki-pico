@@ -191,13 +191,13 @@ function render(){
   $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
  secRender();netRender();notifyRender();if(!$('p_dash').hidden)dash();
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
- $('tanks').innerHTML=S.tanks.length?S.tanks.map(t=>{const p=t.percent??0;return `<div class="card"><div class="row"><b>${esc(t.name)}</b><button onclick="edit('${okMac(t.mac)}')">Edit</button></div>
+ $('tanks').innerHTML=(S.tanks.length>1?`<div class="card"><div class="row" style="min-height:34px"><div><b>Both tanks together</b><div class="mut">Oil, use and forecast for the tanks combined</div></div>${S.primary==='all'?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('all')">Show on dashboard</button>`}</div></div>`:'')+(S.tanks.length?S.tanks.map(t=>{const p=t.percent??0;return `<div class="card"><div class="row"><b>${esc(t.name)}</b><button onclick="edit('${okMac(t.mac)}')">Edit</button></div>
   <div class="row" style="margin-top:8px;min-height:34px"><a class="lnk" href="/history?mac=${okMac(t.mac)}">History &amp; forecast</a>${S.tanks.length>1?(t.mac===S.primary?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('${okMac(t.mac)}')">Show on dashboard</button>`):'<span></span>'}</div>
   <div class="row" style="margin-top:6px"><span class="big">${t.litres==null?'–':Math.round(t.litres)+' L'}</span><span class="big">${t.percent==null?'':t.percent+'%'}</span></div>
   <div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div>
   <div class="mut" style="min-height:18px">${t.litres_standard!=null?'Measured shape · Magnus-style maths says '+Math.round(t.litres_standard)+' L':'&nbsp;'}</div>
   <div class="row mut" style="flex-wrap:wrap;gap:2px 12px"><span style="white-space:nowrap">${t.level==null?'no reading yet':t.level+' mm to oil'} · battery ${t.battery??'–'}%</span><span style="white-space:nowrap">${readAt(t)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div></div>`}).join('')
-  :'<div class="empty">No tanks yet: add one from the sensors below.</div>';
+  :'<div class="empty">No tanks yet: add one from the sensors below.</div>');
  $('found').innerHTML=S.found.length?S.found.map(f=>`<div class="card row"><div><b>${esc(f.name||f.mac)}</b><div class="mut">${f.rssi} dBm · ${ago(f.age)}${f.level!=null?' · '+f.level+' mm':''}</div></div><button class="pri" onclick="add('${okMac(f.mac)}')">Add</button></div>`).join('')
   :'<div class="empty">None heard right now. HAWKi monitors broadcast every few seconds; give it a minute.</div>';
 }
@@ -382,7 +382,7 @@ let AN=null;  // {mac,t,A,P,cv}: analysis of the primary tank, refreshed every 1
 const fmtD=t=>new Date(t*1000).toLocaleDateString(undefined,{day:'numeric',month:'short'});
 const L0=v=>Math.round(v).toLocaleString()+' L';
 let DKEY='';
-async function dash(){if(!S.update)return;const t=S.tanks.find(x=>x.mac===S.primary);
+async function dash(){if(!S.update)return;if(S.primary==='all'&&S.tanks.length>1)return dashAll();const t=S.tanks.find(x=>x.mac===S.primary);
  $('d_name').textContent=t?t.name:'No tanks yet';
  $('d_hist').style.visibility=t?'visible':'hidden';if(t)$('d_hist').href='/history?mac='+okMac(t.mac);
  if(!t){['d_l','d_r','d_w'].forEach(i=>$(i).textContent='–');$('d_l2').textContent='Add a tank under Config → Sensors nearby.';$('d_r2').textContent=$('d_r3').textContent=$('d_w2').textContent=' ';DKEY='';drawTank(null);drawRate(null);drawLvl(null);return}
@@ -405,12 +405,39 @@ async function dash(){if(!S.update)return;const t=S.tanks.find(x=>x.mac===S.prim
  const wt=$('d_wt');wt.className='card tile';
  if(ok){const c=A.fc,wk=x=>(x-now)/(7*DAY);
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
-  $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?'Order now (at '+reserve+' L)':'Order by '+fmtD(c.ord)+' (at '+reserve+' L)';
+  $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?'Order now (at '+reserve+' L)':'Order around '+fmtD(c.ord)+' (at '+reserve+' L)';
   if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
  else{$('d_w').textContent='–';$('d_w2').textContent=' '}
  drawTank(t);
  const key=t.mac+'|'+ck+'|'+(AN&&AN.t)+'|'+t.level+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;  // redraw only when something changed (keeps a hover open)
+ if(!ok)A.fc=null;  /* no forecast line until the tiles have one too */
  drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap:+t.cfg.capacity_l}:null)}
+
+async function dashAll(){const ts=S.tanks;$('d_name').textContent='Both tanks';$('d_hist').style.visibility='hidden';
+ const ck=JSON.stringify(ts.map(t=>[t.mac,t.cfg])),fresh=AN&&AN.mac==='all'&&AN.ck===ck&&Date.now()/1000-AN.t<600;
+ if(!fresh){try{const got=await Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])));
+   AN={mac:'all',ck,t:Date.now()/1000,cvs:got.map(g=>g[1]),bases:got.map(([buf,cv])=>parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)]))}}catch(e){AN=null}}
+ const now=Date.now()/1000,series=AN?AN.bases.map((b,k)=>{const s=b.slice(),t=ts[k];if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383)s.push([now-t.age,toL(t.level,AN.cvs[k])]);return s}):[];
+ /* only while every tank has readings: before a tank's history starts, its use isn't known */
+ const from=series.every(x=>x.length)?Math.max(...series.map(x=>x[0][0])):Infinity,till=series.every(x=>x.length)?Math.min(...series.map(x=>x[x.length-1][0]))+3*H:-Infinity;  /* and only up to where every tank still has readings */
+ const P=AN?combine(series).filter(p=>p[0]>=from&&p[0]<=till):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),A=analyse(P,{now,reserve});
+ const sum=f=>ts.reduce((a,t)=>a+(f(t)||0),0),lit=sum(t=>t.litres),cap=sum(t=>+t.cfg.capacity_l),un=sum(t=>t.unusable&&t.unusable[0]),known=ts.every(t=>t.litres!=null);
+ $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
+ $('d_bar').style.width=(known&&cap?Math.max(0,Math.min(100,lit/cap*100)):0)+'%';
+ const ok=A.recent!=null&&A.span>=2,av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;
+ $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
+ $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average, both tanks':(P.length?'needs 2 days with readings from both tanks':'no readings from both tanks yet');
+ $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';
+ const wt=$('d_wt');wt.className='card tile';
+ if(ok){const c=A.fc,wk=x=>(x-now)/(7*DAY);
+  $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
+  $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?'Order now (at '+reserve+' L in all)':'Order around '+fmtD(c.ord)+' (at '+reserve+' L in all)';
+  if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
+ else{$('d_w').textContent='–';$('d_w2').textContent=' '}
+ drawTanks(ts);
+ const key='all|'+ck+'|'+(AN&&AN.t)+'|'+ts.map(t=>t.level).join(',')+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;
+ if(!ok)A.fc=null;
+ drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap}:null)}
 
 // tiny SVG chart kit: one y-axis, recessive grid, hover tooltip
 const NS='http://www.w3.org/2000/svg',CH=190,ML=44,MR=10,MT=10,MB=24;
@@ -436,16 +463,23 @@ function hover(svg,xs,draw){// xs: [[x,lines]] sorted by x
   if(!b){hideTip();return}g.textContent='';el('line',{class:'xh',x1:b[0],x2:b[0],y1:MT,y2:CH-MB},g);draw&&draw(g,b);showTip(ev,b[1])};
  hit.addEventListener('pointermove',mv);hit.addEventListener('pointerdown',mv);hit.addEventListener('pointerleave',()=>{g.textContent='';hideTip()})}
 
-function drawTank(t){const c=t&&t.cfg;if(!c){$('d_tank').innerHTML='';$('d_tank2').textContent=' ';return}
- if(c.shape!=='cuboid'){$('d_tank').innerHTML='<text x="200" y="115" text-anchor="middle">The drawing is for rectangular tanks</text>';$('d_tank2').textContent=' ';return}
+function tankView(t,cv,withReorder){const c=t&&t.cfg;if(!c||c.shape!=='cuboid')return{svg:'<text x="200" y="115" text-anchor="middle">The drawing is for rectangular tanks</text>',cap:' '};
  const n=v=>{try{return v==null||v===''||!isFinite(+v)?null:+v}catch(e){return null}},m=c.window_model==='measured',out=n(c.outlet_cm),hf=n(c.height_cm);
  const top=hf==null?null:hf+(out||0),lvl=n(t.level),lv=lvl!=null&&lvl<16000&&top!=null?top-lvl/10:null;
- // with the outlet height known the oil is placed from the ground; without it, from the outlet
- $('d_tank2').textContent=lv==null?'no reading yet':lv<=(out||0)?'down to the outlet':out!=null?'oil at '+(+lv.toFixed(1))+' cm':(+lv.toFixed(1))+' cm over outlet';
- const rsv=n(c.reserve_l)??200,cv=AN&&AN.mac===t.mac&&AN.cv;let rh=null;
- if(cv&&Array.isArray(cv.l)&&cv.step>0&&top!=null){const l=cv.l;for(let i=1;i<l.length;i++)if(l[i]<=rsv){const a=l[i-1],b=l[i],mm=(i-1+(a===b?0:(a-rsv)/(a-b)))*cv.step;rh=top-mm/10;break}}
- $('d_tank').innerHTML=tankSvg({reorder:rh!=null&&rsv>0?{h:rh,text:'reorder '+L0(rsv)}:null,L:n(c.length_cm),W:n(c.width_cm),nW:m?n(c.windows):0,og:out,outGuess:0,top,wb0:n(c.win_bottom_cm),wt0:n(c.win_top_cm),wo0:n(c.win_outer_w_cm),
-  wi:n(c.win_inner_w_cm),hi:n(c.win_inner_h_cm),rh:n(c.rib_h_cm),rd:n(c.rib_depth_cm),rv:m&&Array.isArray(c.ribs_cm)?c.ribs_cm.map(n):[],plain:true,level:top==null?null:lvl,oilText:n(t.litres)!=null?L0(t.litres):'oil'})}
+ /* with the outlet height known the oil is placed from the ground; without it, from the outlet */
+ const cap=lv==null?'no reading yet':lv<=(out||0)?'down to the outlet':out!=null?'oil at '+(+lv.toFixed(1))+' cm':(+lv.toFixed(1))+' cm over outlet';
+ const rsv=n(c.reserve_l)??200;let rh=null;
+ if(withReorder&&cv&&Array.isArray(cv.l)&&cv.step>0&&top!=null){const l=cv.l;for(let i=1;i<l.length;i++)if(l[i]<=rsv){const a=l[i-1],b=l[i],mm=(i-1+(a===b?0:(a-rsv)/(a-b)))*cv.step;rh=top-mm/10;break}}
+ return{cap,svg:tankSvg({reorder:rh!=null&&rsv>0?{h:rh,text:'reorder '+L0(rsv)}:null,L:n(c.length_cm),W:n(c.width_cm),nW:m?n(c.windows):0,og:out,outGuess:0,top,wb0:n(c.win_bottom_cm),wt0:n(c.win_top_cm),wo0:n(c.win_outer_w_cm),
+  wi:n(c.win_inner_w_cm),hi:n(c.win_inner_h_cm),rh:n(c.rib_h_cm),rd:n(c.rib_depth_cm),rv:m&&Array.isArray(c.ribs_cm)?c.ribs_cm.map(n):[],plain:true,level:top==null?null:lvl,oilText:n(t.litres)!=null?L0(t.litres):'oil'})}}
+function drawTank(t){const sv=$('d_tank');if(!t){sv.innerHTML='';$('d_tank2').textContent=' ';sv.setAttribute('viewBox','0 0 400 230');return}
+ const v=tankView(t,AN&&AN.mac===t.mac&&AN.cv,true);sv.setAttribute('viewBox','0 0 400 230');sv.innerHTML=v.svg;$('d_tank2').textContent=v.cap}
+function drawTanks(ts){const sv=$('d_tank');sv.setAttribute('viewBox','0 0 400 '+230*ts.length);$('d_tank2').textContent=ts.length+' tanks';
+ sv.innerHTML=ts.map((t,i)=>{const v=tankView(t,null,false);return `<g transform="translate(0 ${230*i})">${v.svg}<text class="lbl" x="6" y="14">${esc(t.name)}</text><text x="394" y="14" text-anchor="end">${esc(v.cap)}</text></g>`}).join('')}
+// Both tanks as one: oil left = the two added; the level series is their sum, so daily use is the
+// combined drop (a tank you didn't draw from adds nothing, rather than dragging the average down)
+function combine(series){const ts=[...new Set(series.flatMap(s=>s.map(p=>p[0])))].sort((a,b)=>a-b),idx=series.map(()=>0);
+ return ts.map(t=>[t,series.reduce((sum,s,k)=>{if(!s.length)return sum;while(idx[k]+1<s.length&&s[idx[k]+1][0]<=t)idx[k]++;return sum+s[idx[k]][1]},0)  /* last reading at or before t (before a tank's first reading: that first one) */])}
 function drawRate(A,now){const svg=$('c_rate');if(!A){noData(svg,'Daily use shows after 2 days of readings');return}
  const t1=midnight(now),t0=addDays(t1,-30),ds=[];for(let t=t0;t<t1;t=addDays(t,1))if(A.days[t]!=null)ds.push([t,Math.max(0,A.days[t])]);
  if(!ds.length){noData(svg,'No full days in the last 30 yet');return}

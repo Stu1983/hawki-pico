@@ -50,7 +50,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <div class="tiles">
  <div class="card tile"><div class="k">In the tank now</div><div class="v" id="t_now">–</div><div class="n" id="t_now2"></div></div>
  <div class="card tile"><div class="k">Using lately</div><div class="v" id="t_rate">–</div><div class="n" id="t_rate2"></div></div>
- <div class="card tile" id="tl_ord"><div class="k">Order by</div><div class="v" id="t_ord">–</div><div class="n" id="t_ord2"></div></div>
+ <div class="card tile" id="tl_ord"><div class="k">Order around</div><div class="v" id="t_ord">–</div><div class="n" id="t_ord2"></div></div>
  <div class="card tile" id="tl_dry"><div class="k">Could run dry</div><div class="v" id="t_dry">–</div><div class="n" id="t_dry2"></div></div>
 </div>
 
@@ -363,6 +363,7 @@ async function load(){
  P=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);
  if(T.level!=null&&T.age!=null&&T.age<1800&&T.level!==16383)P.push([now-T.age,toL(T.level,cv),T.level]);
  A=analyse(P,{now,reserve:T.cfg.reserve_l??200});
+ if(!(A.recent!=null&&A.span>=2))A.fc=null;  /* no forecast line until there's a forecast */
  $('sub').textContent=P.length?'Readings since '+fmtDY(P[0][0])+' · '+(A.span<1?Math.round(A.span*24)+' hours':Math.round(A.span)+' days'):'No readings saved yet';
  const rg=$('rng');rg.textContent='';[['7','7 days'],['30','30 days'],['365','1 year'],['all','All']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',k===R);b.onclick=()=>{R=k;try{localStorage.hawkiRange=k}catch(e){}[...rg.children].forEach(c=>c.setAttribute('aria-pressed',c===b));drawLevel()};rg.appendChild(b)});
  tiles();drawLevel();drawMonths();drawHours()}
