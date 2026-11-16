@@ -1,11 +1,11 @@
 {
- "version": "1.2.0",
- "ref": "v1.2.0",
- "notes": "Tabbed dashboard for your main tank (oil left incl. unusable, litres a day, weeks left, charts). Forecast now uses your own summer hot-water use. Network name setting under Config.",
+ "version": "1.2.1",
+ "ref": "v1.2.1",
+ "notes": "Listens only when a reading is due (radio left to Wi-Fi the rest of the hour), readings saved at their real time. Phone alerts via Pushover or ntfy: reorder level, and oil dropping faster than the burner can use (leak/theft). Use-by-hour-of-day chart on the history page.",
  "files": {
   "app.py": [
-   "4e0cf54d2a4bb4509d52c6d872e70485a69495130dfce8f7058a2c220ae880f6",
-   35779
+   "87aa2f27765bd5bf942e6bdd5369f901dd762a8107ec8a486ffb9b395f7252fa",
+   44760
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -15,37 +15,49 @@
    "c65cad4436ea03360413fd55fe5ebb09ca87ec0e4459dcc0688a2ff91b4dc3c3",
    10237
   ],
+  "drops.py": [
+   "bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81",
+   2030
+  ],
   "hawki_decode.py": [
    "c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266",
    2120
   ],
   "hist.html": [
-   "a36335888c76ebde1959c0ba9b824aa487eb4b25dab6d6a2a306a731bcd46134",
-   29835
+   "8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0",
+   32598
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
    2073
+  ],
+  "listen.py": [
+   "f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d",
+   3391
+  ],
+  "notify.py": [
+   "9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8",
+   4530
   ],
   "tankcalc.py": [
    "dfb23fbcf59fe23b1b085fe8ec66e6f8bf2d58fa8835fe64696d51b482b9b663",
    5821
   ],
   "ui.html": [
-   "7a9546bd5f0c8a23b8160fd83a77f4cd9042795d0f976aca9b0270d57583ef81",
-   43896
+   "d08fa6b331702c1ba7cc3e3c26f3e5d58c46a0cb97178ce4b1b5a7b2f33f5aff",
+   48985
   ],
   "updater.py": [
    "b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b",
    9064
   ],
   "version.py": [
-   "3283920f282dc9646b0ad7b51b90f754cff2fcba278058ed57ee60b696ab8434",
+   "aeb81e1b4128e53ec6e179c241d65d494acab16586950e2a56cb5b1605e81980",
    18
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"4e0cf54d2a4bb4509d52c6d872e70485a69495130dfce8f7058a2c220ae880f6\", 35779], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"c65cad4436ea03360413fd55fe5ebb09ca87ec0e4459dcc0688a2ff91b4dc3c3\", 10237], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"a36335888c76ebde1959c0ba9b824aa487eb4b25dab6d6a2a306a731bcd46134\", 29835], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"tankcalc.py\": [\"dfb23fbcf59fe23b1b085fe8ec66e6f8bf2d58fa8835fe64696d51b482b9b663\", 5821], \"ui.html\": [\"7a9546bd5f0c8a23b8160fd83a77f4cd9042795d0f976aca9b0270d57583ef81\", 43896], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"3283920f282dc9646b0ad7b51b90f754cff2fcba278058ed57ee60b696ab8434\", 18]}, \"notes\": \"Tabbed dashboard for your main tank (oil left incl. unusable, litres a day, weeks left, charts). Forecast now uses your own summer hot-water use. Network name setting under Config.\", \"ref\": \"v1.2.0\", \"version\": \"1.2.0\"}",
-  "sig": "70e64638446ddc025f40e988d99a8a72489898f59bef3a7d366bff35830dc5c5f88610668898c00cc6e5a747f0f762d46621d8d5f6ac49c8d767b38891b9c39a79cd1c94613f39b111f3185f7194108079f60c47c07bcd248dc3d63998fa4e43a85d5c219f2ef7197b0e8d2a643a8e221735d5b2b59dca51d953db0c076cdecd6f0425f3788941f548c79749b1d7b94dcd44ea9ee4c7475f1bb30ef274ff4905aaae03c788f75e95781ee236c1f2deec42691a44267fd61d966ce4b3167e5b04695eb7ee07235009a2160d142f6132f19f4272ea77693142d8d36796a36383aadb32511d9b9c85c1da11ba75a641376336bad2737fb1789107752a03fe5478ba"
+  "body": "{\"files\": {\"app.py\": [\"87aa2f27765bd5bf942e6bdd5369f901dd762a8107ec8a486ffb9b395f7252fa\", 44760], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"c65cad4436ea03360413fd55fe5ebb09ca87ec0e4459dcc0688a2ff91b4dc3c3\", 10237], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"dfb23fbcf59fe23b1b085fe8ec66e6f8bf2d58fa8835fe64696d51b482b9b663\", 5821], \"ui.html\": [\"d08fa6b331702c1ba7cc3e3c26f3e5d58c46a0cb97178ce4b1b5a7b2f33f5aff\", 48985], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"aeb81e1b4128e53ec6e179c241d65d494acab16586950e2a56cb5b1605e81980\", 18]}, \"notes\": \"Listens only when a reading is due (radio left to Wi-Fi the rest of the hour), readings saved at their real time. Phone alerts via Pushover or ntfy: reorder level, and oil dropping faster than the burner can use (leak/theft). Use-by-hour-of-day chart on the history page.\", \"ref\": \"v1.2.1\", \"version\": \"1.2.1\"}",
+  "sig": "1a0fac7ab94e8e093fc252d70ab1fc9276da2d97ed077ecb8fd29ccddeb04af96846b4c6819ac0382f208ad4ad2be47af3af9a4c6707d67b9106ad697ad659439cf692aff91b65a9e102a20a506c62a9b7a91950f8a672b479ddb4ff427bb98d219d8c812bc77e8798742d1e6031a03b86df802ce3094888c05c908e6879a2eb1fe6b0aebeb1a2ae8760a5bbff0373dfd53a15269a8b8593e7e2ac3bb5d26d51bc4b3519038bcee1faced96a42c6e3f21812e4bdc872ddf2c10d74e0d1a21a1f3056f83542412b517967cd01fa4d7235017f583d2b2cec998442fe5399f74a1b0ab52d2926f575760349d2dd41f86354268c1e16c6d2e00560a0d87a635c9ea1"
  }
 }
