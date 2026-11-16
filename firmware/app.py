@@ -557,7 +557,8 @@ def notify_view():
     t = n.get('ntfy_topic') or ''
     return {'channels': notify.channels(n), 'po_user': bool(n.get('po_user')), 'po_token': bool(n.get('po_token')),
             'ntfy_topic': (t[:3] + '…') if t else '', 'ntfy_host': n.get('ntfy_host') or 'ntfy.sh',
-            'reorder': n.get('reorder', True), 'drops': n.get('drops', True), 'burner_lph': n.get('burner_lph', 6)}
+            'reorder': n.get('reorder', True), 'drops': n.get('drops', True), 'battery': n.get('battery', True),
+            'burner_lph': n.get('burner_lph', 6)}
 
 
 def set_notify(b):
@@ -570,7 +571,7 @@ def set_notify(b):
         n['ntfy_topic'] = notify.ok_topic(b['ntfy_topic'])
     if 'ntfy_host' in b:
         n['ntfy_host'] = notify.ok_host(b['ntfy_host'])
-    for k in ('reorder', 'drops'):
+    for k in ('reorder', 'drops', 'battery'):
         if k in b:
             n[k] = bool(b[k])
     if b.get('burner_lph') not in (None, ''):
@@ -628,8 +629,36 @@ async def drop_check(mac, t, lvl):
             save_cfg(cfg)
 
 
+BATT_LOW = 20     # % : tell the phone once at or below this
+BATT_REARM = 40   # % : a new battery (back above this) arms it again
+batt_seen = {}    # mac -> [last payload counted, lows in a row, highs in a row]
+
+
+async def battery_check(n, mac, t, d, a):
+    # Counts MEASUREMENTS (the monitor repeats each hourly one in between), so it takes three hourly
+    # readings in a row to alert (one cold reading doesn't), and three good ones to re-arm.
+    b = d.get('battery')
+    if b is None:
+        return
+    st = batt_seen.setdefault(mac, [None, 0, 0])
+    if d.get('raw') is not None and d.get('raw') == st[0]:
+        return  # the same measurement again
+    st[0] = d.get('raw')
+    st[1] = st[1] + 1 if b <= BATT_LOW else 0
+    st[2] = st[2] + 1 if b >= BATT_REARM else 0
+    if a.get('battery') and st[2] >= 3:
+        a.pop('battery')  # new battery
+        save_cfg(cfg)
+    if n.get('battery', True) and not a.get('battery') and st[1] >= 3:
+        res = await send_alert('%s: monitor battery low' % t.get('name', mac),
+                               'The HAWKi monitor reports %d%% battery. Replace it soon, or readings will stop.' % b)
+        if 'ok' in res.values():
+            a['battery'] = int(time.time())
+            save_cfg(cfg)
+
+
 async def alerts():
-    # Every few minutes: tell the phone(s) once when a tank reaches its reorder level.
+    # Every few minutes: tell the phone(s) once when a tank reaches its reorder level, or a monitor's battery is low.
     await asyncio.sleep(120)
     while True:
         try:
@@ -638,13 +667,19 @@ async def alerts():
                 al = cfg.setdefault('alerted', {})
                 for mac, t in list(cfg['tanks'].items()):
                     d = hawki.get(mac) or {}
+                    if time.time() - d.get('rx', 0) > 3 * 3600:
+                        continue  # not heard lately: nothing current to go on
+                    a = al.setdefault(mac, {})
+                    try:  # (its own try: it must never stop the reorder check)
+                        await battery_check(n, mac, t, d, a)
+                    except Exception as ex:
+                        print('battery alert err', ex)
                     lvl = d.get('level')
-                    if lvl in (None, 16383) or time.time() - d.get('rx', 0) > 3 * 3600:
+                    if lvl in (None, 16383):
                         continue
                     lit = reading(t, lvl)[0]
                     if lit is None:
                         continue
-                    a = al.setdefault(mac, {})
                     reserve = float(t['reserve_l']) if t.get('reserve_l') is not None else 200.0
                     if a.get('reorder') and lit >= reserve + REARM_L:
                         a.pop('reorder')  # topped up: arm it again
