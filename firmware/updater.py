@@ -14,7 +14,7 @@ Install is journalled: upd.pending (stage "swapping") is written BEFORE any file
 so a power cut part-way is undone at the next boot (main.py -> rollback.undo). Only the person
 at the web page (with the PIN) can start an install; nothing updates by itself.
 """
-import json, os, socket, ssl
+import gc, json, os, socket, ssl
 try:
     import hashlib
 except ImportError:
@@ -74,8 +74,23 @@ def _ctx():
     return ctx
 
 
+def _oom(ex):
+    return isinstance(ex, MemoryError) or isinstance(ex, OSError) and (getattr(ex, 'errno', None) == 12 or bool(ex.args and ex.args[0] == 12))
+
+
 def _get(path, sink=None, limit=200000):
-    """HTTPS GET https://HOST/path. Returns the body, or feeds it to sink(chunk) and returns its size."""
+    """HTTPS GET https://HOST/path. Returns the body, or feeds it to sink(chunk) and returns its size.
+    TLS needs one big unbroken block of memory: collect first, and try once more if it still ran out."""
+    for attempt in (0, 1):
+        gc.collect()
+        try:
+            return _get1(path, sink, limit)
+        except Exception as ex:
+            if attempt or sink or not _oom(ex):  # (a file being written is retried by install(), from scratch)
+                raise
+
+
+def _get1(path, sink, limit):
     ai = socket.getaddrinfo(HOST, 443, 0, socket.SOCK_STREAM)[0]
     s = socket.socket(ai[0], socket.SOCK_STREAM, ai[2])
     s.settimeout(20)
@@ -186,12 +201,18 @@ def install(m, current):
         raise OSError('not enough flash for the update')
     try:
         for n, (sha, size) in files.items():
-            h = hashlib.sha256()
-            with open(n + '.new', 'wb') as f:
-                def sink(c):
-                    h.update(c)
-                    f.write(c)
-                got = _get('/%s/%s/firmware/%s' % (REPO, m['ref'], n), sink, size + 1)
+            for attempt in (0, 1):  # out of memory part-way: collect and start this file again, once
+                h = hashlib.sha256()
+                try:
+                    with open(n + '.new', 'wb') as f:
+                        def sink(c):
+                            h.update(c)
+                            f.write(c)
+                        got = _get('/%s/%s/firmware/%s' % (REPO, m['ref'], n), sink, size + 1)
+                    break
+                except Exception as ex:
+                    if attempt or not _oom(ex):
+                        raise
             if got != size or _hex(h.digest()) != sha:
                 raise ValueError('%s did not match the release (download damaged?)' % n)
     except Exception:

@@ -245,7 +245,45 @@ def test_https_github():
     assert b'MicroPython' in b[:3000], b[:100]
 
 
+def test_out_of_memory_retried():
+    # TLS ran out of memory part-way through a file: collect, start that file again, install still matches
+    setup(OLD)
+    raw, served = release('1.0.1', NEW)
+    serve(raw, served)
+    c = updater.check('1.0.0')
+    import importlib
+    fresh = importlib.reload(updater)  # the real _get (serve() replaced it)
+    fails = {'ui.html': 1}
+
+    def fake1(path, sink, limit):
+        n = path.rsplit('/', 1)[1]
+        b = served[n]
+        if fails.get(n):
+            fails[n] -= 1
+            sink(b[:3] + b'JUNKJUNKJUNK')  # a partial, damaged chunk, then the connection runs out of memory
+            raise OSError(12, 'ENOMEM')
+        sink(b)
+        return len(b)
+    fresh._get1 = fake1
+    assert fresh.install(c['manifest'], '1.0.0') == '1.0.1'
+    assert read('ui.html') == b'new ui' and read('app.py') == b'new app'
+    # a different error is not retried, and nothing changes
+    setup(OLD)
+    fails = {}
+
+    def broken(path, sink, limit):
+        broken.n += 1
+        raise OSError(113, 'EHOSTUNREACH')
+    broken.n = 0
+    fresh._get1 = broken
+    try:
+        fresh.install(c['manifest'], '1.0.0')
+        raise AssertionError('installed')
+    except OSError:
+        assert broken.n == 1 and read('app.py') == b'old app'
+
+
 if __name__ == '__main__':
     test_signature(); test_rejects_unsigned_tampered_and_protected(); test_update_rollback_commit()
-    test_bad_download_changes_nothing(); test_power_cut_mid_swap(); test_boot_loop_rolls_back(); test_refuses_without_new_recovery_files(); test_one_install_at_a_time(); test_old_main_py_refused(); test_swap_error_is_undone_at_once(); test_https_github()
+    test_bad_download_changes_nothing(); test_power_cut_mid_swap(); test_boot_loop_rolls_back(); test_refuses_without_new_recovery_files(); test_one_install_at_a_time(); test_old_main_py_refused(); test_swap_error_is_undone_at_once(); test_out_of_memory_retried(); test_https_github()
     print('all ok')
