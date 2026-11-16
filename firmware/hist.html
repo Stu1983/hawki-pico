@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tank History</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--fg:#1d2433;--mut:#6b7385;--line:#e2e5ea;--grid:#eceef2;--acc:#2f6fdb;--warn:#a86b00;--bad:#c4423b;
+ --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--fg:#e8ebf1;--mut:#9aa3b5;--line:#2b3240;--grid:#232937;--acc:#6aa0ff;--warn:#e0a640;--bad:#ff7a70;
+ --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:16px}a{color:var(--acc);text-decoration:none}
+h1{font-size:20px;margin:8px 0 2px}h2{font-size:15px;margin:22px 0 8px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.sub,.mut{color:var(--mut);font-size:13px}.sub{min-height:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.tabs,.seg{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+button{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 11px;cursor:pointer}
+button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tile .v{font-size:26px;font-weight:700;line-height:1.15;min-height:30px}.tile .k{font-size:13px;color:var(--mut)}.tile .n{font-size:12px;color:var(--mut);min-height:16px}
+.tile.warn .v{color:var(--warn)}.tile.bad .v{color:var(--bad)}
+svg{width:100%;height:auto;display:block;touch-action:pan-y}
+svg text{font:11px system-ui,sans-serif;fill:var(--mut)}
+.gl{stroke:var(--grid)}.ax{stroke:var(--line)}
+.ln{fill:none;stroke:var(--s1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.gap{fill:none;stroke:var(--s1);stroke-width:1.5;stroke-dasharray:1 4;stroke-linecap:round;opacity:.6}
+.fc{fill:none;stroke:var(--s1);stroke-width:2;stroke-dasharray:5 4;opacity:.75}
+.rsv{stroke:var(--warn);stroke-dasharray:2 3}.rsvt{fill:var(--warn)}
+.fill{fill:var(--card);stroke:var(--s3);stroke-width:2}
+.xh{stroke:var(--mut);stroke-width:1}.dot{fill:var(--s1);stroke:var(--card);stroke-width:2}
+.bar:hover,.bar:focus{opacity:.8;outline:none}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-top:6px;min-height:20px}
+.legend i{display:inline-block;width:12px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.legend i.l{height:0;border-top:2px solid;border-radius:0;width:16px;vertical-align:3px}.legend i.d{height:0;border-top:2px dashed;border-radius:0;width:16px;vertical-align:3px;background:none}
+#tip{position:fixed;pointer-events:none;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:13px;box-shadow:0 4px 14px #0003;z-index:9;max-width:220px}
+#tip b{display:block;font-size:15px}
+table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}th,td{text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}
+details summary{cursor:pointer;color:var(--acc);font-size:14px;margin-top:8px}
+.fl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.fl:last-child{border:0}.fl .mut{margin-top:2px}.fl .r{text-align:right;white-space:nowrap}.fl .r button{margin-top:4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.full{grid-column:1/-1}label{display:block;font-size:13px;color:var(--mut)}
+input{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);margin-top:3px}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);width:min(480px,calc(100vw - 32px));padding:16px}dialog::backdrop{background:#0008}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.del{color:var(--bad)}.hint{font-size:12px;color:var(--mut);margin-top:3px;min-height:15px}
+.empty{color:var(--mut);font-size:14px}
+</style></head><body><main>
+<a href="/">&larr; Tanks</a>
+<h1 id="ttl">History</h1><div class="sub" id="sub">Loading…</div>
+<div class="tabs" id="tabs"></div>
+
+<div class="tiles">
+ <div class="card tile"><div class="k">In the tank now</div><div class="v" id="t_now">–</div><div class="n" id="t_now2"></div></div>
+ <div class="card tile"><div class="k">Using lately</div><div class="v" id="t_rate">–</div><div class="n" id="t_rate2"></div></div>
+ <div class="card tile" id="tl_ord"><div class="k">Order by</div><div class="v" id="t_ord">–</div><div class="n" id="t_ord2"></div></div>
+ <div class="card tile" id="tl_dry"><div class="k">Could run dry</div><div class="v" id="t_dry">–</div><div class="n" id="t_dry2"></div></div>
+</div>
+
+<h2>Oil in the tank</h2>
+<div class="card">
+ <div class="seg" id="rng"></div>
+ <svg id="c1" viewBox="0 0 640 240" role="img" aria-label="Litres in the tank over time"></svg>
+ <div class="legend"><span><i class="l" style="border-color:var(--s1)"></i>Litres</span><span><i class="d" style="border-color:var(--s1);border-top-style:dotted"></i>No readings</span><span><i class="d" style="border-color:var(--s1)"></i>Cautious forecast</span><span><i class="d" style="border-color:var(--warn)"></i>Reorder level</span><span><i style="background:var(--card);border:2px solid var(--s3);border-radius:50%;width:10px"></i>Delivery</span></div>
+</div>
+
+<h2>Usage by month</h2>
+<div class="card">
+ <svg id="c2" viewBox="0 0 640 220" role="img" aria-label="Litres used each month, by year"></svg>
+ <div class="legend" id="lg2"></div>
+ <details><summary>Show as a table</summary><div style="overflow-x:auto"><table id="tbl"></table></div></details>
+</div>
+
+<h2>Deliveries</h2>
+<div class="card"><div id="fills"><div class="empty">Loading…</div></div><div class="acts" style="justify-content:flex-start;margin-top:8px"><button onclick="editDel(null)">Add a delivery</button></div></div>
+
+<h2>Costs</h2>
+<div class="tiles">
+ <div class="card tile"><div class="k">Last price paid</div><div class="v" id="c_last">–</div><div class="n" id="c_last2"></div></div>
+ <div class="card tile"><div class="k">Average price</div><div class="v" id="c_avg">–</div><div class="n" id="c_avg2"></div></div>
+ <div class="card tile"><div class="k">Spent, last 12 months</div><div class="v" id="c_spent">–</div><div class="n" id="c_spent2"></div></div>
+ <div class="card tile"><div class="k">Heating costs lately</div><div class="v" id="c_run">–</div><div class="n" id="c_run2"></div></div>
+</div>
+<div class="mut" id="c_hint" style="min-height:18px"></div>
+
+<dialog id="ddlg"><form method="dialog" onsubmit="return saveDel(event)">
+<div class="row"><b id="ddT">Delivery</b><span class="mut" id="ddM"></span></div>
+<div class="grid">
+<label class="full">Date and time<input id="d_t" type="datetime-local" required></label>
+<label>Litres delivered<input id="d_l" type="number" step="1" min="0" oninput="price('l')"><div class="hint" id="d_lh"></div></label>
+<label>Supplier<input id="d_s" list="d_sl" maxlength="40" autocomplete="off"><datalist id="d_sl"></datalist></label>
+<label>Price per litre (p)<input id="d_p" type="number" step="0.01" min="0" oninput="price('p')"></label>
+<label>Total paid, £ inc VAT<input id="d_c" type="number" step="0.01" min="0" oninput="price('c')"></label>
+<label class="full">Note<input id="d_n" maxlength="80" placeholder="e.g. invoice number"></label>
+</div>
+<div class="acts"><button type="button" class="del" id="d_del" onclick="delDel()">Delete</button><span style="flex:1"></span><button type="button" onclick="$('ddlg').close()">Cancel</button><button class="pri">Save</button></div>
+</form></dialog>
+
+<h2>How the forecast works</h2>
+<div class="card mut" id="how"></div>
+<div id="tip" hidden></div>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id),H=3600,DAY=86400,NS='http://www.w3.org/2000/svg';
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// Typical UK heating degree days per month (base 15.5 °C): the built-in shape of a year's heating.
+const HDD=[340,300,280,210,140,75,45,50,90,170,260,320];
+const HOT_WATER=0.25;     // share of a year's oil that goes on hot water, used evenly all year
+const CAUTION=1.25;       // the headline dates assume 25 % more use than the likely figure
+const REFILL_L=30;        // a rise this big is a delivery, not sensor noise or warm oil
+let S,T,CV,P=[],A=null,R='30',now=Date.now()/1000;
+
+// ---------- data ----------
+function parse(buf){const v=new DataView(buf),o=[];for(let i=0;i+6<=buf.byteLength;i+=6)o.push([v.getUint32(i,true),v.getUint16(i+4,true)]);
+ o.sort((a,b)=>a[0]-b[0]);return o.filter((p,i)=>!i||p[0]!==o[i-1][0])}
+function toL(mm,cv){if(mm===16382||mm>=cv.h)return 0;const i=mm/cv.step,a=Math.floor(i),l=cv.l;if(a>=l.length-1)return l[l.length-1];return l[a]+(l[a+1]-l[a])*(i-a)}
+const med=a=>{if(!a.length)return null;const s=a.slice().sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const midnight=t=>{const d=new Date(t*1000);d.setHours(0,0,0,0);return d.getTime()/1000};
+const addDays=(t,n)=>{const d=new Date(t*1000);d.setDate(d.getDate()+n);d.setHours(0,0,0,0);return d.getTime()/1000};
+const doy=t=>{const d=new Date(t*1000);return (d-new Date(d.getFullYear(),0,1))/864e5};
+
+// Built-in daily-use shape for a date: degree days per day (smoothed between month centres) + flat hot water.
+function shape(t){const d=new Date(t*1000),y=d.getFullYear(),dim=m=>new Date(y,m+1,0).getDate();
+ const f=d.getMonth()+(d.getDate()-.5)/dim(d.getMonth())-.5,m0=(Math.floor(f)+12)%12,m1=(m0+1)%12,w=f-Math.floor(f);
+ const r=m=>HDD[m]/dim(m),heat=r(m0)*(1-w)+r(m1)*w,mean=HDD.reduce((a,b)=>a+b)/365;
+ return (1-HOT_WATER)*heat/mean+HOT_WATER}
+
+// Pure analysis: pts=[[epoch,litres]] -> deliveries, adjusted level, daily use, months, rates, forecast.
+function analyse(pts,o){
+ o=o||{};const tnow=o.now||now,reserve=o.reserve??200,cap=o.cap||1e9;
+ const n=pts.length,out={fills:[],days:{},months:{},n,span:n?(pts[n-1][0]-pts[0][0])/DAY:0};
+ if(n<2)return out;
+ // deliveries: a jump over REFILL_L that holds for the next few hours
+ const L=pts.map(p=>p[1]),adj=new Array(n);let off=0,i=0;
+ while(i<n){adj[i]=L[i]+off;
+  if(i>0){  // compare with readings close in time only: imported history can be days apart
+   const near=(from,to,dir)=>{const o=[];for(let j=from;j>=0&&j<n&&o.length<4&&Math.abs(pts[j][0]-pts[i][0])<=6*H;j+=dir)o.push(L[j]);return o};
+   const bw=near(i-1,0,-1),before=med(bw.length?bw.slice(0,3):[L[i-1]]),after=near(i,0,1);
+   if(L[i]-before>REFILL_L&&med(after)-before>REFILL_L){
+    const later=near(i+1,0,1),amt=med(later.length?later:after)-before;
+    out.fills.push({t:pts[i][0],add:amt,from:before,to:before+amt});off-=amt;
+    const skip=Math.max(1,after.length);for(let j=i;j<Math.min(n,i+skip);j++)adj[j]=L[j]+off;i+=skip;continue}}
+  i++}
+ // adj = oil that would be left if nothing had been delivered; smooth it (±3 h median) and read it at each midnight
+ const sm=adj.map((_,k)=>{const a=[];for(let j=k;j>=0&&pts[k][0]-pts[j][0]<=3*H;j--)a.push(adj[j]);for(let j=k+1;j<n&&pts[j][0]-pts[k][0]<=3*H;j++)a.push(adj[j]);return med(a)});
+ out.adj=pts.map((p,k)=>[p[0],sm[k]]);
+ const at=t=>{let lo=0,hi=n-1;while(lo<hi){const m=(lo+hi)>>1;if(pts[m][0]<t)lo=m+1;else hi=m}
+  if(pts[lo][0]<t)lo=n;  // t is after the last reading
+  const a=lo-1,b=lo;
+  if(a>=0&&b<n&&pts[b][0]-pts[a][0]<=3*DAY){if(pts[b][0]===pts[a][0])return sm[b];return sm[a]+(sm[b]-sm[a])*(t-pts[a][0])/(pts[b][0]-pts[a][0])}
+  for(const k of[a,b])if(k>=0&&k<n&&Math.abs(pts[k][0]-t)<=4*H)return sm[k];
+  return null};
+ out.at=at;
+ const mids=[];for(let t=midnight(pts[0][0]);t<=pts[n-1][0];t=addDays(t,1)){const v=at(t);if(v!=null)mids.push([t,v])}
+ for(let k=1;k<mids.length;k++){const[t0,v0]=mids[k-1],[t1,v1]=mids[k],nd=Math.round((t1-t0)/DAY),per=(v0-v1)/nd;
+  for(let d=0,t=t0;d<nd;d++,t=addDays(t,1))out.days[t]=per}
+ for(const t in out.days){const d=new Date(t*1000),k=d.getFullYear()+'-'+d.getMonth(),m=out.months[k]||(out.months[k]={y:d.getFullYear(),m:d.getMonth(),used:0,days:0});m.used+=out.days[t];m.days++}
+ // recent rate: last 14 days (or what there is)
+ const tEnd=pts[n-1][0],tStart=Math.max(pts[0][0],tEnd-14*DAY),win=(tEnd-tStart)/DAY;
+ const a0=at(tStart),a1=sm[n-1];
+ out.recent=win>=1&&a0!=null?Math.max(0,(a0-a1)/win):null;out.recentDays=win;
+ if(out.recent==null)return out;
+ // seasonal profile: own data from earlier years if there is enough, else the built-in shape
+ const old=Object.keys(out.days).map(Number).filter(t=>t<tnow-300*DAY);
+ const own=t=>{const x=doy(t),v=old.filter(s=>{const dd=Math.abs(doy(s)-x);return Math.min(dd,365-dd)<=10}).map(s=>out.days[s]);return v.length>=10?Math.max(0,v.reduce((a,b)=>a+b)/v.length):null};
+ let ownRecent=[],shpRecent=0,c=0;
+ for(let t=tStart;t<tEnd;t+=DAY){const v=own(t);if(v!=null)ownRecent.push(v);shpRecent+=shape(t);c++}
+ shpRecent/=Math.max(1,c);
+ const ownMean=ownRecent.length>=Math.max(1,c/2)?ownRecent.reduce((a,b)=>a+b)/ownRecent.length:null;
+ const k=ownMean>0?Math.min(1.6,Math.max(0.6,out.recent/ownMean)):null;
+ out.useOwn=k!=null;out.k=k;
+ const rate=t=>{const v=k!=null?own(t):null;return v!=null?v*k:out.recent*shape(t)/shpRecent};
+ out.rate=rate;
+ // simulate forward from the current level
+ const cur=med(L.slice(-4));out.cur=cur;  // actual level now (sm is the delivery-adjusted level)
+ const sim=f=>{let l=cur,t=tEnd,ord=null,dry=null;const path=[[t,l]];
+  for(let d=0;d<730&&(dry==null);d++){const r=rate(t)*f;l-=r;t+=DAY;path.push([t,Math.max(0,l)]);
+   if(ord==null&&l<=reserve)ord=t;if(l<=0)dry=t}
+  return{ord:cur<=reserve?tEnd:ord,dry:cur<=0?tEnd:dry,path}};
+ out.likely=sim(1);out.cautious=sim(CAUTION);
+ // forecast for each remaining month of this year
+ out.fmonths={};let tt=tEnd;
+ for(let d=0;d<400;d++){const dt=new Date(tt*1000),k2=dt.getFullYear()+'-'+dt.getMonth();(out.fmonths[k2]=(out.fmonths[k2]||0)+rate(tt));tt+=DAY}
+ return out}
+
+// ---------- rendering helpers ----------
+function el(tag,at,parent,txt){const e=document.createElementNS(NS,tag);for(const k in at)e.setAttribute(k,at[k]);if(txt!=null)e.textContent=txt;if(parent)parent.appendChild(e);return e}
+const fmtD=t=>new Date(t*1000).toLocaleDateString(undefined,{day:'numeric',month:'short'});
+const fmtDY=t=>new Date(t*1000).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+const fmtDT=t=>new Date(t*1000).toLocaleString(undefined,{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const L0=v=>Math.round(v).toLocaleString()+' L';
+const tip=$('tip');
+function showTip(ev,lines){tip.textContent='';const b=document.createElement('b');b.textContent=lines[0];tip.appendChild(b);
+ for(const s of lines.slice(1)){const d=document.createElement('div');d.textContent=s;tip.appendChild(d)}
+ tip.hidden=false;const x=Math.min(innerWidth-tip.offsetWidth-8,ev.clientX+12),y=Math.max(8,ev.clientY-tip.offsetHeight-12);tip.style.left=x+'px';tip.style.top=y+'px'}
+const hideTip=()=>{tip.hidden=true};
+function niceStep(max,n){const raw=max/n,p=Math.pow(10,Math.floor(Math.log10(raw||1))),m=raw/p;return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p}
+
+// ---------- chart 1: litres over time ----------
+function drawLevel(){
+ const svg=$('c1');svg.textContent='';const W=640,Hh=240,ml=46,mr=12,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
+ const cap=+T.cfg.capacity_l,reserve=T.cfg.reserve_l??200;
+ if(P.length<2){el('text',{x:W/2,y:Hh/2,'text-anchor':'middle'},svg,'Collecting readings: the first point appears on the hour.');return}
+ const last=P[P.length-1][0],first=P[0][0];
+ const back=R==='all'?Math.max(DAY,last-first):(+R)*DAY,t0=Math.max(first,last-back),ahead=R==='all'?Math.min(365*DAY,back/3):back/3,t1=last+ahead;
+ const x=t=>ml+(t-t0)/(t1-t0)*pw,y=l=>mt+ph-(Math.max(0,l)/cap)*ph;
+ const st=niceStep(cap,4);for(let v=0;v<=cap;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},svg);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},svg,v.toLocaleString())}
+ // x ticks
+ const ticks=[],span=t1-t0;
+ if(span<=45*DAY){const every=span<=10*DAY?1:7;for(let t=addDays(midnight(t0),1);t<t1;t=addDays(t,every))ticks.push([t,fmtD(t)])}
+ else{const every=span<=400*DAY?1:3,d=new Date(t0*1000);d.setDate(1);d.setHours(0,0,0,0);d.setMonth(d.getMonth()+1);
+  while(d/1000<t1){const m=d.getMonth();if(every===1||m%3===0)ticks.push([d/1000,MON[m]+(m===0||every>1?' '+String(d.getFullYear()).slice(2):'')]);d.setMonth(m+1)}}
+ for(const[t,lab]of ticks){const xx=x(t);if(xx<ml+14||xx>W-mr-14)continue;el('line',{x1:xx,x2:xx,y1:mt+ph,y2:mt+ph+4,class:'ax'},svg);el('text',{x:xx,y:Hh-6,'text-anchor':'middle'},svg,lab)}
+ el('line',{x1:ml,x2:W-mr,y1:mt+ph,y2:mt+ph,class:'ax'},svg);
+ el('line',{x1:x(last),x2:x(last),y1:mt,y2:mt+ph,class:'gl'},svg);el('text',{x:x(last)+4,y:mt+10},svg,'now');
+ // reorder level
+ el('line',{x1:ml,x2:W-mr,y1:y(reserve),y2:y(reserve),class:'rsv'},svg);el('text',{x:ml+4,y:y(reserve)-4,class:'rsvt'},svg,'reorder '+reserve+' L');
+ // the data, thinned to about 2 points per pixel; break the line across gaps of more than 6 h
+ const vis=P.filter(p=>p[0]>=t0),step=Math.max(1,Math.floor(vis.length/(pw*2)));let d='',g='',prev=null;
+ for(let i=0;i<vis.length;i+=step){const p=vis[i],xy=x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1),gap=prev&&p[0]-prev[0]>Math.max(3*DAY,6*H*step);
+  if(gap)g+='M'+x(prev[0]).toFixed(1)+' '+y(prev[1]).toFixed(1)+'L'+xy;d+=(prev==null||gap?'M':'L')+xy;prev=p}
+ if(g)el('path',{d:g,class:'gap'},svg);
+ el('path',{d,class:'ln'},svg);
+ if(A&&A.cautious){const fp=A.cautious.path.filter(p=>p[0]<=t1);el('path',{d:fp.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1)).join(''),class:'fc'},svg)}
+ for(const f of (A&&A.fills)||[])if(f.t>=t0)el('circle',{cx:x(f.t),cy:y(f.to),r:5,class:'fill'},svg);
+ // crosshair + tooltip
+ const xh=el('line',{y1:mt,y2:mt+ph,class:'xh',visibility:'hidden'},svg),dot=el('circle',{r:4,class:'dot',visibility:'hidden'},svg);
+ const hit=el('rect',{x:ml,y:mt,width:pw,height:ph,fill:'transparent'},svg);
+ const mv=ev=>{const r=svg.getBoundingClientRect(),tx=t0+((ev.clientX-r.left)*W/r.width-ml)/pw*(t1-t0);
+  let lines,px,py;
+  if(tx>last&&A&&A.cautious){const fp=A.cautious.path;let b=fp[0];for(const p of fp)if(Math.abs(p[0]-tx)<Math.abs(b[0]-tx))b=p;px=x(b[0]);py=y(b[1]);lines=['≈ '+L0(b[1]),'cautious forecast · '+fmtD(b[0])]}
+  else{let lo=0,hi=vis.length-1;while(lo<hi){const m=(lo+hi)>>1;if(vis[m][0]<tx)lo=m+1;else hi=m}
+   const b=lo>0&&Math.abs(vis[lo-1][0]-tx)<Math.abs(vis[lo][0]-tx)?vis[lo-1]:vis[lo];if(!b)return;px=x(b[0]);py=y(b[1]);lines=[L0(b[1]),fmtDT(b[0])+(b[2]!=null?' · '+b[2]+' mm':'')]}
+  xh.setAttribute('x1',px);xh.setAttribute('x2',px);xh.setAttribute('visibility','visible');dot.setAttribute('cx',px);dot.setAttribute('cy',py);dot.setAttribute('visibility','visible');showTip(ev,lines)};
+ hit.addEventListener('pointermove',mv);hit.addEventListener('pointerdown',mv);
+ hit.addEventListener('pointerleave',()=>{xh.setAttribute('visibility','hidden');dot.setAttribute('visibility','hidden');hideTip()})}
+
+// ---------- chart 2: monthly usage, a bar per year ----------
+function drawMonths(){
+ const svg=$('c2');svg.textContent='';$('lg2').textContent='';$('tbl').textContent='';
+ const W=640,Hh=220,ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
+ const ms=Object.values((A&&A.months)||{}),cy=new Date(now*1000).getFullYear(),cm=new Date(now*1000).getMonth();
+ let years=[...new Set(ms.map(m=>m.y).concat([cy]))].sort().slice(-3);
+ const fc={};if(A&&A.fmonths)for(const k in A.fmonths){const[y,m]=k.split('-').map(Number);if(y===cy&&m>=cm)fc[m]=A.fmonths[k]}
+ const val=(y,m)=>ms.find(o=>o.y===y&&o.m===m);
+ let max=10;for(const o of ms)max=Math.max(max,o.used);for(const m in fc)max=Math.max(max,fc[m]+(val(cy,+m)?.used||0));
+ const st=niceStep(max,4);max=Math.ceil(max/st)*st;const y=v=>mt+ph-Math.max(0,v)/max*ph;
+ for(let v=0;v<=max;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},svg);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},svg,v.toLocaleString())}
+ el('line',{x1:ml,x2:W-mr,y1:mt+ph,y2:mt+ph,class:'ax'},svg);
+ const gw=pw/12,bw=Math.min(18,(gw-6)/years.length-2),col=i=>'var(--s'+(i+1)+')';
+ const colour=yr=>col(yr%3);  // a year keeps its colour as new years arrive
+ for(let m=0;m<12;m++){const gx=ml+m*gw+(gw-years.length*(bw+2))/2;el('text',{x:ml+m*gw+gw/2,y:Hh-6,'text-anchor':'middle'},svg,MON[m]);
+  years.forEach((yr,i)=>{const o=val(yr,m),bx=gx+i*(bw+2),f=yr===cy?fc[m]:null;let top=mt+ph;
+   if(o&&o.used>0){const h=Math.max(1,ph-(y(o.used)-mt));top=y(o.used);
+    const r=el('path',{d:bar(bx,top,bw,h),fill:colour(yr),class:'bar',tabindex:0,opacity:o.days<new Date(yr,m+1,0).getDate()-1?.55:1},svg);
+    const pc=priceAt(new Date(yr,m+1,0).getTime()/1000),lines=[L0(o.used),MON[m]+' '+yr+(o.days<new Date(yr,m+1,0).getDate()?' · '+o.days+' days of data':''),(o.used/o.days).toFixed(1)+' L/day'+(pc!=null?' · ≈ '+gbp0(o.used*pc/100):'')];
+    r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip);r.addEventListener('focus',e=>{const b=r.getBoundingClientRect();showTip({clientX:b.right,clientY:b.top},lines)});r.addEventListener('blur',hideTip)}
+   if(f>0){const h=ph-(y(f)-mt);const r=el('rect',{x:bx+1,y:top-h+1,width:bw-2,height:Math.max(0,h-2),rx:3,fill:'none',stroke:colour(yr),'stroke-width':2,'stroke-dasharray':'4 3',class:'bar',tabindex:0},svg);
+    const pc=priceAt(now),lines=['≈ '+L0(f)+(pc!=null?' · ≈ '+gbp0(f*pc/100):''),'forecast for the rest of '+MON[m]+' '+yr];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}})}
+ years.forEach(yr=>{const s=document.createElement('span'),i=document.createElement('i');i.style.background=colour(yr);s.appendChild(i);s.appendChild(document.createTextNode(String(yr)));$('lg2').appendChild(s)});
+ {const s=document.createElement('span'),i=document.createElement('i');i.style.cssText='border:2px dashed var(--mut);background:none';s.appendChild(i);s.appendChild(document.createTextNode('forecast'));$('lg2').appendChild(s)}
+ const hr=document.createElement('tr');['Month'].concat(years.map(String)).forEach(h=>{const th=document.createElement('th');th.textContent=h;hr.appendChild(th)});$('tbl').appendChild(hr);
+ for(let m=0;m<12;m++){const tr=document.createElement('tr'),td=document.createElement('td');td.textContent=MON[m];tr.appendChild(td);
+  years.forEach(yr=>{const o=val(yr,m),c=document.createElement('td');const pc=o&&priceAt(new Date(yr,m+1,0).getTime()/1000);c.textContent=o?Math.round(o.used)+' L'+(pc!=null?' · '+gbp0(o.used*pc/100):'')+(o.days<new Date(yr,m+1,0).getDate()?' ('+o.days+'d)':''):(yr===cy&&fc[m]>0?'≈'+Math.round(fc[m])+' L':'–');tr.appendChild(c)});$('tbl').appendChild(tr)}}
+function bar(x,y,w,h){const r=Math.min(4,w/2,h);return `M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`}
+
+// ---------- tiles, deliveries, explanation ----------
+function tiles(){
+ const cap=+T.cfg.capacity_l,reserve=T.cfg.reserve_l??200;
+ $('t_now').textContent=T.litres==null?'–':L0(T.litres);$('t_now2').textContent=T.percent==null?'':T.percent+'% · reorder at '+reserve+' L';
+ const r=A&&A.recent,ok=r!=null&&A.span>=2;
+ $('t_rate').textContent=ok?r.toFixed(1)+' L/day':'–';$('t_rate2').textContent=ok?'last '+Math.round(A.recentDays)+' days':(A&&A.n?'needs 2 days of readings':'no readings yet');
+ for(const[id,key]of[['ord','ord'],['dry','dry']]){const c=ok&&A.cautious[key],l=ok&&A.likely[key],tl=$('tl_'+id);tl.className='card tile';
+  $('t_'+id).textContent=!ok?'–':c==null?'2+ years':c<=now+DAY?'Now':fmtD(c);
+  $('t_'+id+'2').textContent=!ok?'':l==null?'likely 2+ years':'likely '+(l<=now+DAY?'now':fmtDY(l));
+  if(ok&&c!=null&&c<now+(id==='ord'?14:30)*DAY)tl.classList.add(id==='ord'?'warn':'bad')}
+ if(!ok&&T.litres!=null&&T.litres<=reserve){$('t_ord').textContent='Now';$('t_ord2').textContent='below the reorder level';$('tl_ord').classList.add('warn')}
+ renderDeliveries();costs();
+ const h=$('how');h.textContent='';
+ const p=s=>{const e=document.createElement('p');e.style.margin='0 0 8px';e.textContent=s;h.appendChild(e)};
+ p('The Pico saves one reading an hour for each tank (about 50 KB a year), so this history keeps growing for years.');
+ if(!ok){p('Forecasts start once there are 2 days of readings.');return}
+ if(A.useOwn)p('Seasonal pattern: your own usage from previous years at the same time of year, scaled by how this year compares ('+Math.round(A.k*100)+'% of last time over the past '+Math.round(A.recentDays)+' days).');
+ else p('Seasonal pattern: until there is a year of your own data, a typical UK heating year (degree days, with '+Math.round(HOT_WATER*100)+'% of the oil on hot water all year round), scaled to your use over the last '+Math.round(A.recentDays)+' days. So summer hot-water use is not mistaken for a 700-day tank.');
+ p('"Order by" and "Could run dry" assume '+Math.round((CAUTION-1)*100)+'% more use than expected, so they come early rather than late. The likely dates are underneath.')}
+
+// ---------- deliveries & costs ----------
+let D={},EDIT=null;
+// detected deliveries (from the readings) matched to saved records (supplier/price) within 36 h
+function deliveries(){const recs=((T&&D[T.mac])||[]).slice(),out=[];
+ for(const f of (A&&A.fills)||[]){let bi=-1,bd=36*H;recs.forEach((r,i)=>{const d=Math.abs(r.t-f.t);if(d<=bd){bd=d;bi=i}});
+  out.push({t:bi>=0?recs[bi].t:f.t,f,r:bi>=0?recs.splice(bi,1)[0]:null})}
+ for(const r of recs)out.push({t:r.t,f:null,r});
+ return out.sort((a,b)=>b.t-a.t)}
+const litresOf=x=>x.r&&x.r.litres!=null?x.r.litres:x.f?x.f.add:null;
+const pplOf=x=>{const r=x.r;if(!r)return null;if(r.ppl!=null)return r.ppl;const l=litresOf(x);return r.total!=null&&l>0?r.total/l*100:null};
+const totalOf=x=>{const r=x.r;if(!r)return null;if(r.total!=null)return r.total;const p=pplOf(x),l=litresOf(x);return p!=null&&l!=null?p*l/100:null};
+const gbp=v=>'£'+v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const gbp0=v=>'£'+Math.round(v).toLocaleString();
+function priceAt(t){const p=deliveries().filter(x=>pplOf(x)!=null);if(!p.length)return null;const b=p.find(x=>x.t<=t);return pplOf(b||p[p.length-1])}
+function renderDeliveries(){const f=$('fills');f.textContent='';const list=deliveries();
+ if(!list.length){const d=document.createElement('div');d.className='empty';d.textContent='None seen yet. Deliveries show here automatically (any rise of more than '+REFILL_L+' L), or add one yourself.';f.appendChild(d);return}
+ for(const x of list){const r=x.r,row=document.createElement('div');row.className='fl';
+  const left=document.createElement('div'),a=document.createElement('div'),sub=document.createElement('div');sub.className='mut';
+  a.textContent=fmtDY(x.t)+(r&&r.supplier?' · '+r.supplier:'');const bits=[];
+  if(x.f)bits.push('sensor saw '+L0(x.f.from)+' → '+L0(x.f.to));
+  if(r&&r.litres!=null&&x.f)bits.push(L0(r.litres)+' on the receipt');
+  const p=pplOf(x),tot=totalOf(x);if(tot!=null)bits.push(gbp(tot));if(p!=null)bits.push(p.toFixed(1)+'p/L');
+  if(r&&r.note)bits.push(r.note);if(tot==null)bits.push('add the price with Edit');
+  sub.textContent=bits.join(' · ');left.append(a,sub);
+  const rt=document.createElement('div');rt.className='r';const b=document.createElement('b');const l=litresOf(x);b.textContent=l==null?'–':'+'+L0(l);
+  const e=document.createElement('button');e.textContent='Edit';e.onclick=()=>editDel(x);rt.append(b,document.createElement('br'),e);
+  row.append(left,rt);f.appendChild(row)}}
+function costs(){const ids=['c_last','c_avg','c_spent','c_run'];ids.forEach(i=>{$(i).textContent='–';$(i+'2').textContent=''});
+ const pr=deliveries().filter(x=>pplOf(x)!=null&&litresOf(x)!=null);
+ $('c_hint').textContent=pr.length?'Prices include VAT. Running costs use the last price paid.':'Add the price to a delivery (Edit) to track costs.';
+ if(!pr.length)return;const last=pr[0];
+ $('c_last').textContent=pplOf(last).toFixed(1)+'p/L';$('c_last2').textContent=fmtDY(last.t)+(last.r.supplier?' · '+last.r.supplier:'');
+ const sl=pr.reduce((a,x)=>a+litresOf(x),0),sc=pr.reduce((a,x)=>a+totalOf(x),0);
+ $('c_avg').textContent=(sc/sl*100).toFixed(1)+'p/L';$('c_avg2').textContent=pr.length+' deliver'+(pr.length>1?'ies':'y')+' · '+L0(sl);
+ const yr=pr.filter(x=>x.t>now-365*DAY);$('c_spent').textContent=gbp0(yr.reduce((a,x)=>a+totalOf(x),0));$('c_spent2').textContent=L0(yr.reduce((a,x)=>a+litresOf(x),0))+' bought';
+ if(A&&A.recent!=null&&A.span>=2){const p=pplOf(last)/100;$('c_run').textContent=gbp(A.recent*p)+'/day';
+  let s30=0;for(let d=0,t=A.likely.path[0][0];d<30;d++,t+=DAY)s30+=A.rate(t);$('c_run2').textContent='next 30 days ≈ '+gbp0(s30*p)}}
+const pad=v=>String(v).padStart(2,'0');
+const toLocalInput=t=>{const d=new Date(t*1000);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())};
+function editDel(x){EDIT=x;const r=x&&x.r;
+ $('ddT').textContent=x?(x.f&&!r?'Delivery seen by the sensor':'Edit delivery'):'Add a delivery';$('ddM').textContent=T.name;
+ $('d_t').value=toLocalInput(x?x.t:Math.floor(now));$('d_l').value=r&&r.litres!=null?r.litres:(x&&x.f?Math.round(x.f.add):'');
+ $('d_lh').textContent=x&&x.f?'The sensor saw about +'+L0(x.f.add)+'. Use the receipt figure if you have it.':'';
+ $('d_s').value=r?r.supplier||'':'';$('d_n').value=r?r.note||'':'';
+ $('d_p').value=r&&r.ppl!=null?r.ppl:'';$('d_c').value=r&&r.total!=null?r.total:'';
+ const dl=$('d_sl');dl.textContent='';[...new Set(Object.values(D).flat().map(r=>r.supplier).filter(Boolean))].forEach(s=>{const o=document.createElement('option');o.value=s;dl.appendChild(o)});
+ $('d_del').style.visibility=r?'visible':'hidden';$('ddlg').showModal()}
+function price(src){const l=+$('d_l').value,p=$('d_p').value,c=$('d_c').value;
+ if(!(l>0))return;
+ if((src==='p'||src==='l')&&p!=='')$('d_c').value=(l*p/100).toFixed(2);
+ else if(src==='c'&&c!=='')$('d_p').value=(c/l*100).toFixed(2);
+ else if(src==='l'&&c!=='')$('d_p').value=(c/l*100).toFixed(2)}
+async function postDel(b){const r=await fetch('/api/delivery',{method:'POST',body:JSON.stringify(b)});if(!r.ok){alert(await r.json().catch(()=>'Could not save'));return false}
+ D=await (await fetch('/api/deliveries')).json();renderDeliveries();costs();drawMonths();return true}
+async function saveDel(e){e.preventDefault();const t=Math.floor(new Date($('d_t').value).getTime()/1000);if(!(t>0))return false;
+ const num=id=>$(id).value===''?null:+$(id).value;
+ const b={mac:T.mac,t,old_t:EDIT&&EDIT.r?EDIT.r.t:null,litres:num('d_l'),supplier:$('d_s').value.trim(),ppl:num('d_p'),total:num('d_c'),note:$('d_n').value.trim()};
+ if(await postDel(b))$('ddlg').close();return false}
+async function delDel(){if(!EDIT||!EDIT.r||!confirm('Delete the saved details for this delivery?'+(EDIT.f?' (It will still show, because the sensor saw it.)':'')))return;
+ if(await postDel({mac:T.mac,old_t:EDIT.r.t,delete:true}))$('ddlg').close()}
+
+// ---------- load ----------
+async function load(){
+ S=await (await fetch('/api/state')).json();
+ const q=new URLSearchParams(location.search);let mac=q.get('mac');if(!S.tanks.find(t=>t.mac===mac))mac=S.tanks[0]&&S.tanks[0].mac;
+ const tb=$('tabs');tb.textContent='';if(S.tanks.length>1)S.tanks.forEach(t=>{const b=document.createElement('button');b.textContent=t.name;b.setAttribute('aria-pressed',t.mac===mac);b.onclick=()=>{history.replaceState(null,'','?mac='+t.mac);load()};tb.appendChild(b)});
+ if(!mac){$('sub').textContent='No tanks set up yet.';return}
+ T=S.tanks.find(t=>t.mac===mac);$('ttl').textContent=T.name;
+ const [buf,cv,dl]=await Promise.all([fetch('/api/hist?mac='+mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+mac).then(r=>r.json()),fetch('/api/deliveries').then(r=>r.json()).catch(()=>({}))]);D=dl||{};
+ CV=cv;now=Date.now()/1000;
+ P=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);
+ if(T.level!=null&&T.age!=null&&T.age<1800&&T.level!==16383)P.push([now-T.age,toL(T.level,cv),T.level]);
+ A=analyse(P,{now,reserve:T.cfg.reserve_l??200,cap:+T.cfg.capacity_l});
+ $('sub').textContent=P.length?'Readings since '+fmtDY(P[0][0])+' · '+(A.span<1?Math.round(A.span*24)+' hours':Math.round(A.span)+' days'):'No readings saved yet';
+ const rg=$('rng');rg.textContent='';[['7','7 days'],['30','30 days'],['365','1 year'],['all','All']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',k===R);b.onclick=()=>{R=k;try{localStorage.hawkiRange=k}catch(e){}[...rg.children].forEach(c=>c.setAttribute('aria-pressed',c===b));drawLevel()};rg.appendChild(b)});
+ tiles();drawLevel();drawMonths()}
+try{R=localStorage.hawkiRange||'30'}catch(e){}
+load().catch(e=>{$('sub').textContent='Could not load: '+e});
+</script></body></html>

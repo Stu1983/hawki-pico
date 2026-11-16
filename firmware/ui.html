@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oil Tanks</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--fg:#1d2433;--mut:#6b7385;--line:#e2e5ea;--acc:#2f6fdb;--oil:#c9a43f;--bad:#c4423b}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--fg:#e8ebf1;--mut:#9aa3b5;--line:#2b3240;--acc:#6aa0ff;--oil:#d8b450;--bad:#ff7a70}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:22px 0 8px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.sub{color:var(--mut);font-size:13px;min-height:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.big{font-size:30px;font-weight:700}.mut{color:var(--mut);font-size:13px}
+.bar{height:12px;border-radius:6px;background:var(--line);overflow:hidden;margin:10px 0 8px}.bar i{display:block;height:100%;background:var(--oil)}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:7px 12px;cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.del{color:var(--bad)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{display:block;font-size:13px;color:var(--mut)}
+input,select{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);margin-top:3px}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);width:min(520px,calc(100vw - 32px));padding:16px}
+dialog::backdrop{background:#0008}
+#viz{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
+#viz .tk{fill:none;stroke:var(--fg);stroke-width:1.2}#viz .rib{fill:#2f9ee533;stroke:#2f9ee5}#viz .win{fill:var(--card);stroke:#e0473f}
+#viz .inn{fill:none;stroke:#f08a24;stroke-dasharray:3 2}#viz .oil{fill:var(--oil);opacity:.35}#viz .gnd{stroke:var(--mut)}
+#viz .dim{stroke:var(--mut);stroke-width:.8;fill:none}#viz text{font:9px system-ui,sans-serif;fill:var(--mut)}#viz .g{stroke-dasharray:4 3;opacity:.6}
+#viz .hl{stroke-width:2.6!important;opacity:1}#viz .lbl{fill:var(--fg);font-weight:600}.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.lnk{color:var(--acc);font-size:14px;margin-right:8px;text-decoration:none}.empty{color:var(--mut);font-size:14px;padding:6px 2px}.hint{font-size:12px;color:var(--mut);margin-top:3px}
+</style></head><body><main>
+<h1>Oil Tanks</h1><div class="sub" id="status">Loading…</div>
+
+<h2>Tanks</h2><div id="tanks"><div class="empty">Loading…</div></div>
+
+<h2>Sensors nearby</h2>
+<div class="mut" style="margin:-4px 0 8px">HAWKi monitors the Pico can hear that aren't added yet. The strongest signal is usually yours; neighbours' monitors may show here too.</div>
+<div id="found"><div class="empty">Loading…</div></div>
+
+<h2>Wi-Fi</h2>
+<div class="card"><div class="row"><div><div id="wifi">…</div><div class="mut" id="wifi2">&nbsp;</div></div><button onclick="openWifi()">Change</button></div></div>
+
+<h2>Software</h2>
+<div class="card"><div class="row"><div><div id="ver">Version …</div><div class="mut" id="ver2">&nbsp;</div></div><button id="updBtn" onclick="updClick()">Check for updates</button></div>
+<div class="mut" id="updBox" style="white-space:pre-wrap;min-height:18px;margin-top:6px"></div></div>
+
+<h2>Backup</h2>
+<div class="card"><div class="mut">A backup holds every tank's settings, deliveries (supplier and price) and all saved readings. It doesn't include the Wi-Fi password. Importing one onto this or a new Pico replaces those tanks' settings and deliveries and merges the readings.</div>
+<div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button onclick="exportBackup()">Export backup</button><button onclick="exportCsv()">Export readings (CSV)</button><button onclick="$('impf').click()">Import backup</button>
+<input type="file" id="impf" accept=".json,application/json" hidden onchange="importBackup(this.files[0])"></div><div class="mut" id="bkst" style="min-height:18px;margin-top:6px"></div></div>
+
+<dialog id="dlg"><form method="dialog" onsubmit="return saveTank(event)">
+<div class="row"><b id="dlgT">Add tank</b><span class="mut" id="dlgMac"></span></div>
+<div style="margin:12px 0"><button type="button" onclick="preset()">Fill in Titan R1225</button><div class="hint">Then measure your own height (see below).</div></div>
+<div class="grid">
+<label style="grid-column:1/-1">Name<input id="f_name" required maxlength="24" placeholder="e.g. Back tank"></label>
+<label>Shape<select id="f_shape" onchange="wmShow()"><option value="cuboid">Rectangular (cuboid)</option><option value="horizontal">Horizontal cylinder</option><option value="vertical">Vertical cylinder</option><option value="other">Other (linear)</option></select></label>
+<label>Windows (holes through)<select id="f_windows"><option value="0">None</option><option value="1">1</option><option value="2">2</option></select></label>
+<label style="grid-column:1/-1">Height, cm<input id="f_h" type="number" step="0.1" min="10" required><div class="hint">Maximum fill height: from the bottom of the monitor down to the top of the outlet.</div></label>
+<label>Length, cm<input id="f_l" type="number" step="0.1" min="1"></label>
+<label>Width, cm<input id="f_w" type="number" step="0.1" min="1"></label>
+<label>Brimful capacity, litres<input id="f_c" type="number" step="1" min="1" required></label>
+<label>Reorder below, litres<input id="f_r" type="number" step="10" min="0" placeholder="200"><div class="hint">Forecast warns before this.</div></label>
+<label style="grid-column:1/-1" id="wm_row">Window &amp; rib shape<select id="f_wm" onchange="wmShow()"><option value="standard">Standard (same maths as the Magnus app)</option><option value="measured">Measured (my rough measurements)</option></select></label>
+</div>
+<div id="meas" style="display:none;margin-top:10px">
+<div class="hint" style="margin-bottom:8px">Measure from the <b>ground</b>, in cm. Rough is fine: the total is always scaled to the brimful capacity, so errors only move litres between heights. Dashed parts of the drawing are guesses until you fill them in.</div>
+<svg id="viz" viewBox="0 0 400 230" role="img" aria-label="Tank drawing"></svg>
+<div class="grid">
+<label style="grid-column:1/-1">Top of the outlet pipe<input id="m_outlet" type="number" step="0.5" min="0" data-f="outlet"></label>
+<label>Window opening: bottom<input id="m_wb" type="number" step="0.5" min="0" data-f="win"></label>
+<label>Window opening: top<input id="m_wt" type="number" step="0.5" min="0" data-f="win"></label>
+<label>Opening width<input id="m_wo" type="number" step="0.5" min="0" data-f="win"></label>
+<label>Narrowest width (middle)<input id="m_wi" type="number" step="0.5" min="0" placeholder="half the opening" data-f="inner"></label>
+<label style="grid-column:1/-1">Narrowest height (middle)<input id="m_hi" type="number" step="0.5" min="0" placeholder="half the opening" data-f="inner"></label>
+<label>Number of ribs<select id="m_nr"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+<label>Rib band height<input id="m_rh" type="number" step="0.5" min="0" placeholder="12" data-f="ribs"></label>
+<label style="grid-column:1/-1">Rib sticks out by<input id="m_rd" type="number" step="0.1" min="0" placeholder="1.5" data-f="ribs"></label>
+<div id="ribbox" class="grid" style="grid-column:1/-1"></div>
+</div></div>
+<div class="acts"><button type="button" class="del" id="dlgDel" onclick="delTank()">Remove</button><span style="flex:1"></span><button type="button" onclick="dlg.close()">Cancel</button><button class="pri">Save</button></div>
+</form></dialog>
+
+<dialog id="wdlg"><form method="dialog" onsubmit="return saveWifi(event)">
+<b>Wi-Fi network</b><div class="hint" style="margin:4px 0 10px">2.4 GHz only. The Pico restarts and joins the new network; find it again from your router's device list.</div>
+<label>Network<select id="w_ssid"><option>Scanning…</option></select></label>
+<label style="margin-top:8px">Password<input id="w_pw" type="password" autocomplete="off"></label>
+<div class="acts"><button type="button" onclick="wdlg.close()">Cancel</button><button class="pri">Save &amp; restart</button></div>
+</form></dialog>
+
+<script>
+const $=id=>document.getElementById(id);let S={tanks:[],found:[]},cur=null;
+const ago=s=>s==null?'never':s<90?Math.round(s)+' s ago':s<5400?Math.round(s/60)+' min ago':Math.round(s/3600)+' h ago';
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const okMac=m=>/^[0-9a-f:]{17}$/.test(m)?m:'';
+async function api(p,body){const r=await fetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(!r.ok)throw new Error(await r.text());return r.json()}
+async function load(){try{S=await api('/api/state');render()}catch(e){$('status').textContent='Cannot reach the Pico: '+e.message}}
+function render(){
+ $('status').textContent=S.ap?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
+ if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
+  $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
+ $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip):(S.ap?'Setup network: '+S.ap:' ');
+ $('tanks').innerHTML=S.tanks.length?S.tanks.map(t=>{const p=t.percent??0;return `<div class="card"><div class="row"><b>${esc(t.name)}</b><span><a class="lnk" href="/history?mac=${okMac(t.mac)}">History &amp; forecast</a> <button onclick="edit('${okMac(t.mac)}')">Edit</button></span></div>
+  <div class="row" style="margin-top:6px"><span class="big">${t.litres==null?'–':Math.round(t.litres)+' L'}</span><span class="big">${t.percent==null?'':t.percent+'%'}</span></div>
+  <div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div>
+  <div class="mut" style="min-height:18px">${t.litres_standard!=null?'Measured shape · Magnus-style maths says '+Math.round(t.litres_standard)+' L':'&nbsp;'}</div>
+  <div class="row mut"><span>${t.level==null?'no reading yet':t.level+' mm to oil'} · battery ${t.battery??'–'}%</span><span>${ago(t.age)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div></div>`}).join('')
+  :'<div class="empty">No tanks yet: add one from the sensors below.</div>';
+ $('found').innerHTML=S.found.length?S.found.map(f=>`<div class="card row"><div><b>${esc(f.name||f.mac)}</b><div class="mut">${f.rssi} dBm · ${ago(f.age)}${f.level!=null?' · '+f.level+' mm':''}</div></div><button class="pri" onclick="add('${okMac(f.mac)}')">Add</button></div>`).join('')
+  :'<div class="empty">None heard right now. HAWKi monitors broadcast every few seconds; give it a minute.</div>';
+}
+const MF={m_outlet:'outlet_cm',m_wb:'win_bottom_cm',m_wt:'win_top_cm',m_wo:'win_outer_w_cm',m_wi:'win_inner_w_cm',m_hi:'win_inner_h_cm',m_rh:'rib_h_cm',m_rd:'rib_depth_cm'};
+let curLevel=null,focusF=null;
+function ribInputs(vals){const n=+$('m_nr').value,old=vals||[...document.querySelectorAll('#ribbox input')].map(i=>i.value);
+ $('ribbox').innerHTML=Array.from({length:n},(_,i)=>`<label>Rib ${i+1} centre (from bottom rib up)<input type="number" step="0.5" min="0" data-f="rib${i}" value="${esc(old[i]??'')}"></label>`).join('');draw()}
+function ribVals(){return [...document.querySelectorAll('#ribbox input')].map(i=>i.value===''?null:+i.value)}
+function draw(){const sv=$('viz');if(!sv||$('meas').style.display=='none')return;
+ const g=k=>{const v=$(k).value;return v===''?null:+v};
+ const L=+$('f_l').value||178,W=+$('f_w').value||75,Hf=+$('f_h').value||130,nW=+$('f_windows').value;
+ const og=g('m_outlet'),out=og??8,top=out+Hf+4;
+ const wb0=g('m_wb'),wt0=g('m_wt'),wo0=g('m_wo');const mid=out+Hf/2;
+ const wb=wb0??mid-12,wt=wt0??mid+12,wo=wo0??30,wi=g('m_wi')??wo/2,hi=g('m_hi')??(wt-wb)/2;
+ const rh=g('m_rh')??12,rd=g('m_rd')??1.5,rv=ribVals(),nr=rv.length;
+ const ribs=rv.map((v,i)=>v??(out+Hf*(i+1)/(nr+1)));
+ // front view: x 10..290 holds L; end view: x 312..392 holds W; y: ground at 215
+ const LM=28,GAP=30,RM=26,sc=Math.min((400-LM-GAP-RM)/(L+W),190/top),gy=215,X=x=>LM+x*sc,Y=y=>gy-y*sc,ex=x=>LM+L*sc+GAP+x*sc;
+ const cls=(base,f,guess)=>base+(guess?' g':'')+(focusF&&f&&focusF==f?' hl':'');
+ let o=`<line class="gnd" x1="4" y1="${gy}" x2="396" y2="${gy}"/>`;
+ const lv=curLevel!=null?out+(Hf-curLevel/10):null;
+ if(lv!=null&&lv>out)o+=`<rect class="oil" x="${X(0)}" y="${Y(Math.min(lv,top))}" width="${L*sc}" height="${(Math.min(lv,top)-out)*sc}"/><text x="${X(0)+4}" y="${Y(Math.min(lv,top))+10}">oil now</text>`;
+ ribs.forEach((c,i)=>{o+=`<rect class="${cls('rib','rib'+i,rv[i]==null)}" x="${X(0)-rd*sc*3}" y="${Y(c+rh/2)}" width="${L*sc+rd*sc*6}" height="${rh*sc}"/><text class="lbl" x="${X(0)-rd*sc*3-2}" y="${Y(c)+3}" text-anchor="end">${rv[i]==null?'?':c}</text>`;
+  o+=`<rect class="${cls('rib','rib'+i,rv[i]==null)}" x="${ex(0)-rd*sc*3}" y="${Y(c+rh/2)}" width="${W*sc+rd*sc*6}" height="${rh*sc}"/>`});
+ o+=`<rect class="tk" x="${X(0)}" y="${Y(top)}" width="${L*sc}" height="${(top-0)*sc}"/>`;
+ o+=`<rect class="tk" x="${ex(0)}" y="${Y(top)}" width="${W*sc}" height="${top*sc}"/>`;
+ for(let i=0;i<nW;i++){const cx=L*(i+1)/(nW+1),wg=wb0==null||wt0==null||wo0==null;
+  o+=`<rect class="${cls('win','win',wg)}" x="${X(cx-wo/2)}" y="${Y(wt)}" width="${wo*sc}" height="${(wt-wb)*sc}"/>`;
+  o+=`<rect class="${cls('inn','inner',false)}" x="${X(cx-wi/2)}" y="${Y((wb+wt)/2+hi/2)}" width="${wi*sc}" height="${hi*sc}"/>`}
+ if(nW){const c=(wb+wt)/2,a=ex(0),b=ex(W/2),d=ex(W),wg=wb0==null||wt0==null;  // end view: tunnel taper through the width
+  o+=`<path class="${cls('win','win',wg)}" d="M${a} ${Y(wt)} Q${b} ${Y(c+hi/2)} ${d} ${Y(wt)} L${d} ${Y(wb)} Q${b} ${Y(c-hi/2)} ${a} ${Y(wb)} Z"/>`;
+  o+=`<text class="lbl" x="${d+3}" y="${Y(wt)+3}">${wt0??'?'}</text><text class="lbl" x="${d+3}" y="${Y(wb)+3}">${wb0??'?'}</text>`;
+  const cx=L/(nW+1);o+=`<text class="lbl" x="${X(cx)}" y="${Y(wt)-3}" text-anchor="middle">${wo0??'?'} wide</text>`}
+ o+=`<circle class="${cls('tk','outlet',og==null)}" cx="${X(0)+6}" cy="${Y(out)}" r="3"/><text class="lbl" x="${X(0)+12}" y="${Y(out)+3}">outlet ${og??'?'}</text>`;
+ o+=`<line class="dim" x1="${X(L)+10}" y1="${Y(out)}" x2="${X(L)+10}" y2="${Y(out+Hf)}"/><text x="${X(L)+20}" y="${Y(out+Hf/2)}" text-anchor="middle" transform="rotate(-90 ${X(L)+20} ${Y(out+Hf/2)})">fill height ${Hf}</text>`;
+ o+=`<text x="${X(L/2)}" y="${gy+11}" text-anchor="middle">front ${L} cm</text><text x="${ex(W/2)}" y="${gy+11}" text-anchor="middle">end ${W} cm</text>`;
+ sv.innerHTML=o}
+function wmShow(){const cub=$('f_shape').value=='cuboid';$('wm_row').style.display=cub?'':'none';$('meas').style.display=(cub&&$('f_wm').value=='measured')?'':'none';draw()}
+function fill(c){$('f_name').value=c.name||'';$('f_shape').value=c.shape||'cuboid';$('f_windows').value=c.windows??0;$('f_h').value=c.height_cm??'';$('f_l').value=c.length_cm??'';$('f_w').value=c.width_cm??'';$('f_c').value=c.capacity_l??'';$('f_r').value=c.reserve_l??'';
+ $('f_wm').value=c.window_model||'standard';for(const k in MF)$(k).value=c[MF[k]]??'';const r=c.ribs_cm||[];$('m_nr').value=r.length;ribInputs(r);wmShow()}
+function add(mac){cur=mac;curLevel=(S.found.find(f=>f.mac==mac)||{}).level??null;$('dlgT').textContent='Add tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='hidden';fill({});dlg.showModal()}
+function edit(mac){const t=S.tanks.find(x=>x.mac==mac);cur=mac;curLevel=t.level;$('dlgT').textContent='Edit tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='visible';fill(Object.assign({name:t.name},t.cfg));dlg.showModal()}
+function preset(){$('f_shape').value='cuboid';$('f_windows').value=2;if(!$('f_h').value)$('f_h').value=130;$('f_l').value=178;$('f_w').value=75;$('f_c').value=1323}
+async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:+$('f_h').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,capacity_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,window_model:$('f_wm').value};
+ if(b.window_model=='measured'){for(const k in MF)b[MF[k]]=$(k).value===''?null:+$(k).value;const r=ribVals();if(r.some(v=>v==null)){alert('Fill in every rib height, or reduce the number of ribs.');return false}b.ribs_cm=r}
+ if(b.shape=='cuboid'&&(!b.length_cm||!b.width_cm)){alert('A rectangular tank needs length and width.');return false}
+ try{await api('/api/tank',b);dlg.close();load()}catch(x){alert(x.message)}return false}
+async function delTank(){if(!confirm('Remove this tank? The monitor will show under Sensors nearby again.'))return;try{await api('/api/tank/delete',{mac:cur});dlg.close();load()}catch(x){alert(x.message)}}
+async function openWifi(){$('w_pw').value='';wdlg.showModal();try{const l=await api('/api/wifi/scan');$('w_ssid').innerHTML=l.map(n=>`<option value="${esc(n.ssid)}">${esc(n.ssid)} (${n.rssi} dBm)</option>`).join('')||'<option value="">No networks found</option>'}catch(x){$('w_ssid').innerHTML='<option value="">Scan failed</option>'}}
+async function saveWifi(e){e.preventDefault();try{await api('/api/wifi',{ssid:$('w_ssid').value,pw:$('w_pw').value});wdlg.close();$('status').textContent='Restarting to join '+$('w_ssid').value+'…'}catch(x){alert(x.message)}return false}
+$('dlg').addEventListener('input',draw);$('m_nr').addEventListener('change',()=>ribInputs());
+$('dlg').addEventListener('focusin',e=>{focusF=e.target.dataset&&e.target.dataset.f||null;draw()});
+$('dlg').addEventListener('focusout',()=>{focusF=null;draw()});
+// ---------- updates ----------
+let UPD=null;
+async function updClick(){const b=$('updBtn'),box=$('updBox');
+ if(UPD&&UPD.newer)return installUpd();
+ b.disabled=true;b.textContent='Checking…';box.textContent='';
+ try{UPD=await api('/api/update/check');
+  if(UPD.error){box.textContent='Could not check: '+UPD.error;b.textContent='Check for updates'}
+  else if(UPD.newer){box.textContent='Version '+UPD.latest+' is available.'+(UPD.notes?'\n'+UPD.notes:'');b.textContent='Install '+UPD.latest;b.className='pri'}
+  else{box.textContent='Up to date (latest is '+UPD.latest+').';b.textContent='Check for updates'}}
+ catch(e){box.textContent='Could not check: '+e.message;b.textContent='Check for updates'}
+ b.disabled=false}
+async function installUpd(){const b=$('updBtn'),box=$('updBox'),v=UPD.latest;
+ if(!confirm('Install version '+v+'?\n\nThe Pico downloads it from GitHub, checks every file, then restarts (about a minute). If the new version won\'t run, it goes back to this one by itself.'))return;
+ b.disabled=true;b.textContent='Installing…';box.textContent='Downloading and checking files…';
+ try{await api('/api/update/install',{})}catch(e){box.textContent=e.message.replace(/^"|"$/g,'');b.disabled=false;b.textContent='Check for updates';b.className='';UPD=null;return}
+ box.textContent='Installed. Restarting…';
+ for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,3000));try{S=await api('/api/state');if(S.update&&S.update.version===v){render();box.textContent='Now running version '+v+'.';break}}catch(e){}}
+ if(!(S.update&&S.update.version===v))box.textContent='The Pico has not come back on version '+v+' yet. Refresh this page in a minute.';
+ b.disabled=false;b.textContent='Check for updates';b.className='';UPD=null}
+
+// ---------- backup ----------
+const bst=t=>{$('bkst').textContent=t};
+const b64=buf=>{let s='';const u=new Uint8Array(buf);for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const day=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
+async function getBin(mac){const r=await fetch('/api/hist?mac='+mac);return r.ok?r.arrayBuffer():new ArrayBuffer(0)}
+async function exportBackup(){try{bst('Preparing backup…');const s=await api('/api/state'),dl=await api('/api/deliveries').catch(()=>({}));
+ const o={format:'hawki-backup',version:1,exported:new Date().toISOString(),tanks:{},deliveries:{},history:{}};let n=0;
+ for(const t of s.tanks){o.tanks[t.mac]=Object.assign({name:t.name},t.cfg);o.deliveries[t.mac]=dl[t.mac]||[];const b=await getBin(t.mac);n+=b.byteLength/6;o.history[t.mac]=b64(b)}
+ download('oil-tanks-backup-'+day()+'.json',JSON.stringify(o),'application/json');bst('Backup saved: '+s.tanks.length+' tanks, '+n+' readings.')}catch(e){bst('Export failed: '+e.message)}}
+async function exportCsv(){try{bst('Preparing CSV…');const s=await api('/api/state'),q=v=>'"'+String(v).replace(/"/g,'""')+'"',rows=['tank,sensor,time,distance_mm,litres,percent'];
+ for(const t of s.tanks){const cv=await api('/api/curve?mac='+t.mac),v=new DataView(await getBin(t.mac)),cap=+t.cfg.capacity_l;
+  const toL=mm=>{if(mm===16382||mm>=cv.h)return 0;const i=mm/cv.step,a=Math.floor(i),l=cv.l;return a>=l.length-1?l[l.length-1]:l[a]+(l[a+1]-l[a])*(i-a)};
+  const recs=[];for(let i=0;i+6<=v.byteLength;i+=6)recs.push([v.getUint32(i,true),v.getUint16(i+4,true)]);recs.sort((a,b)=>a[0]-b[0]);
+  for(const[ts,mm]of recs){const L=toL(mm),d=new Date(ts*1000);rows.push([q(t.name),t.mac,d.toISOString(),mm,L.toFixed(1),(100*L/cap).toFixed(1)].join(','))}}
+ download('oil-tanks-readings-'+day()+'.csv',rows.join('\n')+'\n','text/csv');bst('CSV saved: '+(rows.length-1)+' readings. Times are UTC.')}catch(e){bst('Export failed: '+e.message)}}
+async function importBackup(f){$('impf').value='';if(!f)return;let o;
+ try{o=JSON.parse(await f.text())}catch(e){alert('That file isn\'t a backup (not valid JSON).');return}
+ if(!o||o.format!=='hawki-backup'||typeof o.tanks!=='object'){alert('That file isn\'t an Oil Tanks backup.');return}
+ const macs=Object.keys(o.tanks).filter(m=>okMac(m)),hist=o.history||{},dl=o.deliveries||{};
+ const recs={};let nR=0,nD=0;for(const m of macs){nD+=(dl[m]||[]).length;if(hist[m]){const u=unb64(hist[m]),v=new DataView(u.buffer),a=[];
+  for(let i=0;i+6<=u.length;i+=6)a.push([v.getUint32(i,true),v.getUint16(i+4,true)]);a.sort((x,y)=>x[0]-y[0]);recs[m]=a;nR+=a.length}}
+ const names=macs.map(m=>o.tanks[m].name||m).join(', ');
+ if(!confirm('Import from the backup of '+(o.exported||'?').slice(0,10)+'?\n\n'+macs.length+' tank(s): '+names+'\n'+nD+' deliveries, '+nR+' readings\n\nThose tanks\' settings and deliveries will be replaced; readings are merged with the ones already here.'))return;
+ try{bst('Importing settings…');const t={},d={};for(const m of macs){t[m]=o.tanks[m];d[m]=dl[m]||[]}
+  let r=await fetch('/api/restore',{method:'POST',body:JSON.stringify({tanks:t,deliveries:d})});if(!r.ok)throw new Error(await r.json().catch(()=>r.status));
+  for(const m of macs)if(recs[m]&&recs[m].length){bst('Importing readings for '+(o.tanks[m].name||m)+'…');const b=new DataView(new ArrayBuffer(recs[m].length*6));
+   recs[m].forEach(([ts,mm],i)=>{b.setUint32(i*6,ts,true);b.setUint16(i*6+4,mm,true)});
+   r=await fetch('/api/hist?mac='+m,{method:'POST',body:b.buffer});if(!r.ok)throw new Error(await r.json().catch(()=>r.status))}
+  bst('Imported '+macs.length+' tank(s), '+nD+' deliveries and '+nR+' readings.');load()}catch(e){bst('Import failed: '+e.message)}}
+
+load();setInterval(()=>{if(!dlg.open&&!wdlg.open)load()},10000);
+</script></main></body></html>

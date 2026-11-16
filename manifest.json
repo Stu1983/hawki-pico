@@ -1,0 +1,43 @@
+{
+ "version": "1.0.0",
+ "ref": "v1.0.0",
+ "notes": "First release: tanks, history and forecast, deliveries and costs, backup, updates from GitHub.",
+ "files": {
+  "app.py": [
+   "ebf0bab1c43e10bc8bf9d953a51c3ce57285b4375c3b55ce2925c56fb8bffb71",
+   24769
+  ],
+  "ca.pem": [
+   "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
+   7065
+  ],
+  "hawki_decode.py": [
+   "c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266",
+   2120
+  ],
+  "hist.html": [
+   "c304a05cf080917cc6096b042d13869e20d383357dc01ecf3307b9d9d1ac391e",
+   33151
+  ],
+  "histstore.py": [
+   "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
+   2073
+  ],
+  "tankcalc.py": [
+   "dfb23fbcf59fe23b1b085fe8ec66e6f8bf2d58fa8835fe64696d51b482b9b663",
+   5821
+  ],
+  "ui.html": [
+   "3bb4905c0e4d1f9dc6b3161502800f606d287c4b24629342a4c51bec7acebf4f",
+   24191
+  ],
+  "updater.py": [
+   "47d6f9cb198a7ff5caf754cc4787d00d4376da7728ad9f6f957ae044b5f261b1",
+   5694
+  ],
+  "version.py": [
+   "49dc6fd020a89e240a2929b9b1f102a05bb14cd018d6d32177cd6ddd8f7e6a98",
+   18
+  ]
+ }
+}
