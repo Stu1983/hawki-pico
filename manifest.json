@@ -1,11 +1,11 @@
 {
- "version": "1.2.16",
- "ref": "v1.2.16",
- "notes": "Layout polish (phones especially): readable history charts, tidier Notifications and tank cards. Tank form: copy from another tank is first, and Fill in Titan R1225 fills in every measurement.",
+ "version": "1.2.17",
+ "ref": "v1.2.17",
+ "notes": "History page: each delivery shows the sensor's sum (85 L -> 585 L = 500 L) with the receipt underneath, and suggests the tank capacity that best fits your receipts (Use it with one tap).",
  "files": {
   "app.py": [
-   "825633c7bbc9382efb687119b942d41cc3fa6315c15a226f6f0b50b26039660c",
-   51933
+   "095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b",
+   52263
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -24,8 +24,8 @@
    2120
   ],
   "hist.html": [
-   "47f235a901d6eb71782f0fdc67d39434107dac7e0f43458cb9f714415d1e429a",
-   33170
+   "3efd89f5e7823aabc3f9cc6cbeb74dc413943ede4a0e9a3557e162a88dc26e5c",
+   37055
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
@@ -52,12 +52,12 @@
    9943
   ],
   "version.py": [
-   "182a207e41d58415381119c97fcfb2fcbbadf16ba85237d082458c82a51c6ecd",
+   "821b1fba8526133dfa39fcf1f18c24ae85877a2fc80d163fbf9673907d749663",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"825633c7bbc9382efb687119b942d41cc3fa6315c15a226f6f0b50b26039660c\", 51933], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"47f235a901d6eb71782f0fdc67d39434107dac7e0f43458cb9f714415d1e429a\", 33170], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"c749337a5a0400b8c83d8e3728ea65ee51e43bd699d6c4901e72b3d8f636fd7b\", 56055], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"182a207e41d58415381119c97fcfb2fcbbadf16ba85237d082458c82a51c6ecd\", 19]}, \"notes\": \"Layout polish (phones especially): readable history charts, tidier Notifications and tank cards. Tank form: copy from another tank is first, and Fill in Titan R1225 fills in every measurement.\", \"ref\": \"v1.2.16\", \"version\": \"1.2.16\"}",
-  "sig": "7b253003014fe1724c06cceeb4fbd17d731558c49f859364480880399e185b74d358192b9cd8e4292416962810a84c33b3ce1d856ed87627db6a51558a81cac7d40900c531a87443b117e32ee9279f4079268e98165d31cf1e702af462a6e5c29d94dcfbc947daa9f4bf4263f3a591e656e6aa226e8a795a6dda2872f85cd82ef031a441851cbb1255692d1b1e3bbfa43f93eb4ff92512b5c9467c73e8c4df4018835a006b1623cb938d7a7c601a14febaee5d52e416c2d1b8ee5da38f8970ca647b052c127ab4223f291dd0ac95f02bb5c510f6a676fb38819778d44ffe7b129068b643cd9e502420915b1922ccfd478cf9170e8e633903e60ff48b0430b4c7"
+  "body": "{\"files\": {\"app.py\": [\"095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b\", 52263], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"3efd89f5e7823aabc3f9cc6cbeb74dc413943ede4a0e9a3557e162a88dc26e5c\", 37055], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"c749337a5a0400b8c83d8e3728ea65ee51e43bd699d6c4901e72b3d8f636fd7b\", 56055], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"821b1fba8526133dfa39fcf1f18c24ae85877a2fc80d163fbf9673907d749663\", 19]}, \"notes\": \"History page: each delivery shows the sensor's sum (85 L -> 585 L = 500 L) with the receipt underneath, and suggests the tank capacity that best fits your receipts (Use it with one tap).\", \"ref\": \"v1.2.17\", \"version\": \"1.2.17\"}",
+  "sig": "2abce58209c301bdaf894064c08a9fce1b3bcd8bd206e204a03899b64ed1d375bbc6276a8e36c212988a61f28c0f902736677965aa3c61f456ccf8a3e80f0d11dafce5f6f68a267d65418565a49fa20dcbc9d5531d712168db44c05378ef9af978d86a9a2137a6376b60985215a91b5e74131e425758e4c583087b04a8b068357a12d190c7433a72762750da1c833ccaa7d596d915aa72bf6febfe3ea582135df4a989f0d55d71ba547f0e0f5659a87e5ab532fb0dc158b86d4adf3cfb3525f560dde38273c6b30311c2dc23d6600a34db2f1c6e11ab8885ce956691e3863f8075c4bcdf69c584972c13947b92234bc593bfd5581bf1e5253c06b83a0d524f28"
  }
 }
