@@ -18,7 +18,7 @@ button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.del{c
 input,select{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);margin-top:3px}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);width:min(520px,calc(100vw - 32px));padding:16px}
 dialog::backdrop{background:#0008}
-#viz,#d_tank{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}#d_tank{display:block;max-width:560px;margin:8px auto 0}#d_tank text{font-size:11px}
+#viz,#d_tank{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}#d_tank{display:block;max-width:560px;margin:8px auto 0}#d_tank text{font-size:11px}#d_tank .rl{stroke:var(--fg);stroke-width:.6;opacity:.25}#d_tank .tk{fill:none}
 #viz .tk,#d_tank .tk{fill:none;stroke:var(--fg);stroke-width:1.2}#viz .rib,#d_tank .rib{fill:#2f9ee533;stroke:#2f9ee5}#viz .win,#d_tank .win{fill:var(--card);stroke:#e0473f}
 #viz .inn,#d_tank .inn{fill:none;stroke:#f08a24;stroke-dasharray:3 2}#viz .oil,#d_tank .oil{fill:var(--oil);opacity:.35}#viz .oilx,#d_tank .oilx{opacity:.15;stroke:var(--oil);stroke-dasharray:4 3}#viz .gnd,#d_tank .gnd{stroke:var(--mut)}
 #viz .dim,#d_tank .dim{stroke:var(--mut);stroke-width:.8;fill:none}#viz text,#d_tank text{font:9px system-ui,sans-serif;fill:var(--mut)}#viz .g,#d_tank .g{stroke-dasharray:4 3;opacity:.6}
@@ -215,7 +215,7 @@ function tankSvg(p){
  const rh=p.rh??12,rd=p.rd??1.5,rv=Array.isArray(p.rv)?p.rv:[],nr=rv.length;
  const ribs=rv.map((v,i)=>v??(out+Hf*(i+1)/(nr+1)));
  // y: ground at 215; front view from LM, end view after a gap
- const LM=34,GAP=30,RM=26,sc=Math.min((400-LM-(end?GAP:0)-RM)/(L+(end?W:0)),190/top),gy=215,X=x=>LM+x*sc,Y=y=>gy-y*sc,ex=x=>LM+L*sc+GAP+x*sc;
+ const GAP=30,RM=26,sc=Math.min((400-34-(end?GAP:0)-RM)/(L+(end?W:0)),190/top),LM=p.plain?(400-L*sc)/2:34,gy=215,X=x=>LM+x*sc,Y=y=>gy-y*sc,ex=x=>LM+L*sc+GAP+x*sc;
  const cls=(base,f,guess)=>base+(guess?' g':'')+(focusF&&f&&focusF==f?' hl':'');
  let o=`<line class="gnd" x1="4" y1="${gy}" x2="396" y2="${gy}"/>`;
  const lv=p.level!=null&&p.level<16000?Math.max(0,Math.min(top,top-p.level/10)):null;  // oil surface, cm above the ground
@@ -224,21 +224,29 @@ function tankSvg(p){
   if(lv>out)o+=`<rect class="oil" x="${X(0)}" y="${Y(lv)}" width="${L*sc}" height="${(lv-out)*sc}"/><text x="${X(0)+4}" y="${Y(lv)+10}">${p.oilText||'oil now'}</text>`;
   else o+=`<text x="${X(L/2)}" y="${Y(out)-4}" text-anchor="middle">${p.oilText||'oil now'}: down to the outlet</text>`;
   if(out>0)o+=`<line class="dim" x1="${X(0)}" y1="${Y(out)}" x2="${X(L)}" y2="${Y(out)}" stroke-dasharray="4 3"/><text x="${X(L)-3}" y="${Y(out)+9}" text-anchor="end">can't be used</text>`}
+ if(p.plain){  // the tank's own outline, with the ribs standing out of it (exaggerated x3 so they show)
+  const d=Math.max(2,rd*sc*3),bands=ribs.map(c=>[Math.max(0,c-rh/2),Math.min(top,c+rh/2)]).filter(b=>b[1]>b[0]).sort((a,b)=>a[0]-b[0]).reduce((m,b)=>{const q=m[m.length-1];if(q&&b[0]<=q[1])q[1]=Math.max(q[1],b[1]);else m.push(b.slice());return m},[]);  // overlapping ribs: one bump
+  let l=`M${X(0)} ${Y(0)}`;
+  for(const [b0,b1] of bands){l+=` V${Y(b0)} H${X(0)-d} V${Y(b1)} H${X(0)}`;
+   o+=`<line class="rl" x1="${X(0)}" y1="${Y(b0)}" x2="${X(L)}" y2="${Y(b0)}"/><line class="rl" x1="${X(0)}" y1="${Y(b1)}" x2="${X(L)}" y2="${Y(b1)}"/>`}
+  let rs=`V${Y(top)} H${X(L)}`;for(const [b0,b1] of bands.slice().reverse())rs+=` V${Y(b1)} H${X(L)+d} V${Y(b0)} H${X(L)}`;
+  o+=`<path class="tk" d="${l} ${rs} V${Y(0)} Z"/>`}
+ else{
  ribs.forEach((c,i)=>{o+=`<rect class="${cls('rib','rib'+i,rv[i]==null)}" x="${X(0)-rd*sc*3}" y="${Y(c+rh/2)}" width="${L*sc+rd*sc*6}" height="${rh*sc}"/><text class="lbl" x="${X(0)-rd*sc*3-2}" y="${Y(c)+3}" text-anchor="end">${rv[i]==null?'?':c}</text>`;
   if(end)o+=`<rect class="${cls('rib','rib'+i,rv[i]==null)}" x="${ex(0)-rd*sc*3}" y="${Y(c+rh/2)}" width="${W*sc+rd*sc*6}" height="${rh*sc}"/>`});
- o+=`<rect class="tk" x="${X(0)}" y="${Y(top)}" width="${L*sc}" height="${(top-0)*sc}"/>`;
+ o+=`<rect class="tk" x="${X(0)}" y="${Y(top)}" width="${L*sc}" height="${(top-0)*sc}"/>`}
  if(end)o+=`<rect class="tk" x="${ex(0)}" y="${Y(top)}" width="${W*sc}" height="${top*sc}"/>`;
  for(let i=0;i<nW;i++){const cx=L*(i+1)/(nW+1),wg=wb0==null||wt0==null||wo0==null;
   o+=`<rect class="${cls('win','win',wg)}" x="${X(cx-wo/2)}" y="${Y(wt)}" width="${wo*sc}" height="${(wt-wb)*sc}"/>`;
   o+=`<rect class="${cls('inn','inner',false)}" x="${X(cx-wi/2)}" y="${Y((wb+wt)/2+hi/2)}" width="${wi*sc}" height="${hi*sc}"/>`}
  if(nW&&end){const c=(wb+wt)/2,a=ex(0),b=ex(W/2),d=ex(W),wg=wb0==null||wt0==null;  // end view: tunnel taper through the width
   o+=`<path class="${cls('win','win',wg)}" d="M${a} ${Y(wt)} Q${b} ${Y(c+hi/2)} ${d} ${Y(wt)} L${d} ${Y(wb)} Q${b} ${Y(c-hi/2)} ${a} ${Y(wb)} Z"/>`;
-  o+=`<text class="lbl" x="${d+3}" y="${Y(wt)+3}">${wt0??'?'}</text><text class="lbl" x="${d+3}" y="${Y(wb)+3}">${wb0??'?'}</text>`;
-  const cx=L/(nW+1);o+=`<text class="lbl" x="${X(cx)}" y="${Y(wt)-3}" text-anchor="middle">${wo0??'?'} wide</text>`}
+  if(!p.plain){o+=`<text class="lbl" x="${d+3}" y="${Y(wt)+3}">${wt0??'?'}</text><text class="lbl" x="${d+3}" y="${Y(wb)+3}">${wb0??'?'}</text>`;
+  const cx=L/(nW+1);o+=`<text class="lbl" x="${X(cx)}" y="${Y(wt)-3}" text-anchor="middle">${wo0??'?'} wide</text>`}}
  if(out>0||og!=null){const r=Math.max(2.5,Math.min(2.5,out/2)*sc);  // the fitting (~5 cm): its TOP is the measured height
-  o+=`<circle class="${cls('tk','outlet',og==null)}" cx="${X(0)+3+r}" cy="${Y(out)+r}" r="${r}"/><text class="lbl" x="${X(0)+6+2*r}" y="${Y(out)-3}">outlet ${og??'?'}</text>`}
- o+=`<line class="dim" x1="${X(L)+10}" y1="${Y(0)}" x2="${X(L)+10}" y2="${Y(top)}"/><text x="${X(L)+20}" y="${Y(top/2)}" text-anchor="middle" transform="rotate(-90 ${X(L)+20} ${Y(top/2)})">monitor ${+top.toFixed(1)} up</text>`;
- o+=`<text x="${X(L/2)}" y="${gy+11}" text-anchor="middle">front ${L} cm</text>`+(end?`<text x="${ex(W/2)}" y="${gy+11}" text-anchor="middle">end ${W} cm</text>`:'');
+  o+=`<circle class="${cls('tk','outlet',og==null)}" cx="${X(0)+3+r}" cy="${Y(out)+r}" r="${r}"/>`+(p.plain?'':`<text class="lbl" x="${X(0)+6+2*r}" y="${Y(out)-3}">outlet ${og??'?'}</text>`)}
+ if(!p.plain){o+=`<line class="dim" x1="${X(L)+10}" y1="${Y(0)}" x2="${X(L)+10}" y2="${Y(top)}"/><text x="${X(L)+20}" y="${Y(top/2)}" text-anchor="middle" transform="rotate(-90 ${X(L)+20} ${Y(top/2)})">monitor ${+top.toFixed(1)} up</text>`;
+ o+=`<text x="${X(L/2)}" y="${gy+11}" text-anchor="middle">front ${L} cm</text>`+(end?`<text x="${ex(W/2)}" y="${gy+11}" text-anchor="middle">end ${W} cm</text>`:'')}
  return o}
 function hfOf(){const t=$('f_top').value,o=$('f_out').value;return t===''?null:+t-(o===''?0:+o)}
 function uEst(){const hf=hfOf();$('f_hh').textContent=hf==null?'Both from the ground.':hf<10?'The monitor must be at least 10 cm above the outlet.':'Fill height '+(+hf.toFixed(1))+' cm. The oil below the outlet isn\'t counted.';}
@@ -419,7 +427,7 @@ function drawTank(t){const c=t&&t.cfg;if(!c){$('d_tank').innerHTML='';$('d_tank2
  // with the outlet height known the oil is placed from the ground; without it, from the outlet
  $('d_tank2').textContent=lv==null?'no reading yet':lv<=(out||0)?'down to the outlet':out!=null?'oil at '+(+lv.toFixed(1))+' cm':(+lv.toFixed(1))+' cm over outlet';
  $('d_tank').innerHTML=tankSvg({L:n(c.length_cm),W:n(c.width_cm),nW:m?n(c.windows):0,og:out,outGuess:0,top,wb0:n(c.win_bottom_cm),wt0:n(c.win_top_cm),wo0:n(c.win_outer_w_cm),
-  wi:n(c.win_inner_w_cm),hi:n(c.win_inner_h_cm),rh:n(c.rib_h_cm),rd:n(c.rib_depth_cm),rv:m&&Array.isArray(c.ribs_cm)?c.ribs_cm.map(n):[],level:top==null?null:lvl,oilText:n(t.litres)!=null?L0(t.litres):'oil'})}
+  wi:n(c.win_inner_w_cm),hi:n(c.win_inner_h_cm),rh:n(c.rib_h_cm),rd:n(c.rib_depth_cm),rv:m&&Array.isArray(c.ribs_cm)?c.ribs_cm.map(n):[],plain:true,level:top==null?null:lvl,oilText:n(t.litres)!=null?L0(t.litres):'oil'})}
 function drawRate(A,now){const svg=$('c_rate');if(!A){noData(svg,'Daily use shows after 2 days of readings');return}
  const t1=midnight(now),t0=addDays(t1,-30),ds=[];for(let t=t0;t<t1;t=addDays(t,1))if(A.days[t]!=null)ds.push([t,Math.max(0,A.days[t])]);
  if(!ds.length){noData(svg,'No full days in the last 30 yet');return}
