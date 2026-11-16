@@ -1,7 +1,7 @@
 {
- "version": "1.2.1",
- "ref": "v1.2.1",
- "notes": "Listens only when a reading is due (radio left to Wi-Fi the rest of the hour), readings saved at their real time. Phone alerts via Pushover or ntfy: reorder level, and oil dropping faster than the burner can use (leak/theft). Use-by-hour-of-day chart on the history page.",
+ "version": "1.2.2",
+ "ref": "v1.2.2",
+ "notes": "Using tile also shows 7-day and 3-day averages. Includes everything in 1.2.1 (scheduled listening, Pushover/ntfy alerts, hour-of-day chart).",
  "files": {
   "app.py": [
    "87aa2f27765bd5bf942e6bdd5369f901dd762a8107ec8a486ffb9b395f7252fa",
@@ -12,8 +12,8 @@
    7065
   ],
   "common.js.html": [
-   "c65cad4436ea03360413fd55fe5ebb09ca87ec0e4459dcc0688a2ff91b4dc3c3",
-   10237
+   "14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824",
+   10488
   ],
   "drops.py": [
    "bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81",
@@ -44,20 +44,20 @@
    5821
   ],
   "ui.html": [
-   "d08fa6b331702c1ba7cc3e3c26f3e5d58c46a0cb97178ce4b1b5a7b2f33f5aff",
-   48985
+   "2732c41b843fcd20b9320d74056441f65df54ac0bb96adc16259f1ef64c6e06d",
+   49162
   ],
   "updater.py": [
    "b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b",
    9064
   ],
   "version.py": [
-   "aeb81e1b4128e53ec6e179c241d65d494acab16586950e2a56cb5b1605e81980",
+   "d44765615995f44da24348be8e4153acd39e7332796748d5fa04c589710f7805",
    18
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"87aa2f27765bd5bf942e6bdd5369f901dd762a8107ec8a486ffb9b395f7252fa\", 44760], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"c65cad4436ea03360413fd55fe5ebb09ca87ec0e4459dcc0688a2ff91b4dc3c3\", 10237], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"dfb23fbcf59fe23b1b085fe8ec66e6f8bf2d58fa8835fe64696d51b482b9b663\", 5821], \"ui.html\": [\"d08fa6b331702c1ba7cc3e3c26f3e5d58c46a0cb97178ce4b1b5a7b2f33f5aff\", 48985], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"aeb81e1b4128e53ec6e179c241d65d494acab16586950e2a56cb5b1605e81980\", 18]}, \"notes\": \"Listens only when a reading is due (radio left to Wi-Fi the rest of the hour), readings saved at their real time. Phone alerts via Pushover or ntfy: reorder level, and oil dropping faster than the burner can use (leak/theft). Use-by-hour-of-day chart on the history page.\", \"ref\": \"v1.2.1\", \"version\": \"1.2.1\"}",
-  "sig": "1a0fac7ab94e8e093fc252d70ab1fc9276da2d97ed077ecb8fd29ccddeb04af96846b4c6819ac0382f208ad4ad2be47af3af9a4c6707d67b9106ad697ad659439cf692aff91b65a9e102a20a506c62a9b7a91950f8a672b479ddb4ff427bb98d219d8c812bc77e8798742d1e6031a03b86df802ce3094888c05c908e6879a2eb1fe6b0aebeb1a2ae8760a5bbff0373dfd53a15269a8b8593e7e2ac3bb5d26d51bc4b3519038bcee1faced96a42c6e3f21812e4bdc872ddf2c10d74e0d1a21a1f3056f83542412b517967cd01fa4d7235017f583d2b2cec998442fe5399f74a1b0ab52d2926f575760349d2dd41f86354268c1e16c6d2e00560a0d87a635c9ea1"
+  "body": "{\"files\": {\"app.py\": [\"87aa2f27765bd5bf942e6bdd5369f901dd762a8107ec8a486ffb9b395f7252fa\", 44760], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"dfb23fbcf59fe23b1b085fe8ec66e6f8bf2d58fa8835fe64696d51b482b9b663\", 5821], \"ui.html\": [\"2732c41b843fcd20b9320d74056441f65df54ac0bb96adc16259f1ef64c6e06d\", 49162], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"d44765615995f44da24348be8e4153acd39e7332796748d5fa04c589710f7805\", 18]}, \"notes\": \"Using tile also shows 7-day and 3-day averages. Includes everything in 1.2.1 (scheduled listening, Pushover/ntfy alerts, hour-of-day chart).\", \"ref\": \"v1.2.2\", \"version\": \"1.2.2\"}",
+  "sig": "749ceb3862a9da7c3c6450eaa592f5eca030354eb201bba554d788139b80b79e979dbcbf76e144c363b88e1ee0ded64f9a61270d298f9a1ec64d504f7001e805035d267daafebf6cbddb0ccedbabd074c1aeb52166c9f9e4218432607e262405403ff6abda03ea4596f26570b0e8035bf735d9f445fde3f2073160223b7605041ded26d2e9cdfa11b1dfb4023074911b4b29376a5fcae49098c0c27666034f0a7a1b1cdcd18ebc1db0bbabb27be4db5381d40306cf150a8d88940a94ab79734c251e53657e116106d0d14c990fc8d7de629b9dac15447f8b85d6728bb3c2d5c20a43aa6cee84e632ce421a43a9f69e6ad90c0120781453a50d9a4a38fc827913"
  }
 }
