@@ -1,7 +1,7 @@
 {
- "version": "1.2.15",
- "ref": "v1.2.15",
- "notes": "Dashboard tank drawing: oil fills the hollow ribs up to the level. Includes the low-battery and no-readings alerts.",
+ "version": "1.2.16",
+ "ref": "v1.2.16",
+ "notes": "Layout polish (phones especially): readable history charts, tidier Notifications and tank cards. Tank form: copy from another tank is first, and Fill in Titan R1225 fills in every measurement.",
  "files": {
   "app.py": [
    "825633c7bbc9382efb687119b942d41cc3fa6315c15a226f6f0b50b26039660c",
@@ -24,8 +24,8 @@
    2120
   ],
   "hist.html": [
-   "8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0",
-   32598
+   "47f235a901d6eb71782f0fdc67d39434107dac7e0f43458cb9f714415d1e429a",
+   33170
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
@@ -44,20 +44,20 @@
    8204
   ],
   "ui.html": [
-   "0a1eee3135f05561cfe882b7e0c372a5dfe359353bb689dd707ab124bbf596bd",
-   55777
+   "c749337a5a0400b8c83d8e3728ea65ee51e43bd699d6c4901e72b3d8f636fd7b",
+   56055
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "88a7b9bacd80187d0dc0ff757f8bc4ad18523bb9b513a0456838d69b40e206ac",
+   "182a207e41d58415381119c97fcfb2fcbbadf16ba85237d082458c82a51c6ecd",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"825633c7bbc9382efb687119b942d41cc3fa6315c15a226f6f0b50b26039660c\", 51933], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"0a1eee3135f05561cfe882b7e0c372a5dfe359353bb689dd707ab124bbf596bd\", 55777], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"88a7b9bacd80187d0dc0ff757f8bc4ad18523bb9b513a0456838d69b40e206ac\", 19]}, \"notes\": \"Dashboard tank drawing: oil fills the hollow ribs up to the level. Includes the low-battery and no-readings alerts.\", \"ref\": \"v1.2.15\", \"version\": \"1.2.15\"}",
-  "sig": "6c10ef8684c8309fdc3b5c74835d50677a3d2085d9b8ba3f0ba1904b9071ee638056f6d2bb518104d6ee4946c24dccc44f8c5c60aef83b0e491bb007ea4175869c274e712d4ec4dfab70badb01039e96e61acb804918b0e8473ab34ecfc837de7882e8c036316e138b72a6cb4a688b3becadad0ac25fc2f036d5208ab5d173f9000bb23f43c72abd36950cd25a9d51bc6d1a89cfe4c0fb4150b9660df822374e878076181fc804c3b794f4288c35c3180a8139a380725c8504116e14971db7395a8134e00b20a4db41cb06415896e28e3de3a42b263ec65ef3b29c7706b979deca5897e35a1aa3d429d832c76af54026374fd3c9eb2be571ac795288a32926d8"
+  "body": "{\"files\": {\"app.py\": [\"825633c7bbc9382efb687119b942d41cc3fa6315c15a226f6f0b50b26039660c\", 51933], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"47f235a901d6eb71782f0fdc67d39434107dac7e0f43458cb9f714415d1e429a\", 33170], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"c749337a5a0400b8c83d8e3728ea65ee51e43bd699d6c4901e72b3d8f636fd7b\", 56055], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"182a207e41d58415381119c97fcfb2fcbbadf16ba85237d082458c82a51c6ecd\", 19]}, \"notes\": \"Layout polish (phones especially): readable history charts, tidier Notifications and tank cards. Tank form: copy from another tank is first, and Fill in Titan R1225 fills in every measurement.\", \"ref\": \"v1.2.16\", \"version\": \"1.2.16\"}",
+  "sig": "7b253003014fe1724c06cceeb4fbd17d731558c49f859364480880399e185b74d358192b9cd8e4292416962810a84c33b3ce1d856ed87627db6a51558a81cac7d40900c531a87443b117e32ee9279f4079268e98165d31cf1e702af462a6e5c29d94dcfbc947daa9f4bf4263f3a591e656e6aa226e8a795a6dda2872f85cd82ef031a441851cbb1255692d1b1e3bbfa43f93eb4ff92512b5c9467c73e8c4df4018835a006b1623cb938d7a7c601a14febaee5d52e416c2d1b8ee5da38f8970ca647b052c127ab4223f291dd0ac95f02bb5c510f6a676fb38819778d44ffe7b129068b643cd9e502420915b1922ccfd478cf9170e8e633903e60ff48b0430b4c7"
  }
 }
