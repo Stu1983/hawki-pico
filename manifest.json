@@ -1,23 +1,27 @@
 {
- "version": "1.1.0",
- "ref": "v1.1.0",
- "notes": "Security: signed releases, admin PIN for changes, maintenance access off by default, power-cut-safe updates with automatic rollback, upload/request limits. Picos first installed with 1.0.x need tools/install.sh once over USB.",
+ "version": "1.2.0",
+ "ref": "v1.2.0",
+ "notes": "Tabbed dashboard for your main tank (oil left incl. unusable, litres a day, weeks left, charts). Forecast now uses your own summer hot-water use. Network name setting under Config.",
  "files": {
   "app.py": [
-   "66d108ca5d95a33f2ccca0ea38031beb7cd339ceada4780b9e2a5f25636d4ee1",
-   33724
+   "4e0cf54d2a4bb4509d52c6d872e70485a69495130dfce8f7058a2c220ae880f6",
+   35779
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
    7065
+  ],
+  "common.js.html": [
+   "c65cad4436ea03360413fd55fe5ebb09ca87ec0e4459dcc0688a2ff91b4dc3c3",
+   10237
   ],
   "hawki_decode.py": [
    "c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266",
    2120
   ],
   "hist.html": [
-   "644bedc5efd0c4483ae8d7fbde3b15d01ed74215160a010104f2c87499525bdc",
-   36370
+   "a36335888c76ebde1959c0ba9b824aa487eb4b25dab6d6a2a306a731bcd46134",
+   29835
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
@@ -28,20 +32,20 @@
    5821
   ],
   "ui.html": [
-   "745c7e0fbc7c2fbef9ac542f887f5f7fe2d954b6dbd3ce17d1f67f20323c4dc6",
-   29288
+   "7a9546bd5f0c8a23b8160fd83a77f4cd9042795d0f976aca9b0270d57583ef81",
+   43896
   ],
   "updater.py": [
    "b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b",
    9064
   ],
   "version.py": [
-   "98ba2020cd6c60e0da5979e9902dcc51a59258845515c705292dd880aab9ac34",
+   "3283920f282dc9646b0ad7b51b90f754cff2fcba278058ed57ee60b696ab8434",
    18
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"66d108ca5d95a33f2ccca0ea38031beb7cd339ceada4780b9e2a5f25636d4ee1\", 33724], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"644bedc5efd0c4483ae8d7fbde3b15d01ed74215160a010104f2c87499525bdc\", 36370], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"tankcalc.py\": [\"dfb23fbcf59fe23b1b085fe8ec66e6f8bf2d58fa8835fe64696d51b482b9b663\", 5821], \"ui.html\": [\"745c7e0fbc7c2fbef9ac542f887f5f7fe2d954b6dbd3ce17d1f67f20323c4dc6\", 29288], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"98ba2020cd6c60e0da5979e9902dcc51a59258845515c705292dd880aab9ac34\", 18]}, \"notes\": \"Security: signed releases, admin PIN for changes, maintenance access off by default, power-cut-safe updates with automatic rollback, upload/request limits. Picos first installed with 1.0.x need tools/install.sh once over USB.\", \"ref\": \"v1.1.0\", \"version\": \"1.1.0\"}",
-  "sig": "868332989de32f056a7b4bb3ec51d25855744a12427055521584c0090af95a82163bc40ab30e887f09bef83356c5fcc0a38a98e3c4e420a021139329bb4a38adb84f745558e8fa699149ebc0a92a688bed2180474360c56786f431b8e173808051683cfa3ad959ff4ca8da8c13590788928b9bdc8381b599da9c1847404ed552c4e8e8253b849fcd2a17ab1697a273f2c1c96e0f7b3e92f516dcad575e8187a33e2b381dce71dc24e6e00507f605e38ab43d5a1bffffc6e1e3aaaeb9ebb487c6c641fec77bc3e8f507f9ecc88886d81a25b89205bd7af155f117391f9e4580dad1ed09c4a601a84269de3c5de96df037d02971783cd9805d1f0fa2749bf9143f"
+  "body": "{\"files\": {\"app.py\": [\"4e0cf54d2a4bb4509d52c6d872e70485a69495130dfce8f7058a2c220ae880f6\", 35779], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"c65cad4436ea03360413fd55fe5ebb09ca87ec0e4459dcc0688a2ff91b4dc3c3\", 10237], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"a36335888c76ebde1959c0ba9b824aa487eb4b25dab6d6a2a306a731bcd46134\", 29835], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"tankcalc.py\": [\"dfb23fbcf59fe23b1b085fe8ec66e6f8bf2d58fa8835fe64696d51b482b9b663\", 5821], \"ui.html\": [\"7a9546bd5f0c8a23b8160fd83a77f4cd9042795d0f976aca9b0270d57583ef81\", 43896], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"3283920f282dc9646b0ad7b51b90f754cff2fcba278058ed57ee60b696ab8434\", 18]}, \"notes\": \"Tabbed dashboard for your main tank (oil left incl. unusable, litres a day, weeks left, charts). Forecast now uses your own summer hot-water use. Network name setting under Config.\", \"ref\": \"v1.2.0\", \"version\": \"1.2.0\"}",
+  "sig": "70e64638446ddc025f40e988d99a8a72489898f59bef3a7d366bff35830dc5c5f88610668898c00cc6e5a747f0f762d46621d8d5f6ac49c8d767b38891b9c39a79cd1c94613f39b111f3185f7194108079f60c47c07bcd248dc3d63998fa4e43a85d5c219f2ef7197b0e8d2a643a8e221735d5b2b59dca51d953db0c076cdecd6f0425f3788941f548c79749b1d7b94dcd44ea9ee4c7475f1bb30ef274ff4905aaae03c788f75e95781ee236c1f2deec42691a44267fd61d966ce4b3167e5b04695eb7ee07235009a2160d142f6132f19f4272ea77693142d8d36796a36383aadb32511d9b9c85c1da11ba75a641376336bad2737fb1789107752a03fe5478ba"
  }
 }
