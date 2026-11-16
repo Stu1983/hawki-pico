@@ -2,8 +2,8 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Oil Tanks</title>
 <style>
-:root{--bg:#f4f5f7;--card:#fff;--fg:#1d2433;--mut:#6b7385;--line:#e2e5ea;--acc:#2f6fdb;--oil:#c9a43f;--bad:#c4423b}
-@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--fg:#e8ebf1;--mut:#9aa3b5;--line:#2b3240;--acc:#6aa0ff;--oil:#d8b450;--bad:#ff7a70}}
+:root{--bg:#f4f5f7;--card:#fff;--fg:#1d2433;--mut:#6b7385;--line:#e2e5ea;--acc:#2f6fdb;--acc2:#a9c4f0;--oil:#c9a43f;--bad:#c4423b;--warn:#c98a1a}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--fg:#e8ebf1;--mut:#9aa3b5;--line:#2b3240;--acc:#6aa0ff;--acc2:#2f4a78;--oil:#d8b450;--bad:#ff7a70;--warn:#e0a640}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 main{max-width:720px;margin:0 auto;padding:16px}
 h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:22px 0 8px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
@@ -24,17 +24,51 @@ dialog::backdrop{background:#0008}
 #viz .dim{stroke:var(--mut);stroke-width:.8;fill:none}#viz text{font:9px system-ui,sans-serif;fill:var(--mut)}#viz .g{stroke-dasharray:4 3;opacity:.6}
 #viz .hl{stroke-width:2.6!important;opacity:1}#viz .lbl{fill:var(--fg);font-weight:600}.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .lnk{color:var(--acc);font-size:14px;margin-right:8px;text-decoration:none}.empty{color:var(--mut);font-size:14px;padding:6px 2px}.hint{font-size:12px;color:var(--mut);margin-top:3px}
+.tabs{display:flex;gap:4px;margin:12px 0 14px;border-bottom:1px solid var(--line)}.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mut);padding:8px 14px;font-weight:600}
+.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}
+.dh{margin:0 0 8px;min-height:24px}.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.tile{margin:0 0 10px;min-height:118px}.tl{color:var(--mut);font-size:13px}
+.tile .big{font-size:26px;margin:2px 0}.tile.warn{border-color:var(--warn)}.tile.bad{border-color:var(--bad)}
+@media (max-width:560px){.tiles{grid-template-columns:1fr 1fr}.tiles .tile:first-child{grid-column:1/-1}.tile .big{font-size:22px;white-space:nowrap}}
+.card .row button{white-space:nowrap}
+.ch{width:100%;height:auto;display:block;margin-top:6px;touch-action:pan-y}.ch text{font:11px system-ui,sans-serif;fill:var(--mut)}
+.ch .gl{stroke:var(--line);stroke-width:1}.ch .ax{stroke:var(--mut);stroke-width:1}.ch .bx{fill:var(--acc2)}.ch .avg{fill:none;stroke:var(--acc);stroke-width:2}
+.ch .lv{fill:none;stroke:var(--oil);stroke-width:2}.ch .fc{fill:none;stroke:var(--mut);stroke-width:2;stroke-dasharray:5 4}.ch .rs{stroke:var(--bad);stroke-width:1.5;stroke-dasharray:2 3}
+.ch .xh{stroke:var(--mut);stroke-width:1}.ch .dot{stroke:var(--card);stroke-width:2}.ch .nod{font-size:13px}
+.lg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:6px}.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.sw.ln{height:2px;width:14px;vertical-align:3px}.sw.dash{background:repeating-linear-gradient(90deg,var(--mut) 0 5px,transparent 5px 9px)}
+#tip{position:fixed;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:13px;box-shadow:0 4px 14px #0003;z-index:5;white-space:nowrap}
+.pill{font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:2px 8px;margin-right:8px}
 </style></head><body><main>
 <h1>Oil Tanks</h1><div class="sub" id="status">Loading…</div>
+<nav class="tabs" role="tablist"><button role="tab" data-p="dash">Dashboard</button><button role="tab" data-p="tanks">Tanks</button><button role="tab" data-p="cfg">Config</button></nav>
 
-<h2>Tanks</h2><div id="tanks"><div class="empty">Loading…</div></div>
+<section id="p_dash">
+<div class="row dh"><b id="d_name">&nbsp;</b><a class="lnk" id="d_hist" href="/history">History &amp; forecast</a></div>
+<div class="tiles">
+ <div class="card tile"><div class="tl">Oil left</div><div class="big" id="d_l">–</div><div class="mut" id="d_l2">&nbsp;</div><div class="bar"><i id="d_bar" style="width:0"></i></div></div>
+ <div class="card tile"><div class="tl">Using</div><div class="big" id="d_r">–</div><div class="mut" id="d_r2">&nbsp;</div></div>
+ <div class="card tile" id="d_wt"><div class="tl">Weeks left</div><div class="big" id="d_w">–</div><div class="mut" id="d_w2">&nbsp;</div></div>
+</div>
+<div class="card"><div class="row"><b>Litres a day</b><span class="mut">last 30 days</span></div><svg id="c_rate" class="ch" viewBox="0 0 640 190" role="img" aria-label="Litres used each day over the last 30 days"></svg>
+<div class="lg"><span><i class="sw" style="background:var(--acc2)"></i>each day</span><span><i class="sw ln" style="background:var(--acc)"></i>7-day average</span></div></div>
+<div class="card"><div class="row"><b>Oil in the tank</b><span class="mut">30 days back, 30 ahead</span></div><svg id="c_lvl" class="ch" viewBox="0 0 640 190" role="img" aria-label="Litres in the tank over the last 30 days, with the forecast"></svg>
+<div class="lg"><span><i class="sw ln" style="background:var(--oil)"></i>oil in the tank</span><span><i class="sw ln dash"></i>forecast (cautious)</span><span><i class="sw ln" style="background:var(--bad)"></i>reorder level</span></div></div>
+</section>
 
+<section id="p_tanks" hidden>
+<div id="tanks"><div class="empty">Loading…</div></div>
+<div class="mut" style="margin-top:4px">New sensors show under <a class="lnk" href="#cfg" style="margin:0">Config → Sensors nearby</a>.</div>
+</section>
+
+<section id="p_cfg" hidden>
 <h2>Sensors nearby</h2>
 <div class="mut" style="margin:-4px 0 8px">HAWKi monitors the Pico can hear that aren't added yet. The strongest signal is usually yours; neighbours' monitors may show here too.</div>
 <div id="found"><div class="empty">Loading…</div></div>
 
-<h2>Wi-Fi</h2>
-<div class="card"><div class="row"><div><div id="wifi">…</div><div class="mut" id="wifi2">&nbsp;</div></div><button onclick="openWifi()">Change</button></div></div>
+<h2>Wi-Fi &amp; network</h2>
+<div class="card"><div class="row"><div><div id="wifi">…</div><div class="mut" id="wifi2">&nbsp;</div></div><button onclick="openWifi()">Change</button></div>
+<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Name on the network: <b id="hn">…</b></div><div class="mut" id="hn2">&nbsp;</div></div><button onclick="changeHost()">Change</button></div>
+<div class="mut" id="ipnote" style="margin-top:10px;min-height:36px">&nbsp;</div></div>
 
 <h2>Software</h2>
 <div class="card"><div class="row"><div><div id="ver">Version …</div><div class="mut" id="ver2">&nbsp;</div></div><button id="updBtn" onclick="updClick()">Check for updates</button></div>
@@ -49,7 +83,7 @@ dialog::backdrop{background:#0008}
 <div class="card"><div class="mut">A backup holds every tank's settings, deliveries (supplier and price) and all saved readings. It doesn't include the Wi-Fi password. Importing one onto this or a new Pico replaces those tanks' settings and deliveries and merges the readings.</div>
 <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button onclick="exportBackup()">Export backup</button><button onclick="exportCsv()">Export readings (CSV)</button><button onclick="$('impf').click()">Import backup</button>
 <input type="file" id="impf" accept=".json,application/json" hidden onchange="importBackup(this.files[0])"></div><div class="mut" id="bkst" style="min-height:18px;margin-top:6px"></div></div>
-
+</section>
 <dialog id="dlg"><form method="dialog" onsubmit="return saveTank(event)">
 <div class="row"><b id="dlgT">Add tank</b><span class="mut" id="dlgMac"></span></div>
 <div style="margin:12px 0"><button type="button" onclick="preset()">Fill in Titan R1225</button><div class="hint">Then measure your own height (see below).</div></div>
@@ -62,7 +96,8 @@ dialog::backdrop{background:#0008}
 <label>Width, cm<input id="f_w" type="number" step="0.1" min="1"></label>
 <label>Brimful capacity, litres<input id="f_c" type="number" step="1" min="1" required></label>
 <label>Reorder below, litres<input id="f_r" type="number" step="10" min="0" placeholder="200"><div class="hint">Forecast warns before this.</div></label>
-<label style="grid-column:1/-1" id="wm_row">Window &amp; rib shape<select id="f_wm" onchange="wmShow()"><option value="standard">Standard (same maths as the Magnus app)</option><option value="measured">Measured (my rough measurements)</option></select></label>
+<label style="grid-column:1/-1">Unusable oil below the outlet, litres<input id="f_u" type="number" step="1" min="0"><div class="hint" id="f_u2">Not counted in the litres shown: the boiler can't draw it. Shown in brackets on the dashboard.</div></label>
+<label style="grid-column:1/-1" id="wm_row">Window &amp; rib shape<select id="f_wm" onchange="wmShow()"><option value="standard">Standard (same maths as the Magnus app)</option><option value="measured">Measured</option></select></label>
 </div>
 <div id="meas" style="display:none;margin-top:10px">
 <div class="hint" style="margin-bottom:8px">Measure from the <b>ground</b>, in cm. Rough is fine: the total is always scaled to the brimful capacity, so errors only move litres between heights. Dashed parts of the drawing are guesses until you fill them in.</div>
@@ -95,6 +130,8 @@ dialog::backdrop{background:#0008}
 <label id="p2l" style="margin-top:8px">Type it again<input id="p2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12"></label>
 <div class="hint" id="pErr" style="color:var(--bad)"></div>
 <div class="acts"><button type="button" onclick="pinCancel()">Cancel</button><button class="pri">OK</button></div></form></dialog>
+<div id="tip" hidden></div>
+<script src="/common.js"></script>
 <script>
 const $=id=>document.getElementById(id);let S={tanks:[],found:[]},cur=null;
 // ---------- admin PIN: changes need a signed-in browser ----------
@@ -130,9 +167,10 @@ function render(){
  $('status').textContent=S.ap?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
  if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
   $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
- secRender();
+ secRender();netRender();if(!$('p_dash').hidden)dash();
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
- $('tanks').innerHTML=S.tanks.length?S.tanks.map(t=>{const p=t.percent??0;return `<div class="card"><div class="row"><b>${esc(t.name)}</b><span><a class="lnk" href="/history?mac=${okMac(t.mac)}">History &amp; forecast</a> <button onclick="edit('${okMac(t.mac)}')">Edit</button></span></div>
+ $('tanks').innerHTML=S.tanks.length?S.tanks.map(t=>{const p=t.percent??0;return `<div class="card"><div class="row"><b>${esc(t.name)}</b><button onclick="edit('${okMac(t.mac)}')">Edit</button></div>
+  <div class="row" style="margin-top:8px;min-height:34px"><a class="lnk" href="/history?mac=${okMac(t.mac)}">History &amp; forecast</a>${S.tanks.length>1?(t.mac===S.primary?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('${okMac(t.mac)}')">Show on dashboard</button>`):'<span></span>'}</div>
   <div class="row" style="margin-top:6px"><span class="big">${t.litres==null?'–':Math.round(t.litres)+' L'}</span><span class="big">${t.percent==null?'':t.percent+'%'}</span></div>
   <div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div>
   <div class="mut" style="min-height:18px">${t.litres_standard!=null?'Measured shape · Magnus-style maths says '+Math.round(t.litres_standard)+' L':'&nbsp;'}</div>
@@ -175,20 +213,21 @@ function draw(){const sv=$('viz');if(!sv||$('meas').style.display=='none')return
  o+=`<line class="dim" x1="${X(L)+10}" y1="${Y(out)}" x2="${X(L)+10}" y2="${Y(out+Hf)}"/><text x="${X(L)+20}" y="${Y(out+Hf/2)}" text-anchor="middle" transform="rotate(-90 ${X(L)+20} ${Y(out+Hf/2)})">fill height ${Hf}</text>`;
  o+=`<text x="${X(L/2)}" y="${gy+11}" text-anchor="middle">front ${L} cm</text><text x="${ex(W/2)}" y="${gy+11}" text-anchor="middle">end ${W} cm</text>`;
  sv.innerHTML=o}
-function wmShow(){const cub=$('f_shape').value=='cuboid';$('wm_row').style.display=cub?'':'none';$('meas').style.display=(cub&&$('f_wm').value=='measured')?'':'none';draw()}
-function fill(c){$('f_name').value=c.name||'';$('f_shape').value=c.shape||'cuboid';$('f_windows').value=c.windows??0;$('f_h').value=c.height_cm??'';$('f_l').value=c.length_cm??'';$('f_w').value=c.width_cm??'';$('f_c').value=c.capacity_l??'';$('f_r').value=c.reserve_l??'';
+function uEst(){const l=+$('f_l').value,w=+$('f_w').value,o=+$('m_outlet').value;const e=$('f_shape').value=='cuboid'&&$('f_wm').value=='measured'&&l&&w&&o?Math.round(l*w*o/1000):null;$('f_u').placeholder=e!=null?'about '+e+' (length × width × outlet height)':'not set'}
+function wmShow(){uEst();const cub=$('f_shape').value=='cuboid';$('wm_row').style.display=cub?'':'none';$('meas').style.display=(cub&&$('f_wm').value=='measured')?'':'none';draw()}
+function fill(c){$('f_name').value=c.name||'';$('f_shape').value=c.shape||'cuboid';$('f_windows').value=c.windows??0;$('f_h').value=c.height_cm??'';$('f_l').value=c.length_cm??'';$('f_w').value=c.width_cm??'';$('f_c').value=c.capacity_l??'';$('f_r').value=c.reserve_l??'';$('f_u').value=c.unusable_l??'';
  $('f_wm').value=c.window_model||'standard';for(const k in MF)$(k).value=c[MF[k]]??'';const r=c.ribs_cm||[];$('m_nr').value=r.length;ribInputs(r);wmShow()}
 function add(mac){cur=mac;curLevel=(S.found.find(f=>f.mac==mac)||{}).level??null;$('dlgT').textContent='Add tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='hidden';fill({});dlg.showModal()}
 function edit(mac){const t=S.tanks.find(x=>x.mac==mac);cur=mac;curLevel=t.level;$('dlgT').textContent='Edit tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='visible';fill(Object.assign({name:t.name},t.cfg));dlg.showModal()}
 function preset(){$('f_shape').value='cuboid';$('f_windows').value=2;if(!$('f_h').value)$('f_h').value=130;$('f_l').value=178;$('f_w').value=75;$('f_c').value=1323}
-async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:+$('f_h').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,capacity_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,window_model:$('f_wm').value};
+async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:+$('f_h').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,capacity_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,unusable_l:$('f_u').value===''?null:+$('f_u').value,window_model:$('f_wm').value};
  if(b.window_model=='measured'){for(const k in MF)b[MF[k]]=$(k).value===''?null:+$(k).value;const r=ribVals();if(r.some(v=>v==null)){alert('Fill in every rib height, or reduce the number of ribs.');return false}b.ribs_cm=r}
  if(b.shape=='cuboid'&&(!b.length_cm||!b.width_cm)){alert('A rectangular tank needs length and width.');return false}
  try{await api('/api/tank',b);dlg.close();load()}catch(x){alert(x.message)}return false}
 async function delTank(){if(!confirm('Remove this tank? The monitor will show under Sensors nearby again.'))return;try{await api('/api/tank/delete',{mac:cur});dlg.close();load()}catch(x){alert(x.message)}}
 async function openWifi(){$('w_pw').value='';wdlg.showModal();try{const l=await api('/api/wifi/scan');$('w_ssid').innerHTML=l.map(n=>`<option value="${esc(n.ssid)}">${esc(n.ssid)} (${n.rssi} dBm)</option>`).join('')||'<option value="">No networks found</option>'}catch(x){$('w_ssid').innerHTML='<option value="">Scan failed</option>'}}
 async function saveWifi(e){e.preventDefault();try{await api('/api/wifi',{ssid:$('w_ssid').value,pw:$('w_pw').value});wdlg.close();$('status').textContent='Restarting to join '+$('w_ssid').value+'…'}catch(x){alert(x.message)}return false}
-$('dlg').addEventListener('input',draw);$('m_nr').addEventListener('change',()=>ribInputs());
+$('dlg').addEventListener('input',()=>{draw();uEst()});$('m_nr').addEventListener('change',()=>ribInputs());
 $('dlg').addEventListener('focusin',e=>{focusF=e.target.dataset&&e.target.dataset.f||null;draw()});
 $('dlg').addEventListener('focusout',()=>{focusF=null;draw()});
 // ---------- security card ----------
@@ -216,7 +255,7 @@ async function installUpd(){const b=$('updBtn'),box=$('updBox'),v=UPD.latest;
  b.disabled=true;b.textContent='Installing…';box.textContent='Downloading and checking files…';
  try{await api('/api/update/install',{})}catch(e){box.textContent=e.message.replace(/^"|"$/g,'');b.disabled=false;b.textContent='Check for updates';b.className='';UPD=null;return}
  box.textContent='Installed. Restarting…';
- for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,3000));try{S=await api('/api/state');if(S.update&&S.update.version===v){render();box.textContent='Now running version '+v+'.';break}}catch(e){}}
+ for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,3000));try{S=await api('/api/state');if(S.update&&S.update.version===v){box.textContent='Now running version '+v+'. Reloading the page…';setTimeout(()=>location.reload(),1500);break}}catch(e){}}
  if(!(S.update&&S.update.version===v))box.textContent='The Pico has not come back on version '+v+' yet. Refresh this page in a minute.';
  b.disabled=false;b.textContent='Check for updates';b.className='';UPD=null}
 
@@ -250,7 +289,101 @@ async function importBackup(f){$('impf').value='';if(!f)return;let o;
   for(const m of macs)if(recs[m]&&recs[m].length){bst('Importing readings for '+(o.tanks[m].name||m)+'…');const b=new DataView(new ArrayBuffer(recs[m].length*6));
    recs[m].forEach(([ts,mm],i)=>{b.setUint32(i*6,ts,true);b.setUint16(i*6+4,mm,true)});
    r=await authFetch('/api/hist?mac='+m,{method:'POST',body:b.buffer});if(!r.ok)throw new Error(await r.json().catch(()=>r.status))}
-  bst('Imported '+macs.length+' tank(s), '+nD+' deliveries and '+nR+' readings.');load()}catch(e){bst('Import failed: '+e.message)}}
+  bst('Imported '+macs.length+' tank(s), '+nD+' deliveries and '+nR+' readings.');AN=null;load()}catch(e){bst('Import failed: '+e.message)}}
 
+// ---------- tabs ----------
+function tab(p){if(!['dash','tanks','cfg'].includes(p))p='dash';
+ document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.p===p));
+ for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash()}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{history.replaceState(null,'','#'+b.dataset.p);tab(b.dataset.p)});
+addEventListener('hashchange',()=>tab(location.hash.slice(1)));
+
+// ---------- network name ----------
+function netRender(){$('hn').textContent=S.hostname||'hawki-pico';$('hn2').textContent=S.hostname?'http://'+S.hostname+'.local/ also works on most phones and computers':' ';
+ $('ipnote').textContent=S.ip?'To keep '+S.ip+' for good, reserve it for this Pico in your router (often called "fixed IP" or "DHCP reservation"). The Pico\'s Wi-Fi address (MAC) is '+(S.mac||'?')+'.':' '}
+async function changeHost(){const v=prompt('Name on the network (letters, digits and hyphens). The Pico restarts to use it.',S.hostname||'hawki-pico');if(v==null||v.trim()===''||v.trim()===S.hostname)return;
+ try{await api('/api/hostname',{hostname:v.trim()});$('status').textContent='Restarting as '+v.trim()+'…';setTimeout(load,15000)}catch(x){alert(x.message.replace(/^"|"$/g,''))}}
+async function setPrimary(mac){try{await api('/api/primary',{mac});AN=null;await load();history.replaceState(null,'','#dash');tab('dash')}catch(x){alert(x.message)}}
+
+// ---------- dashboard ----------
+let AN=null;  // {mac,t,A,P,cv}: analysis of the primary tank, refreshed every 10 minutes
+const fmtD=t=>new Date(t*1000).toLocaleDateString(undefined,{day:'numeric',month:'short'});
+const L0=v=>Math.round(v).toLocaleString()+' L';
+let DKEY='';
+async function dash(){if(!S.update)return;const t=S.tanks.find(x=>x.mac===S.primary);
+ $('d_name').textContent=t?t.name:'No tanks yet';
+ $('d_hist').style.visibility=t?'visible':'hidden';if(t)$('d_hist').href='/history?mac='+okMac(t.mac);
+ if(!t){['d_l','d_r','d_w'].forEach(i=>$(i).textContent='–');$('d_l2').textContent='Add a tank under Config → Sensors nearby.';$('d_r2').textContent=$('d_w2').textContent=' ';DKEY='';drawRate(null);drawLvl(null);return}
+ const ck=JSON.stringify(t.cfg),fresh=AN&&AN.mac===t.mac&&AN.ck===ck&&Date.now()/1000-AN.t<600;
+ if(!fresh){try{const[buf,cv]=await Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())]);
+   AN={mac:t.mac,ck,t:Date.now()/1000,cv,base:parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)])}}catch(e){AN=null}}
+ const now=Date.now()/1000,P=AN?AN.base.slice():[];
+ if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383&&AN)P.push([now-t.age,toL(t.level,AN.cv)]);
+ const reserve=t.cfg.reserve_l??200,A=analyse(P,{now,reserve});
+ // oil left (+ unusable)
+ $('d_l').textContent=t.litres==null?'–':L0(t.litres);
+ const u=t.unusable;$('d_l2').textContent=(t.percent!=null?t.percent+'% · ':'')+(u?'(+ '+(u[1]==='estimate'?'about ':'')+L0(u[0])+' unusable below the outlet)':'(unusable amount not set: Tanks → Edit)');
+ $('d_bar').style.width=Math.max(0,Math.min(100,t.percent??0))+'%';
+ const ok=A.recent!=null&&A.span>=2;
+ $('d_r').textContent=ok?A.recent.toFixed(1)+' L/day':'–';$('d_r2').textContent=ok?'average of the last '+Math.round(A.recentDays)+' days':(P.length?'needs 2 days of readings':'no readings yet');
+ const wt=$('d_wt');wt.className='card tile';
+ if(ok){const c=A.cautious,l=A.likely,wk=x=>(x-now)/(7*DAY);
+  $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
+  $('d_w2').textContent=(c.ord==null?'':c.ord<=now+DAY?'Order now':'Order by '+fmtD(c.ord))+(l.dry!=null?' · likely '+Math.floor(wk(l.dry))+' weeks':'');
+  if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
+ else{$('d_w').textContent='–';$('d_w2').textContent=' '}
+ const key=t.mac+'|'+ck+'|'+(AN&&AN.t)+'|'+t.level+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;  // redraw only when something changed (keeps a hover open)
+ drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap:+t.cfg.capacity_l}:null)}
+
+// tiny SVG chart kit: one y-axis, recessive grid, hover tooltip
+const NS='http://www.w3.org/2000/svg',CH=190,ML=44,MR=10,MT=10,MB=24;
+function el(tag,at,parent,txt){const e=document.createElementNS(NS,tag);for(const k in at)e.setAttribute(k,at[k]);if(txt!=null)e.textContent=txt;if(parent)parent.appendChild(e);return e}
+function niceStep(max,n){const raw=max/n,p=Math.pow(10,Math.floor(Math.log10(raw||1))),m=raw/p;return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p}
+let CW=640;
+function size(svg){CW=Math.round(svg.getBoundingClientRect().width)||640;svg.setAttribute('viewBox','0 0 '+CW+' '+CH)}
+function frame(svg,t0,t1,ymax,unit){svg.textContent='';size(svg);const st=niceStep(ymax,4),top=Math.max(st,Math.ceil(ymax/st)*st);
+ const X=t=>ML+(t-t0)/(t1-t0)*(CW-ML-MR),Y=v=>CH-MB-v/top*(CH-MB-MT);
+ for(let v=0;v<=top+1e-9;v+=st){el('line',{class:'gl',x1:ML,x2:CW-MR,y1:Y(v),y2:Y(v)},svg);el('text',{x:ML-6,y:Y(v)+4,'text-anchor':'end'},svg,(st%1?v.toFixed(1):Math.round(v))+(v===top?' '+unit:''))}
+ el('line',{class:'ax',x1:ML,x2:CW-MR,y1:Y(0),y2:Y(0)},svg);
+ const every=X(t0+7*DAY)-X(t0)<56?2:1;let wk=0;
+ for(let t=midnight(t0+DAY*0.5);t<=t1;t=addDays(t,1)){const d=new Date(t*1000);if(d.getDay()===1&&wk++%every===0&&X(t)>ML+20&&X(t)<CW-MR-24)el('text',{x:X(t),y:CH-6,'text-anchor':'middle'},svg,fmtD(t))}
+ return{X,Y,top}}
+function noData(svg,msg){svg.textContent='';size(svg);el('text',{x:CW/2,y:CH/2,'text-anchor':'middle',class:'nod'},svg,msg)}
+const tip=$('tip');
+function showTip(ev,lines){tip.textContent='';lines.forEach((l,i)=>{const e=document.createElement(i?'div':'b');e.textContent=l;tip.appendChild(e)});tip.hidden=false;
+ const x=ev.clientX+14,y=ev.clientY-10,w=tip.offsetWidth;tip.style.left=Math.min(x,innerWidth-w-8)+'px';tip.style.top=Math.max(4,y-tip.offsetHeight)+'px'}
+function hideTip(){tip.hidden=true}
+function hover(svg,xs,draw){// xs: [[x,lines]] sorted by x
+ const g=el('g',{},svg),hit=el('rect',{x:ML,y:0,width:CW-ML-MR,height:CH,fill:'transparent'},svg);
+ const mv=ev=>{const r=svg.getBoundingClientRect(),x=(ev.clientX-r.left)/r.width*CW;let b=null,bd=1e9;for(const p of xs){const d=Math.abs(p[0]-x);if(d<bd){bd=d;b=p}}
+  if(!b){hideTip();return}g.textContent='';el('line',{class:'xh',x1:b[0],x2:b[0],y1:MT,y2:CH-MB},g);draw&&draw(g,b);showTip(ev,b[1])};
+ hit.addEventListener('pointermove',mv);hit.addEventListener('pointerdown',mv);hit.addEventListener('pointerleave',()=>{g.textContent='';hideTip()})}
+
+function drawRate(A,now){const svg=$('c_rate');if(!A){noData(svg,'Daily use shows after 2 days of readings');return}
+ const t1=midnight(now),t0=addDays(t1,-30),ds=[];for(let t=t0;t<t1;t=addDays(t,1))if(A.days[t]!=null)ds.push([t,Math.max(0,A.days[t])]);
+ if(!ds.length){noData(svg,'No full days in the last 30 yet');return}
+ const avg=ds.map(([t],i)=>{const w=ds.filter(([s])=>s<=t&&s>t-7*DAY);return[t,w.reduce((a,b)=>a+b[1],0)/w.length]});
+ const f=frame(svg,t0,t1,Math.max(1,...ds.map(d=>d[1]),...avg.map(a=>a[1]))*1.05,'L'),bw=(CW-ML-MR)/30;
+ for(const[t,v]of ds){const x=f.X(t)+1,w=bw-2,y=f.Y(v),h=f.Y(0)-y,r=Math.min(3,w/2,h);
+  if(h>0)el('path',{class:'bx',d:`M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`},svg)}
+ el('path',{class:'avg',d:avg.map(([t,v],i)=>(i?'L':'M')+(f.X(t)+bw/2).toFixed(1)+','+f.Y(v).toFixed(1)).join('')},svg);
+ hover(svg,ds.map(([t,v],i)=>[f.X(t)+bw/2,[new Date(t*1000).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}),v.toFixed(1)+' L that day','7-day average '+avg[i][1].toFixed(1)+' L/day']]),
+  (g,b)=>{const i=ds.findIndex(([t])=>Math.abs(f.X(t)+bw/2-b[0])<.01);if(i>=0)el('circle',{class:'dot',cx:b[0],cy:f.Y(avg[i][1]),r:4,fill:'var(--acc)'},g)})}
+
+function drawLvl(o){const svg=$('c_lvl');if(!o){noData(svg,'No readings yet');return}
+ const{A,P,reserve,now,cap}=o,t0=now-30*DAY,t1=now+30*DAY,pts=P.filter(p=>p[0]>=t0);
+ const fc=A.cautious?A.cautious.path.filter(p=>p[0]<=t1):[];
+ const f=frame(svg,t0,t1,Math.max(reserve,...pts.map(p=>p[1]),...fc.map(p=>p[1]),1)*1.05,'L');
+ el('line',{class:'rs',x1:ML,x2:CW-MR,y1:f.Y(reserve),y2:f.Y(reserve)},svg);
+ const path=(a,gap)=>{let d='',prev=null;for(const[t,v]of a){d+=(prev!=null&&t-prev>gap?'M':d?'L':'M')+f.X(t).toFixed(1)+','+f.Y(v).toFixed(1);prev=t}return d};
+ if(pts.length)el('path',{class:'lv',d:path(pts,6*H)},svg);
+ if(fc.length)el('path',{class:'fc',d:path(fc,2*DAY)},svg);
+ el('line',{class:'ax',x1:f.X(now),x2:f.X(now),y1:MT,y2:CH-MB,'stroke-dasharray':'1 3'},svg);
+ const xs=[];let last=-1e9;for(const[t,v]of pts){const x=f.X(t);if(x-last>=3){xs.push([x,[new Date(t*1000).toLocaleString(undefined,{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}),L0(v)+' ('+Math.round(100*v/cap)+'%)'],v]);last=x}}
+ for(const[t,v]of fc.slice(1)){xs.push([f.X(t),[fmtD(t)+' (forecast)','about '+L0(v)+' if it turns cold'],v])}
+ hover(svg,xs,(g,b)=>el('circle',{class:'dot',cx:b[0],cy:f.Y(b[2]),r:4,fill:'var(--oil)'},g))}
+
+tab(location.hash.slice(1));
+addEventListener('resize',()=>{if(!$('p_dash').hidden)dash()});
 load();setInterval(()=>{if(!dlg.open&&!wdlg.open)load()},10000);
 </script></main></body></html>

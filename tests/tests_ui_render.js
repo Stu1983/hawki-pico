@@ -1,5 +1,6 @@
 const {JSDOM}=require('jsdom');const fs=require('fs');
-const html=fs.readFileSync(process.argv[2],'utf8');
+const path=require('path');const common=fs.readFileSync(path.join(path.dirname(process.argv[2]),'common.js.html'),'utf8');
+const html=fs.readFileSync(process.argv[2],'utf8').replace('<script src="/common.js"></script>',()=>'<script>'+common+'</script>');
 const state={tanks:[{mac:'aa:bb:cc:00:00:01',name:'Back tank',level:701,litres:617.2,percent:46.7,litres_standard:null,battery:62,rssi:-70,age:3,
   cfg:{shape:'cuboid',height_cm:130,length_cm:178,width_cm:75,capacity_l:1323,windows:2,window_model:'measured',outlet_cm:10,win_bottom_cm:57,win_top_cm:80,win_outer_w_cm:30,ribs_cm:[30,68,null]}}],found:[],ssid:'HomeWiFi',ip:'192.168.1.50',ap:null};
 const dom=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){

@@ -34,6 +34,7 @@ def main():
     for t in sorted(os.listdir(os.path.join(ROOT, 'tests'))):
         if t.startswith('test_') and t.endswith('.py'):
             subprocess.run([sys.executable, os.path.join(ROOT, 'tests', t)], check=True)
+    subprocess.run(['node', os.path.join(ROOT, 'tests', 'tests_forecast.js')], check=True)  # no npm packages needed
     with open(os.path.join(FW, 'version.py'), 'w') as f:
         f.write("VERSION = '%s'\n" % ver)
     files = {}

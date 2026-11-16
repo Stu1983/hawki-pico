@@ -7,7 +7,16 @@ The Pico listens for the monitors' Bluetooth broadcasts, turns each reading into
 
 - **Tanks.** Each tank shows litres, % full, battery and signal. Add a tank by picking its monitor from the list of sensors nearby.
 - **Tank shapes.** Rectangular, horizontal or vertical cylinder. Rectangular tanks with "windows" (holes through the tank) use either the same maths as the Magnus app or your own rough measurements, drawn to scale as you type them.
-- **History and forecast.** The Pico keeps one reading an hour for 2 years, then one a day after that, for about 110 KB per tank. It detects deliveries and shows usage by month for each year. "Order by" and "could run dry" dates follow the heating season: they use your own previous years once you have them, and until then a typical UK heating year scaled to your recent use.
+- **History and forecast.** The Pico keeps one reading an hour for 2 years, then one a day after that, for about 110 KB per tank. It detects deliveries and shows usage by month for each year. "Order by" and "could run dry" dates follow the heating season. Once you have a previous year, they use your own usage from that time of year. Until then:
+  - hot water is your own summer usage (from a June to August month with the heating off), up to 25% more in winter because mains water is colder;
+  - heating follows a typical UK year, sized to your recent use. Before a summer of your own data, hot water is taken as 15% of the year's oil.
+- **Dashboard.** It opens on one tank (pick which under **Tanks**, if you have more than one). It shows:
+  - the oil left, with the unusable oil below the outlet in brackets;
+  - litres a day, with a 30-day chart;
+  - the weeks left;
+  - the oil level, with the forecast.
+
+  **Config** holds the nearby sensors, Wi-Fi, network name, security, updates and backup.
 - **Costs.** Record the supplier and price per delivery to track p/L, money spent and running cost.
 - **Backup.** Export and import everything (settings, deliveries, readings), or export the readings as CSV.
 - **Updates.** Press *Check for updates* on the page to install new releases from this repo.
@@ -30,6 +39,8 @@ Nothing is sent anywhere except to GitHub, and only when you check for updates.
    ```
 3. **Connect it to Wi-Fi.** The Pico opens a Wi-Fi network called **HAWKi-Setup-XXXX** (password `oiltanks`). Join it, browse to <http://192.168.4.1/> and pick your home Wi-Fi.
 4. **Open the page.** Browse to the Pico's address; your router shows it, or try <http://hawki-pico.local/>. Then add your tanks.
+
+   **Keep the address the same.** Reserve the address for the Pico in your router: look for "fixed IP" or "DHCP reservation", and use the MAC address shown under Config. The Pico has no static-IP setting of its own: on this firmware, a fixed address set on the Pico itself didn't survive a Wi-Fi reconnect. You can change the name it shows on the network under Config.
 
 **Tank height** is the *maximum fill height*: from the bottom of the monitor down to the top of the outlet pipe. That's what the Magnus app asks for too.
 
@@ -67,6 +78,7 @@ git add -A && git commit -m "Release v1.0.1" && git tag v1.0.1 && git push origi
 
 ```
 for t in tests/test_*.py; do python3 $t; done
+node tests/tests_forecast.js                                  # seasonal model, no packages needed
 NODE_PATH=... node tests/tests_hist.js firmware/hist.html     # needs jsdom
 ```
 

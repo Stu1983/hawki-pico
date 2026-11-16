@@ -44,7 +44,7 @@ AP_PASSWORD = 'oiltanks'
 MEASURED_KEYS = ('outlet_cm', 'win_bottom_cm', 'win_top_cm', 'win_outer_w_cm', 'win_inner_w_cm',
                  'win_inner_h_cm', 'rib_h_cm', 'rib_depth_cm')
 CFG_KEYS = ('shape', 'height_cm', 'length_cm', 'width_cm', 'capacity_l', 'windows', 'window_model',
-            'ribs_cm', 'reserve_l') + MEASURED_KEYS
+            'ribs_cm', 'reserve_l', 'unusable_l') + MEASURED_KEYS
 
 
 def load_cfg():
@@ -145,8 +145,16 @@ def start_scan():
 
 start_scan()
 
+def ok_hostname(h):
+    h = str(h or '').strip().lower()
+    if not (1 <= len(h) <= 32 and h[0] != '-' and h[-1] != '-' and all(c.isdigit() or 'a' <= c <= 'z' or c == '-' for c in h)):
+        raise ValueError('use 1 to 32 letters, digits or hyphens (not at the start or end)')
+    return h
+
+
+HOSTNAME = cfg.get('hostname') or 'hawki-pico'
 try:
-    network.hostname('hawki-pico')  # reachable as http://hawki-pico.local/ where mDNS works
+    network.hostname(HOSTNAME)  # what the router lists; http://<name>.local/ where mDNS works
 except Exception:
     pass
 wlan = network.WLAN(network.STA_IF)
@@ -386,7 +394,7 @@ def rm(name):
 
 
 MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
-            '/api/update/install', '/api/maint')
+            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname')
 
 
 # ---------- views ----------
@@ -399,10 +407,22 @@ def tank_view(mac, t, now):
     if t.get('window_model') == 'measured' and lvl is not None:
         std = reading(dict(t, window_model='standard'), lvl)[0]
     return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct,
-            'litres_standard': std,
+            'litres_standard': std, 'unusable': unusable(t),
             'battery': d.get('battery'), 'rssi': d.get('rssi'),
             'age': (now - d['rx']) if d.get('rx') else None,
             'cfg': {k: t.get(k) for k in CFG_KEYS}}
+
+
+def unusable(t):
+    """Oil below the top of the outlet, which the boiler can't draw: [litres, 'set'|'estimate'] or None."""
+    if t.get('unusable_l') is not None:
+        return [t['unusable_l'], 'set']
+    try:  # a cuboid with a measured outlet height: footprint x outlet height
+        if t.get('shape') == 'cuboid' and t.get('outlet_cm'):
+            return [round(float(t['length_cm']) * float(t['width_cm']) * float(t['outlet_cm']) / 1000), 'estimate']
+    except Exception:  # odd stored values must never break /api/state
+        pass
+    return None
 
 
 def update_info():
@@ -466,7 +486,9 @@ def state():
             'ip': wlan.ifconfig()[0] if wlan.isconnected() else None,
             'wifi_rssi': wlan.status('rssi') if wlan.isconnected() else None,
             'ap': AP_NAME if ap.active() else None, 'update': update_info(),
-            'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint'))}
+            'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint')),
+            'primary': cfg.get('primary') if cfg.get('primary') in cfg['tanks'] else (tanks[0]['mac'] if tanks else None),
+            'hostname': HOSTNAME, 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
 
 
 def num(v, lo, hi):
@@ -486,8 +508,9 @@ def set_tank(b, restore=False):
     t = {'name': (str(b.get('name') or '').strip() or mac)[:24], 'shape': shape,
          'height_cm': num(b['height_cm'], 10, 500), 'capacity_l': num(b['capacity_l'], 1, 100000),
          'windows': int(num(b.get('windows', 0), 0, 2))}
-    if b.get('reserve_l') not in (None, ''):
-        t['reserve_l'] = num(b['reserve_l'], 0, 100000)
+    for k in ('reserve_l', 'unusable_l'):
+        if b.get(k) not in (None, ''):
+            t[k] = num(b[k], 0, 100000)
     if shape == 'cuboid':
         t['length_cm'] = num(b['length_cm'], 1, 2000)
         t['width_cm'] = num(b['width_cm'], 1, 2000)
@@ -762,6 +785,22 @@ async def handle(r, w):
             cfg['maint'] = bool(json.loads(body or '{}').get('on'))
             save_cfg(cfg)
             return await send(w, 200, json.dumps(cfg['maint']))
+        if path == '/api/hostname' and method == 'POST':
+            try:
+                cfg['hostname'] = ok_hostname(json.loads(body or '{}').get('hostname'))
+            except Exception as ex:
+                return await send(w, 400, json.dumps(str(ex)))
+            save_cfg(cfg)
+            await send(w, 200, '"ok"')
+            await asyncio.sleep(1)
+            machine.reset()
+        if path == '/api/primary' and method == 'POST':
+            mac = str(json.loads(body or '{}').get('mac', '')).lower()
+            if mac not in cfg['tanks']:
+                return await send(w, 400, '"unknown tank"')
+            cfg['primary'] = mac
+            save_cfg(cfg)
+            return await send(w, 200, '"ok"')
         if path == '/api/tank' and method == 'POST':
             try:
                 set_tank(json.loads(body))
@@ -835,6 +874,8 @@ async def handle(r, w):
             return await send(w, 200, hawki_json())
         if path == '/history':
             return await send_file(w, 'hist.html', 'text/html; charset=utf-8')
+        if path == '/common.js':
+            return await send_file(w, 'common.js.html', 'text/javascript; charset=utf-8')
         if path in ('/api/hist', '/api/curve'):
             mac = q.get('mac', '').replace('%3A', ':').replace('%3a', ':').lower()
             if mac not in cfg['tanks']:

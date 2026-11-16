@@ -1,0 +1,119 @@
+// Shared by the dashboard (ui.html) and the history page (hist.html); served as /common.js.
+// (Saved as .html only because Picos on 1.1.x accept .py/.html/.pem files in an update.)
+// Pure analysis: no page elements are touched here.
+const H=3600,DAY=86400;
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// Typical UK heating degree days per month (base 15.5 °C)...
+const HDD=[340,300,280,210,140,75,45,50,90,170,260,320];
+// ...less the mild days when heating stays off (about 60 a month): the built-in shape of a year's heating, off in July and August.
+const HEAT=HDD.map(v=>Math.max(0,v-60));
+const HW_SHARE=0.15;      // before a summer of your own data: share of a year's oil assumed to go on hot water
+const MAINS=0.25;         // hot water takes up to 25 % more oil in winter (mains water ~6 °C instead of ~15 °C)
+const CAUTION=1.25;       // the headline dates assume 25 % more use than the likely figure
+const REFILL_L=30;        // a rise this big is a delivery, not sensor noise or warm oil
+
+function parse(buf){const v=new DataView(buf),o=[];for(let i=0;i+6<=buf.byteLength;i+=6)o.push([v.getUint32(i,true),v.getUint16(i+4,true)]);
+ o.sort((a,b)=>a[0]-b[0]);return o.filter((p,i)=>!i||p[0]!==o[i-1][0])}
+function toL(mm,cv){if(mm===16382||mm>=cv.h)return 0;const i=mm/cv.step,a=Math.floor(i),l=cv.l;if(a>=l.length-1)return l[l.length-1];return l[a]+(l[a+1]-l[a])*(i-a)}
+const med=a=>{if(!a.length)return null;const s=a.slice().sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const midnight=t=>{const d=new Date(t*1000);d.setHours(0,0,0,0);return d.getTime()/1000};
+const addDays=(t,n)=>{const d=new Date(t*1000);d.setDate(d.getDate()+n);d.setHours(0,0,0,0);return d.getTime()/1000};
+const doy=t=>{const d=new Date(t*1000);return (d-new Date(d.getFullYear(),0,1))/864e5};
+
+// Heating on a date relative to an average day (degree days, smoothed between month centres; averages 1 over a year).
+function heatShape(t){const d=new Date(t*1000),y=d.getFullYear(),dim=m=>new Date(y,m+1,0).getDate();
+ const f=d.getMonth()+(d.getDate()-.5)/dim(d.getMonth())-.5,m0=(Math.floor(f)+12)%12,m1=(m0+1)%12,w=f-Math.floor(f);
+ const r=m=>HEAT[m]/dim(m),heat=r(m0)*(1-w)+r(m1)*w;return heat/(HEAT.reduce((a,b)=>a+b)/365)}
+// Hot water on a date relative to mid-August: 1 in August, 1+MAINS in mid-February (mains water lags the weather).
+const hwShape=t=>1+MAINS*(1+Math.cos(2*Math.PI*(doy(t)-46)/365))/2;
+const HW_MEAN=1+MAINS/2;  // hwShape averaged over a year
+
+// Summer hot-water baseline from your own readings (last two years). Heating is off in summer, so June-August use is
+// hot water alone. Months with 14+ days count; any that used over 1.5x the lowest (heating still on) are left out; the
+// rest are pooled and need 21+ days between them, so the oil warming or cooling a few litres can't skew it much.
+// A day the level rose 10 L+ (a jerry can or small top-up the delivery check missed) counts as 0, so it can't pull the
+// baseline down; smaller wobbles average out.
+function hotWater(days,tnow){const m={};
+ for(const k in days){const t=+k;if(t<tnow-730*DAY)continue;const d=new Date(t*1000),mo=d.getMonth();if(mo<5||mo>7)continue;
+  const key=d.getFullYear()+'-'+mo;(m[key]=m[key]||{y:d.getFullYear(),m:mo,v:[],s:[]}).v.push(days[k]<-10?0:days[k]);m[key].s.push(hwShape(t))}
+ const ms=Object.values(m).filter(x=>x.v.length>=14).map(x=>Object.assign(x,{per:Math.max(0,mean(x.v))}));if(!ms.length)return null;
+ const low=Math.min(...ms.map(x=>x.per)),use=ms.filter(x=>x.per<=Math.max(0.3,1.5*low)),v=[].concat(...use.map(x=>x.v)),sh=[].concat(...use.map(x=>x.s));
+ if(v.length<21)return null;const per=Math.max(0,mean(v)),last=use.reduce((a,b)=>b.y*12+b.m>a.y*12+a.m?b:a);
+ return{perDay:per,y:last.y,m:last.m,months:use.length,days:v.length,b0:per/mean(sh)}}  // b0 = hot water L/day on a mid-August day
+
+// pts=[[epoch,litres]] -> deliveries, adjusted level, daily use, months, rates, forecast.
+function analyse(pts,o){
+ o=o||{};const tnow=o.now||Date.now()/1000,reserve=o.reserve??200;
+ const n=pts.length,out={fills:[],days:{},months:{},n,span:n?(pts[n-1][0]-pts[0][0])/DAY:0};
+ if(n<2)return out;
+ // deliveries: a jump over REFILL_L that holds for the next few hours
+ const L=pts.map(p=>p[1]),adj=new Array(n);let off=0,i=0;
+ while(i<n){adj[i]=L[i]+off;
+  if(i>0){  // compare with readings close in time only: imported history can be days apart
+   const near=(from,to,dir)=>{const o=[];for(let j=from;j>=0&&j<n&&o.length<4&&Math.abs(pts[j][0]-pts[i][0])<=6*H;j+=dir)o.push(L[j]);return o};
+   const bw=near(i-1,0,-1),before=med(bw.length?bw.slice(0,3):[L[i-1]]),after=near(i,0,1);
+   if(L[i]-before>REFILL_L&&med(after)-before>REFILL_L){
+    const later=near(i+1,0,1),amt=med(later.length?later:after)-before;
+    out.fills.push({t:pts[i][0],add:amt,from:before,to:before+amt});off-=amt;
+    const skip=Math.max(1,after.length);for(let j=i;j<Math.min(n,i+skip);j++)adj[j]=L[j]+off;i+=skip;continue}}
+  i++}
+ // adj = oil that would be left if nothing had been delivered; smooth it (±3 h median) and read it at each midnight
+ const sm=adj.map((_,k)=>{const a=[];for(let j=k;j>=0&&pts[k][0]-pts[j][0]<=3*H;j--)a.push(adj[j]);for(let j=k+1;j<n&&pts[j][0]-pts[k][0]<=3*H;j++)a.push(adj[j]);return med(a)});
+ out.adj=pts.map((p,k)=>[p[0],sm[k]]);
+ const at=t=>{let lo=0,hi=n-1;while(lo<hi){const m=(lo+hi)>>1;if(pts[m][0]<t)lo=m+1;else hi=m}
+  if(pts[lo][0]<t)lo=n;  // t is after the last reading
+  const a=lo-1,b=lo;
+  if(a>=0&&b<n&&pts[b][0]-pts[a][0]<=3*DAY){if(pts[b][0]===pts[a][0])return sm[b];return sm[a]+(sm[b]-sm[a])*(t-pts[a][0])/(pts[b][0]-pts[a][0])}
+  for(const k of[a,b])if(k>=0&&k<n&&Math.abs(pts[k][0]-t)<=4*H)return sm[k];
+  return null};
+ out.at=at;
+ const mids=[];for(let t=midnight(pts[0][0]);t<=pts[n-1][0];t=addDays(t,1)){const v=at(t);if(v!=null)mids.push([t,v])}
+ for(let k=1;k<mids.length;k++){const[t0,v0]=mids[k-1],[t1,v1]=mids[k],nd=Math.round((t1-t0)/DAY),per=(v0-v1)/nd;
+  for(let d=0,t=t0;d<nd;d++,t=addDays(t,1))out.days[t]=per}
+ for(const t in out.days){const d=new Date(t*1000),k=d.getFullYear()+'-'+d.getMonth(),m=out.months[k]||(out.months[k]={y:d.getFullYear(),m:d.getMonth(),used:0,days:0});m.used+=out.days[t];m.days++}
+ // recent rate: last 14 days (or what there is)
+ const tEnd=pts[n-1][0],tStart=Math.max(pts[0][0],tEnd-14*DAY),win=(tEnd-tStart)/DAY;
+ const a0=at(tStart),a1=sm[n-1];
+ out.recent=win>=1&&a0!=null?Math.max(0,(a0-a1)/win):null;out.recentDays=win;
+ if(out.recent==null)return out;
+ const recentDays=[];for(let t=tStart;t<tEnd;t+=DAY)recentDays.push(t);
+ const avgOver=f=>mean(recentDays.map(f));
+ // 1st choice: your own data from earlier years at this time of year, scaled to how this year compares
+ const old=Object.keys(out.days).map(Number).filter(t=>t<tnow-300*DAY);
+ const own=t=>{const x=doy(t),v=old.filter(s=>{const dd=Math.abs(doy(s)-x);return Math.min(dd,365-dd)<=10}).map(s=>out.days[s]);return v.length>=10?Math.max(0,mean(v)):null};
+ const ownRecent=recentDays.map(own).filter(v=>v!=null);
+ const ownMean=ownRecent.length>=Math.max(1,recentDays.length/2)?mean(ownRecent):null;
+ const k=ownMean>0?Math.min(1.6,Math.max(0.6,out.recent/ownMean)):null;
+ out.useOwn=k!=null;out.k=k;
+ // otherwise: hot water (your summer baseline, more in winter) + heating (degree days), fitted to recent use
+ const hw=hotWater(out.days,tnow);out.hw=hw;
+ let model;
+ if(hw){const heatR=avgOver(heatShape),hwR=hw.b0*avgOver(hwShape);
+  // how much heating per degree-day: from recent use when it's heating season, else a typical split
+  const hFit=heatR>0?Math.max(0,(out.recent-hwR)/heatR):0,hPrior=hw.b0*HW_MEAN*(1-HW_SHARE)/HW_SHARE;
+  const wgt=Math.min(1,Math.max(0,(heatR-0.3)/0.5)),h=wgt*hFit+(1-wgt)*hPrior;
+  const base=t=>hw.b0*hwShape(t)+h*heatShape(t),modR=hwR+h*heatR;
+  const s=modR>0?(wgt*out.recent+(1-wgt)*modR)/modR:1;  // in heating season match recent use exactly
+  model=t=>base(t)*s;out.heatFit=wgt;out.heatPerDay=h*s}
+ else{const S=t=>HW_SHARE*hwShape(t)/HW_MEAN+(1-HW_SHARE)*heatShape(t),sR=avgOver(S);
+  model=t=>out.recent*S(t)/sR}
+ const rate=t=>{const v=k!=null?own(t):null;return v!=null?v*k:model(t)};
+ out.rate=rate;
+ // simulate forward from the current level
+ const cur=med(L.slice(-4));out.cur=cur;  // actual level now (sm is the delivery-adjusted level)
+ const sim=f=>{let l=cur,t=tEnd,ord=null,dry=null;const path=[[t,l]];
+  for(let d=0;d<730&&(dry==null);d++){const r=rate(t)*f;l-=r;t+=DAY;path.push([t,Math.max(0,l)]);
+   if(ord==null&&l<=reserve)ord=t;if(l<=0)dry=t}
+  return{ord:cur<=reserve?tEnd:ord,dry:cur<=0?tEnd:dry,path}};
+ out.likely=sim(1);out.cautious=sim(CAUTION);
+ // forecast for each remaining month of this year
+ out.fmonths={};let tt=tEnd;
+ for(let d=0;d<400;d++){const dt=new Date(tt*1000),k2=dt.getFullYear()+'-'+dt.getMonth();(out.fmonths[k2]=(out.fmonths[k2]||0)+rate(tt));tt+=DAY}
+ return out}
+
+// Words for the forecast method, shared by both pages.
+function howText(A){
+ if(A.useOwn)return 'Seasonal pattern: your own usage from previous years at the same time of year, scaled by how this year compares ('+Math.round(A.k*100)+'% of last time over the past '+Math.round(A.recentDays)+' days).';
+ if(A.hw)return 'Seasonal pattern: hot water uses about '+A.hw.perDay.toFixed(2)+' L/day (your summer'+(A.hw.months>1?' months':' '+MON[A.hw.m])+' '+A.hw.y+', heating off), up to '+Math.round(MAINS*100)+'% more in winter because the mains water is colder. Heating follows a typical UK year (degree days)'+(A.heatFit>=1?', sized to your use over the last '+Math.round(A.recentDays)+' days.':A.heatFit>0?', sized partly from your last '+Math.round(A.recentDays)+' days and partly from a typical '+Math.round(HW_SHARE*100)+'% hot-water share.':', sized from a typical '+Math.round(HW_SHARE*100)+'% hot-water share until the heating season shows your real use.');
+ return 'Seasonal pattern: until there is a summer of your own data, a typical UK heating year (degree days), with '+Math.round(HW_SHARE*100)+'% of the oil on hot water (a little more in winter), scaled to your use over the last '+Math.round(A.recentDays)+' days. So summer hot-water use is not mistaken for a 700-day tank.'}

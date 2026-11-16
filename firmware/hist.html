@@ -102,9 +102,10 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <label id="p2l" style="margin-top:8px">Type it again<input id="p2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12"></label>
 <div class="hint" id="pErr" style="color:var(--bad)"></div>
 <div class="acts"><button type="button" onclick="pinCancel()">Cancel</button><button class="pri">OK</button></div></form></dialog>
+<script src="/common.js"></script>
 <script>
 'use strict';
-const $=id=>document.getElementById(id),H=3600,DAY=86400,NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 // ---------- admin PIN: changes need a signed-in browser ----------
 const SK='hawkiSession';let SESS=null,PMODE='login',pinRes=null;try{SESS=localStorage.getItem(SK)}catch(e){}
 function saveSess(s){SESS=s;try{s?localStorage.setItem(SK,s):localStorage.removeItem(SK)}catch(e){}}
@@ -129,87 +130,7 @@ async function authFetch(u,o){if(typeof u!=='string'||!/^\/[A-Za-z0-9_\-.\/?=&%:
  const j=await r.clone().json().catch(()=>({}));if(j.auth==='login')saveSess(null);
  if(!(await askPin(j.auth==='setup'?'setup':'login')))return r;
  o.headers['X-Auth']=SESS;return fetch(u,o)}
-const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-// Typical UK heating degree days per month (base 15.5 °C): the built-in shape of a year's heating.
-const HDD=[340,300,280,210,140,75,45,50,90,170,260,320];
-const HOT_WATER=0.25;     // share of a year's oil that goes on hot water, used evenly all year
-const CAUTION=1.25;       // the headline dates assume 25 % more use than the likely figure
-const REFILL_L=30;        // a rise this big is a delivery, not sensor noise or warm oil
 let S,T,CV,P=[],A=null,R='30',now=Date.now()/1000;
-
-// ---------- data ----------
-function parse(buf){const v=new DataView(buf),o=[];for(let i=0;i+6<=buf.byteLength;i+=6)o.push([v.getUint32(i,true),v.getUint16(i+4,true)]);
- o.sort((a,b)=>a[0]-b[0]);return o.filter((p,i)=>!i||p[0]!==o[i-1][0])}
-function toL(mm,cv){if(mm===16382||mm>=cv.h)return 0;const i=mm/cv.step,a=Math.floor(i),l=cv.l;if(a>=l.length-1)return l[l.length-1];return l[a]+(l[a+1]-l[a])*(i-a)}
-const med=a=>{if(!a.length)return null;const s=a.slice().sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
-const midnight=t=>{const d=new Date(t*1000);d.setHours(0,0,0,0);return d.getTime()/1000};
-const addDays=(t,n)=>{const d=new Date(t*1000);d.setDate(d.getDate()+n);d.setHours(0,0,0,0);return d.getTime()/1000};
-const doy=t=>{const d=new Date(t*1000);return (d-new Date(d.getFullYear(),0,1))/864e5};
-
-// Built-in daily-use shape for a date: degree days per day (smoothed between month centres) + flat hot water.
-function shape(t){const d=new Date(t*1000),y=d.getFullYear(),dim=m=>new Date(y,m+1,0).getDate();
- const f=d.getMonth()+(d.getDate()-.5)/dim(d.getMonth())-.5,m0=(Math.floor(f)+12)%12,m1=(m0+1)%12,w=f-Math.floor(f);
- const r=m=>HDD[m]/dim(m),heat=r(m0)*(1-w)+r(m1)*w,mean=HDD.reduce((a,b)=>a+b)/365;
- return (1-HOT_WATER)*heat/mean+HOT_WATER}
-
-// Pure analysis: pts=[[epoch,litres]] -> deliveries, adjusted level, daily use, months, rates, forecast.
-function analyse(pts,o){
- o=o||{};const tnow=o.now||now,reserve=o.reserve??200,cap=o.cap||1e9;
- const n=pts.length,out={fills:[],days:{},months:{},n,span:n?(pts[n-1][0]-pts[0][0])/DAY:0};
- if(n<2)return out;
- // deliveries: a jump over REFILL_L that holds for the next few hours
- const L=pts.map(p=>p[1]),adj=new Array(n);let off=0,i=0;
- while(i<n){adj[i]=L[i]+off;
-  if(i>0){  // compare with readings close in time only: imported history can be days apart
-   const near=(from,to,dir)=>{const o=[];for(let j=from;j>=0&&j<n&&o.length<4&&Math.abs(pts[j][0]-pts[i][0])<=6*H;j+=dir)o.push(L[j]);return o};
-   const bw=near(i-1,0,-1),before=med(bw.length?bw.slice(0,3):[L[i-1]]),after=near(i,0,1);
-   if(L[i]-before>REFILL_L&&med(after)-before>REFILL_L){
-    const later=near(i+1,0,1),amt=med(later.length?later:after)-before;
-    out.fills.push({t:pts[i][0],add:amt,from:before,to:before+amt});off-=amt;
-    const skip=Math.max(1,after.length);for(let j=i;j<Math.min(n,i+skip);j++)adj[j]=L[j]+off;i+=skip;continue}}
-  i++}
- // adj = oil that would be left if nothing had been delivered; smooth it (±3 h median) and read it at each midnight
- const sm=adj.map((_,k)=>{const a=[];for(let j=k;j>=0&&pts[k][0]-pts[j][0]<=3*H;j--)a.push(adj[j]);for(let j=k+1;j<n&&pts[j][0]-pts[k][0]<=3*H;j++)a.push(adj[j]);return med(a)});
- out.adj=pts.map((p,k)=>[p[0],sm[k]]);
- const at=t=>{let lo=0,hi=n-1;while(lo<hi){const m=(lo+hi)>>1;if(pts[m][0]<t)lo=m+1;else hi=m}
-  if(pts[lo][0]<t)lo=n;  // t is after the last reading
-  const a=lo-1,b=lo;
-  if(a>=0&&b<n&&pts[b][0]-pts[a][0]<=3*DAY){if(pts[b][0]===pts[a][0])return sm[b];return sm[a]+(sm[b]-sm[a])*(t-pts[a][0])/(pts[b][0]-pts[a][0])}
-  for(const k of[a,b])if(k>=0&&k<n&&Math.abs(pts[k][0]-t)<=4*H)return sm[k];
-  return null};
- out.at=at;
- const mids=[];for(let t=midnight(pts[0][0]);t<=pts[n-1][0];t=addDays(t,1)){const v=at(t);if(v!=null)mids.push([t,v])}
- for(let k=1;k<mids.length;k++){const[t0,v0]=mids[k-1],[t1,v1]=mids[k],nd=Math.round((t1-t0)/DAY),per=(v0-v1)/nd;
-  for(let d=0,t=t0;d<nd;d++,t=addDays(t,1))out.days[t]=per}
- for(const t in out.days){const d=new Date(t*1000),k=d.getFullYear()+'-'+d.getMonth(),m=out.months[k]||(out.months[k]={y:d.getFullYear(),m:d.getMonth(),used:0,days:0});m.used+=out.days[t];m.days++}
- // recent rate: last 14 days (or what there is)
- const tEnd=pts[n-1][0],tStart=Math.max(pts[0][0],tEnd-14*DAY),win=(tEnd-tStart)/DAY;
- const a0=at(tStart),a1=sm[n-1];
- out.recent=win>=1&&a0!=null?Math.max(0,(a0-a1)/win):null;out.recentDays=win;
- if(out.recent==null)return out;
- // seasonal profile: own data from earlier years if there is enough, else the built-in shape
- const old=Object.keys(out.days).map(Number).filter(t=>t<tnow-300*DAY);
- const own=t=>{const x=doy(t),v=old.filter(s=>{const dd=Math.abs(doy(s)-x);return Math.min(dd,365-dd)<=10}).map(s=>out.days[s]);return v.length>=10?Math.max(0,v.reduce((a,b)=>a+b)/v.length):null};
- let ownRecent=[],shpRecent=0,c=0;
- for(let t=tStart;t<tEnd;t+=DAY){const v=own(t);if(v!=null)ownRecent.push(v);shpRecent+=shape(t);c++}
- shpRecent/=Math.max(1,c);
- const ownMean=ownRecent.length>=Math.max(1,c/2)?ownRecent.reduce((a,b)=>a+b)/ownRecent.length:null;
- const k=ownMean>0?Math.min(1.6,Math.max(0.6,out.recent/ownMean)):null;
- out.useOwn=k!=null;out.k=k;
- const rate=t=>{const v=k!=null?own(t):null;return v!=null?v*k:out.recent*shape(t)/shpRecent};
- out.rate=rate;
- // simulate forward from the current level
- const cur=med(L.slice(-4));out.cur=cur;  // actual level now (sm is the delivery-adjusted level)
- const sim=f=>{let l=cur,t=tEnd,ord=null,dry=null;const path=[[t,l]];
-  for(let d=0;d<730&&(dry==null);d++){const r=rate(t)*f;l-=r;t+=DAY;path.push([t,Math.max(0,l)]);
-   if(ord==null&&l<=reserve)ord=t;if(l<=0)dry=t}
-  return{ord:cur<=reserve?tEnd:ord,dry:cur<=0?tEnd:dry,path}};
- out.likely=sim(1);out.cautious=sim(CAUTION);
- // forecast for each remaining month of this year
- out.fmonths={};let tt=tEnd;
- for(let d=0;d<400;d++){const dt=new Date(tt*1000),k2=dt.getFullYear()+'-'+dt.getMonth();(out.fmonths[k2]=(out.fmonths[k2]||0)+rate(tt));tt+=DAY}
- return out}
-
 // ---------- rendering helpers ----------
 function el(tag,at,parent,txt){const e=document.createElementNS(NS,tag);for(const k in at)e.setAttribute(k,at[k]);if(txt!=null)e.textContent=txt;if(parent)parent.appendChild(e);return e}
 const fmtD=t=>new Date(t*1000).toLocaleDateString(undefined,{day:'numeric',month:'short'});
@@ -307,8 +228,7 @@ function tiles(){
  const p=s=>{const e=document.createElement('p');e.style.margin='0 0 8px';e.textContent=s;h.appendChild(e)};
  p('The Pico saves one reading an hour for each tank (about 50 KB a year), so this history keeps growing for years.');
  if(!ok){p('Forecasts start once there are 2 days of readings.');return}
- if(A.useOwn)p('Seasonal pattern: your own usage from previous years at the same time of year, scaled by how this year compares ('+Math.round(A.k*100)+'% of last time over the past '+Math.round(A.recentDays)+' days).');
- else p('Seasonal pattern: until there is a year of your own data, a typical UK heating year (degree days, with '+Math.round(HOT_WATER*100)+'% of the oil on hot water all year round), scaled to your use over the last '+Math.round(A.recentDays)+' days. So summer hot-water use is not mistaken for a 700-day tank.');
+ p(howText(A));
  p('"Order by" and "Could run dry" assume '+Math.round((CAUTION-1)*100)+'% more use than expected, so they come early rather than late. The likely dates are underneath.')}
 
 // ---------- deliveries & costs ----------
@@ -383,7 +303,7 @@ async function load(){
  CV=cv;now=Date.now()/1000;
  P=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);
  if(T.level!=null&&T.age!=null&&T.age<1800&&T.level!==16383)P.push([now-T.age,toL(T.level,cv),T.level]);
- A=analyse(P,{now,reserve:T.cfg.reserve_l??200,cap:+T.cfg.capacity_l});
+ A=analyse(P,{now,reserve:T.cfg.reserve_l??200});
  $('sub').textContent=P.length?'Readings since '+fmtDY(P[0][0])+' · '+(A.span<1?Math.round(A.span*24)+' hours':Math.round(A.span)+' days'):'No readings saved yet';
  const rg=$('rng');rg.textContent='';[['7','7 days'],['30','30 days'],['365','1 year'],['all','All']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',k===R);b.onclick=()=>{R=k;try{localStorage.hawkiRange=k}catch(e){}[...rg.children].forEach(c=>c.setAttribute('aria-pressed',c===b));drawLevel()};rg.appendChild(b)});
  tiles();drawLevel();drawMonths()}
