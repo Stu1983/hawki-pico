@@ -1,11 +1,11 @@
 {
- "version": "1.2.22",
- "ref": "v1.2.22",
- "notes": "One forecast with nothing added (the 25% cautious margin is gone). With a previous year of data, it scales by how this year compares over up to a whole year, so a steady change carries forward.",
+ "version": "1.2.23",
+ "ref": "v1.2.23",
+ "notes": "Both tanks together: a dashboard option that adds the tanks' oil and works out use and the forecast from the combined drop. 'Order by' is now 'Order around'.",
  "files": {
   "app.py": [
-   "095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b",
-   52263
+   "a0b5f2de42722e2c588ab210bfb447b2d1ecd24857b8bbabd8e4cb3f00482979",
+   52416
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -24,8 +24,8 @@
    2120
   ],
   "hist.html": [
-   "012fc31f5df8966f02e77f7cc9ac1c4037aa8f883a0b252c30fb503509494f8d",
-   37005
+   "3732518c445c037112c492cd85b3262c43fb9e1704cf4235caed1345f0402546",
+   37102
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
@@ -44,20 +44,20 @@
    8588
   ],
   "ui.html": [
-   "053e774404df9315ebb3c370b2b0292fe0f28a90bffe3a230a5082debd9aab35",
-   56808
+   "442ae82eef22d30a3680bf82d5df35bf068256feffd589ac73cee0c656846818",
+   61372
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "b09fbb6b3866fd1a0a0add40b8013825dd98e4cf92a1f8e28d436fc264efcf40",
+   "25e75a02541ba410dc2b71a321e36adba4c12040f582d831ab3b7e9e72cce6b3",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b\", 52263], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"55df1935462611e18fe76cac107ca9a8a75b8f22669ae00325f05bb85ac5a37f\", 11046], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"012fc31f5df8966f02e77f7cc9ac1c4037aa8f883a0b252c30fb503509494f8d\", 37005], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"053e774404df9315ebb3c370b2b0292fe0f28a90bffe3a230a5082debd9aab35\", 56808], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"b09fbb6b3866fd1a0a0add40b8013825dd98e4cf92a1f8e28d436fc264efcf40\", 19]}, \"notes\": \"One forecast with nothing added (the 25% cautious margin is gone). With a previous year of data, it scales by how this year compares over up to a whole year, so a steady change carries forward.\", \"ref\": \"v1.2.22\", \"version\": \"1.2.22\"}",
-  "sig": "78a2269a3a65b0034dced83653d4057ef06a9b2007aaeece86c17af60f98a5b64a98d2fd6d47a49543c46ce56ef9f1323f2d9b8c5cd3a9c5ec413027ee7783df3a11b4a07fb2f67207d8899f04c4ebf8f2d991b9c1233a5168eecf396a370696fc8e0182177446d2c6ffab15cb2162bc9f54036f5d189a75323b4feaaa3a42787fc5294f71f2bfac8430f004672cb4ed3be14047c98c456f048c7916e640ba6b3f4038e65197e642637b97e8c95d3b23be36c9ed37603f188f66ddc1c63a0d51b373fdf937b0b0bef6e96169fb78a51689a8062bd05ab583eb33a6d16c269827f9986ddf873cda8d71c2c7935daeea3e5153c22c9756edaf5aa2de855874726a"
+  "body": "{\"files\": {\"app.py\": [\"a0b5f2de42722e2c588ab210bfb447b2d1ecd24857b8bbabd8e4cb3f00482979\", 52416], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"55df1935462611e18fe76cac107ca9a8a75b8f22669ae00325f05bb85ac5a37f\", 11046], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"3732518c445c037112c492cd85b3262c43fb9e1704cf4235caed1345f0402546\", 37102], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"442ae82eef22d30a3680bf82d5df35bf068256feffd589ac73cee0c656846818\", 61372], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"25e75a02541ba410dc2b71a321e36adba4c12040f582d831ab3b7e9e72cce6b3\", 19]}, \"notes\": \"Both tanks together: a dashboard option that adds the tanks' oil and works out use and the forecast from the combined drop. 'Order by' is now 'Order around'.\", \"ref\": \"v1.2.23\", \"version\": \"1.2.23\"}",
+  "sig": "159ad540720c24e5fa784071baa2c7239bf2f7b5afb360d2754f1ce42de4859e776ddb1d896de6aed8dfabb0a80df7970190acd46155f5ff3bff5f7c9268502bd579d1c9dd4c04dda11b79883b27787c900b0a86f76eaa131614f64d8b20340cdfa2d8668d6c35ed70119deae73b2166d544e7f7409868abd04ad143cfb1299e49b1267373903fa44f0eb4ebc7c1672d73b5666377c94c2d6e4b21b829e266c7cbb75454348181a3a9f87f5a9b3adea55aa028ae198b76f3146a9d282c3f386d3ce7cc6c4a43919faeb766375fd1857ae0a38863812fd3351356c98ee5e2b33a858868391e732382150d451c496df736f922d39426160c73f9d3dcdac2fcb754"
  }
 }
