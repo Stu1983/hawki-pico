@@ -2,7 +2,10 @@
 
 Mirrors what the Magnus app/server does with the Tank Details:
   height_cm  = the user-measured maximum fill height (sensor down to the outlet)
-  length_cm, width_cm, capacity_l (brimful), shape, windows (0/1/2)
+  length_cm, width_cm, shape, windows (0/1/2)
+  capacity_l = the oil between the top of the outlet and the monitor (NOT the brochure figure,
+               which counts from the tank floor: a Titan R1225 is ~1180 L here, checked against
+               a metered 500 L delivery with height 121.5 = 130 less an 8.5 cm outlet)
 
 Cuboid with windows: Magnus computes window geometry server-side from the window count.
 Reverse-fitted from the app on a Titan R1225 (H130 L178 W75, 1323 L, 2 windows):
