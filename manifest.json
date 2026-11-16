@@ -1,11 +1,11 @@
 {
- "version": "1.0.0",
- "ref": "v1.0.0",
- "notes": "First release: tanks, history and forecast, deliveries and costs, backup, updates from GitHub.",
+ "version": "1.0.1",
+ "ref": "v1.0.1",
+ "notes": "Shows the Wi-Fi signal strength on the main page; fixes the uptime figure.",
  "files": {
   "app.py": [
-   "ebf0bab1c43e10bc8bf9d953a51c3ce57285b4375c3b55ce2925c56fb8bffb71",
-   24769
+   "60cedb41ee07417abe4243ab52af0e16906d4c5c02b3c8451bd2d4a43ec05897",
+   24878
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -28,15 +28,15 @@
    5821
   ],
   "ui.html": [
-   "3bb4905c0e4d1f9dc6b3161502800f606d287c4b24629342a4c51bec7acebf4f",
-   24191
+   "02ea259ece5ebcde2cd5d89921c216262ae9bd431125de899f05c017cfb1ec24",
+   24337
   ],
   "updater.py": [
    "47d6f9cb198a7ff5caf754cc4787d00d4376da7728ad9f6f957ae044b5f261b1",
    5694
   ],
   "version.py": [
-   "49dc6fd020a89e240a2929b9b1f102a05bb14cd018d6d32177cd6ddd8f7e6a98",
+   "58c5c2cdf4b06c4dbe378aae94425198f62fa3fce1940fb60c296475ed9d1431",
    18
   ]
  }

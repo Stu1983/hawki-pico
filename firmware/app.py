@@ -323,6 +323,7 @@ def state():
     return {'tanks': tanks, 'found': found,
             'ssid': cfg.get('ssid') if wlan.isconnected() else None,
             'ip': wlan.ifconfig()[0] if wlan.isconnected() else None,
+            'wifi_rssi': wlan.status('rssi') if wlan.isconnected() else None,
             'ap': AP_NAME if ap.active() else None, 'update': update_info()}
 
 
@@ -619,7 +620,7 @@ async def handle(r, w):
             f, a = q.get('name', '').lower(), q.get('addr', '').lower()
             out = {k: v for k, v in seen.items()
                    if (not f or f in v['name'].lower()) and (not a or k.startswith(a))}
-            return await send(w, 200, json.dumps({'uptime': time.time() - boot, 'now': time.time(),
+            return await send(w, 200, json.dumps({'uptime': time.ticks_diff(time.ticks_ms(), boot_ms) // 1000, 'now': time.time(),
                                                   'count': len(seen), 'mem': gc.mem_free(), 'devices': out}))
         if path == '/reset':
             seen.clear()
