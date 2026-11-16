@@ -170,12 +170,22 @@ def lid():
     nub_bot = -OVER + BOOTSEL_TOP + NUB_GAP        # lid underside is z 0; the board's component face is z -OVER
     nub = U(cyl(bx, by, nub_bot + NUB_CH, TOP - TAB_T + 0.01, 2 * NUB_R), cone(bx, by, nub_bot, nub_bot + NUB_CH + 0.01, 2 * (NUB_R - NUB_CH), 2 * NUB_R))
     body = U(body, nub)
-    # oil drop on the button (press here); text across the rest of the lid
-    logo = drop(tip + TAB_W / 2 + 0.6, by, 5.6)
-    tx0, tx1 = hinge + SLOT + 2, OUT_L - 3
-    w = text_polys(TEXT, 4.6, 0, 0).bounds
-    main = text_polys(TEXT, min(4.6, 4.6 * (tx1 - tx0) / (w[2] - w[0])), (tx0 + tx1) / 2, OUT_W / 2 + 3.0)
-    sub = text_polys(SUB, 3.8, (tx0 + tx1) / 2, OUT_W / 2 - 3.6).buffer(0.1)
+    # layout (top view, USB on the left): 'Oil Monitor' along the top, the button below it, the oil drop
+    # beside the button, 'HAWKi' reading upwards along the far end
+    from shapely import affinity
+    band0 = by + TAB_W / 2 + SLOT + 1.2               # text band: above the button...
+    band1 = OUT_W - 2.0                               # ...to near the far edge
+    tx0, tx1 = 3.5, OUT_L - 10.5
+    w = text_polys(TEXT, 10, 0, 0).bounds
+    size = min(10 * (tx1 - tx0) / (w[2] - w[0]), 10 * (band1 - band0) / (w[3] - w[1]))
+    main = text_polys(TEXT, size, 0, 0)
+    mb = main.bounds
+    main = affinity.translate(main, tx0 - mb[0], (band0 + band1) / 2 - (mb[1] + mb[3]) / 2)
+    logo = drop((hinge + OUT_L - 9) / 2 + 0.5, (2.0 + band0) / 2, min(band0 - 2.5, 11))
+    sub = text_polys(SUB, 4.4, 0, 0).buffer(0.08)
+    sub = affinity.rotate(sub, 90, origin='centroid')
+    sb = sub.bounds
+    sub = affinity.translate(sub, OUT_L - 4.6 - (sb[0] + sb[2]) / 2, OUT_W / 2 - (sb[1] + sb[3]) / 2)
     deco = extrude(unary_union([main, sub, logo]), TOP - INLAY, INLAY)
     return D(body, deco), deco
 
