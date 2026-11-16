@@ -81,6 +81,7 @@ dialog::backdrop{background:#0008}
 </div>
 <label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--fg)"><input type="checkbox" id="n_ro" style="width:auto;margin:0"> Tell me when a tank reaches its reorder level</label>
 <label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_bt" style="width:auto;margin:0"> Tell me when a monitor's battery is low (20% or less)</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_sl" style="width:auto;margin:0"> Tell me if a monitor goes quiet (no reading for 6 hours)</label>
 <label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_dr" style="width:auto;margin:0"> Warn me if oil drops faster than the burner can use it (leak or theft)</label>
 <label style="margin-top:8px;max-width:260px">Burner's maximum, litres an hour<input id="n_bl" type="number" min="1" max="30" step="0.5" placeholder="6"><div class="hint">On the boiler's data plate (kW ÷ 10 is close). 6 suits almost any home boiler. The warning comes within about 2 hours.</div></label>
 <div class="acts" style="justify-content:flex-start"><button class="pri" onclick="saveNotify()">Save</button><button onclick="testNotify()">Send a test</button></div>
@@ -348,11 +349,11 @@ let NDIRTY=false;
 function notifyRender(){const n=S.notify;if(!n||NDIRTY)return;
  $('n_pu').value='';$('n_pt').value='';$('n_nt').value='';$('n_nh').value=n.ntfy_host==='ntfy.sh'?'':n.ntfy_host;
  $('n_pu').placeholder=n.po_user?'saved (type to replace)':'';$('n_pt').placeholder=n.po_token?'saved (type to replace)':'';
- $('n_nt').placeholder=n.ntfy_topic?'saved: '+n.ntfy_topic+' (type to replace)':'';$('n_ro').checked=n.reorder!==false;$('n_bt').checked=n.battery!==false;$('n_dr').checked=n.drops!==false;$('n_bl').value=n.burner_lph&&n.burner_lph!=6?n.burner_lph:'';
+ $('n_nt').placeholder=n.ntfy_topic?'saved: '+n.ntfy_topic+' (type to replace)':'';$('n_ro').checked=n.reorder!==false;$('n_bt').checked=n.battery!==false;$('n_sl').checked=n.silent!==false;$('n_dr').checked=n.drops!==false;$('n_bl').value=n.burner_lph&&n.burner_lph!=6?n.burner_lph:'';
  if(!$('n_st').dataset.msg)$('n_st').textContent=n.channels.length?'Sending to '+n.channels.join(' and ')+'.':'Not set up yet.'}
-['n_pu','n_pt','n_nt','n_nh','n_ro','n_bt','n_dr','n_bl'].forEach(i=>$(i).addEventListener('input',()=>{NDIRTY=true}));
+['n_pu','n_pt','n_nt','n_nh','n_ro','n_bt','n_sl','n_dr','n_bl'].forEach(i=>$(i).addEventListener('input',()=>{NDIRTY=true}));
 function newTopic(){const a=new Uint8Array(12);crypto.getRandomValues(a);$('n_nt').value='oil-'+[...a].map(b=>'abcdefghijkmnpqrstuvwxyz23456789'[b%32]).join('');NDIRTY=true}
-async function saveNotify(){const b={reorder:$('n_ro').checked,battery:$('n_bt').checked,drops:$('n_dr').checked,burner_lph:$('n_bl').value||6},v=i=>$(i).value.trim();
+async function saveNotify(){const b={reorder:$('n_ro').checked,battery:$('n_bt').checked,silent:$('n_sl').checked,drops:$('n_dr').checked,burner_lph:$('n_bl').value||6},v=i=>$(i).value.trim();
  if(v('n_pu'))b.po_user=v('n_pu');if(v('n_pt'))b.po_token=v('n_pt');if(v('n_nt'))b.ntfy_topic=v('n_nt');b.ntfy_host=v('n_nh');
  const st=$('n_st');st.dataset.msg=1;try{await api('/api/notify',b);NDIRTY=false;st.textContent='Saved.'+(v('n_nt')?' Subscribe to '+v('n_nt')+' in the ntfy app.':'');load()}catch(x){st.textContent=x.message.replace(/^"|"$/g,'')}
  setTimeout(()=>{delete st.dataset.msg},8000)}

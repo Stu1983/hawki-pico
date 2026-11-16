@@ -557,7 +557,7 @@ def notify_view():
     t = n.get('ntfy_topic') or ''
     return {'channels': notify.channels(n), 'po_user': bool(n.get('po_user')), 'po_token': bool(n.get('po_token')),
             'ntfy_topic': (t[:3] + '…') if t else '', 'ntfy_host': n.get('ntfy_host') or 'ntfy.sh',
-            'reorder': n.get('reorder', True), 'drops': n.get('drops', True), 'battery': n.get('battery', True),
+            'reorder': n.get('reorder', True), 'drops': n.get('drops', True), 'battery': n.get('battery', True), 'silent': n.get('silent', True),
             'burner_lph': n.get('burner_lph', 6)}
 
 
@@ -571,7 +571,7 @@ def set_notify(b):
         n['ntfy_topic'] = notify.ok_topic(b['ntfy_topic'])
     if 'ntfy_host' in b:
         n['ntfy_host'] = notify.ok_host(b['ntfy_host'])
-    for k in ('reorder', 'drops', 'battery'):
+    for k in ('reorder', 'drops', 'battery', 'silent'):
         if k in b:
             n[k] = bool(b[k])
     if b.get('burner_lph') not in (None, ''):
@@ -657,19 +657,63 @@ async def battery_check(n, mac, t, d, a):
             save_cfg(cfg)
 
 
+SILENT_H = 6  # hours with no new measurement before saying so
+quiet_clock = {'start': None, 'prev': None}  # when the clock-based count began; the previous check's time
+
+
+def quiet_since_start(now):
+    # The moment silence is counted from at the earliest: the first check with a set clock, and again after
+    # the clock jumps (an NTP correction), so neither a restart nor a correction looks like hours of silence.
+    q = quiet_clock
+    if q['start'] is None or q['prev'] is None or not 0 <= now - q['prev'] <= 900:  # checks come every 5 min
+        q['start'] = now
+    q['prev'] = now
+    return q['start']
+
+
+async def silent_check(n, mac, t, e, now, start, a):
+    # e: the listener's record for this monitor (None if not heard since boot). A new measurement every hour
+    # is normal; none for SILENT_H hours means a flat battery, a fault, or out of range. Once, until it's back.
+    if now < 1.7e9:
+        return  # clock not set yet
+    chg = None if e is None else e.get('chg')  # a genuinely new measurement (not just heard again after a restart)
+    if a.get('silent') and chg is not None and e.get('raw') != a.get('silent_raw'):
+        a.pop('silent')  # a different reading from the one we were stuck on: arm it again
+        a.pop('silent_raw', None)
+        save_cfg(cfg)
+    last = None if e is None else (chg or e.get('first'))
+    since = max(last or 0, start)
+    if n.get('silent', True) and not a.get('silent') and now - since > SILENT_H * 3600:
+        res = await send_alert('%s: no readings' % t.get('name', mac),
+                               'Nothing new from the monitor for %d hours. Its battery may be flat, or it may be out of '
+                               'range of the Pico.' % ((now - since) // 3600))
+        if 'ok' in res.values():
+            a['silent'] = int(now)
+            if e is not None:
+                a['silent_raw'] = e.get('raw')
+            save_cfg(cfg)
+
+
 async def alerts():
-    # Every few minutes: tell the phone(s) once when a tank reaches its reorder level, or a monitor's battery is low.
+    # Every few minutes: tell the phone(s) once when a tank reaches its reorder level, a monitor's battery is low,
+    # or a monitor has gone quiet.
     await asyncio.sleep(120)
     while True:
         try:
             n = cfg.get('notify') or {}
             if notify.channels(n) and wlan.isconnected():
                 al = cfg.setdefault('alerted', {})
+                start = quiet_since_start(time.time())
                 for mac, t in list(cfg['tanks'].items()):
                     d = hawki.get(mac) or {}
-                    if time.time() - d.get('rx', 0) > 3 * 3600:
-                        continue  # not heard lately: nothing current to go on
                     a = al.setdefault(mac, {})
+                    fresh = time.time() - d.get('rx', 0) <= 3 * 3600  # (judged before any slow send below)
+                    try:
+                        await silent_check(n, mac, t, listener.s.get(mac), time.time(), start, a)
+                    except Exception as ex:
+                        print('silent alert err', ex)
+                    if not fresh:
+                        continue  # not heard lately: nothing current to go on
                     try:  # (its own try: it must never stop the reorder check)
                         await battery_check(n, mac, t, d, a)
                     except Exception as ex:
