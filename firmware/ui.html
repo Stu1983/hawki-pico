@@ -40,6 +40,11 @@ dialog::backdrop{background:#0008}
 <div class="card"><div class="row"><div><div id="ver">Version …</div><div class="mut" id="ver2">&nbsp;</div></div><button id="updBtn" onclick="updClick()">Check for updates</button></div>
 <div class="mut" id="updBox" style="white-space:pre-wrap;min-height:18px;margin-top:6px"></div></div>
 
+<h2>Security</h2>
+<div class="card"><div class="row"><div><div id="secT">…</div><div class="mut" id="secM">&nbsp;</div></div><span><button id="secB" onclick="secClick()">Set PIN</button> <button id="secOut" onclick="signOut()" style="visibility:hidden">Sign out</button></span></div>
+<label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--fg)"><input type="checkbox" id="maint" style="width:auto;margin:0" onchange="setMaint(this)"> Allow maintenance uploads</label>
+<div class="hint">Lets someone with this Pico's maintenance token (it's in config.json, readable over USB) upload files and run code over Wi-Fi. Leave it off unless you're fixing something.</div></div>
+
 <h2>Backup</h2>
 <div class="card"><div class="mut">A backup holds every tank's settings, deliveries (supplier and price) and all saved readings. It doesn't include the Wi-Fi password. Importing one onto this or a new Pico replaces those tanks' settings and deliveries and merges the readings.</div>
 <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button onclick="exportBackup()">Export backup</button><button onclick="exportCsv()">Export readings (CSV)</button><button onclick="$('impf').click()">Import backup</button>
@@ -84,17 +89,48 @@ dialog::backdrop{background:#0008}
 <div class="acts"><button type="button" onclick="wdlg.close()">Cancel</button><button class="pri">Save &amp; restart</button></div>
 </form></dialog>
 
+<dialog id="pdlg"><form method="dialog" onsubmit="return pinSubmit(event)">
+<b id="pT">Enter the PIN</b><div class="mut" id="pM" style="margin:4px 0 10px"></div>
+<label>PIN<input id="p1" type="password" inputmode="numeric" autocomplete="current-password" maxlength="12"></label>
+<label id="p2l" style="margin-top:8px">Type it again<input id="p2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12"></label>
+<div class="hint" id="pErr" style="color:var(--bad)"></div>
+<div class="acts"><button type="button" onclick="pinCancel()">Cancel</button><button class="pri">OK</button></div></form></dialog>
 <script>
 const $=id=>document.getElementById(id);let S={tanks:[],found:[]},cur=null;
+// ---------- admin PIN: changes need a signed-in browser ----------
+const SK='hawkiSession';let SESS=null,PMODE='login',pinRes=null;try{SESS=localStorage.getItem(SK)}catch(e){}
+function saveSess(s){SESS=s;try{s?localStorage.setItem(SK,s):localStorage.removeItem(SK)}catch(e){}}
+function askPin(mode){return new Promise(res=>{pinRes=res;PMODE=mode;const setup=mode!=='login';
+ $('pT').textContent=mode==='setup'?'Choose a PIN':mode==='change'?'Choose a new PIN':'Enter the PIN';
+ $('pM').textContent=mode==='setup'?'Protects this Pico: changes (tanks, Wi-Fi, deliveries, updates) will need it. 4 to 12 characters. Forgot it? Hold the Pico\'s BOOTSEL button for 5 seconds.':mode==='change'?'Everyone else will have to sign in again.':'Needed to change anything on this Pico. This browser stays signed in.';
+ $('p1').value='';$('p2').value='';$('pErr').textContent='';$('p2l').style.display=setup?'':'none';$('p1').autocomplete=setup?'new-password':'current-password';
+ $('pdlg').showModal();setTimeout(()=>$('p1').focus(),50)})}
+async function pinSubmit(e){e.preventDefault();const p=$('p1').value;
+ if(PMODE!=='login'&&p!==$('p2').value){$('pErr').textContent='The two PINs don\'t match.';return false}
+ const h={'Content-Type':'application/json'};if(SESS)h['X-Auth']=SESS;
+ const r=await fetch(PMODE==='login'?'/api/pin/login':'/api/pin/set',{method:'POST',headers:h,body:JSON.stringify({pin:p})});
+ const j=await r.json().catch(()=>null);
+ if(r.status===401){$('pErr').textContent='Sign in with the current PIN first.';PMODE='login';$('p2l').style.display='none';return false}
+ if(!r.ok){$('pErr').textContent=typeof j==='string'?j.charAt(0).toUpperCase()+j.slice(1)+'.':'Could not sign in.';return false}
+ saveSess(j.session);$('pdlg').close();const f=pinRes;pinRes=null;f&&f(true);return false}
+function pinCancel(){$('pdlg').close();const f=pinRes;pinRes=null;f&&f(false)}
+document.addEventListener('DOMContentLoaded',()=>$('pdlg').addEventListener('cancel',()=>{const f=pinRes;pinRes=null;f&&f(false)}));
+// fetch that adds the session and, on "sign in needed", asks for the PIN once and retries
+async function authFetch(u,o){if(typeof u!=='string'||!/^\/[A-Za-z0-9_\-.\/?=&%:]*$/.test(u)||u[1]==='/')throw new Error('local paths only');o=Object.assign({},o||{});o.headers=Object.assign({},o.headers||{});if(SESS)o.headers['X-Auth']=SESS;
+ let r=await fetch(u,o);if(r.status!==401)return r;
+ const j=await r.clone().json().catch(()=>({}));if(j.auth==='login')saveSess(null);
+ if(!(await askPin(j.auth==='setup'?'setup':'login')))return r;
+ o.headers['X-Auth']=SESS;return fetch(u,o)}
 const ago=s=>s==null?'never':s<90?Math.round(s)+' s ago':s<5400?Math.round(s/60)+' min ago':Math.round(s/3600)+' h ago';
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const okMac=m=>/^[0-9a-f:]{17}$/.test(m)?m:'';
-async function api(p,body){const r=await fetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(!r.ok)throw new Error(await r.text());return r.json()}
+async function api(p,body){const r=await authFetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(r.status===401)throw new Error("The PIN is needed to change this.");if(!r.ok)throw new Error(await r.text());return r.json()}
 async function load(){try{S=await api('/api/state');render()}catch(e){$('status').textContent='Cannot reach the Pico: '+e.message}}
 function render(){
  $('status').textContent=S.ap?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
  if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
   $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
+ secRender();
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
  $('tanks').innerHTML=S.tanks.length?S.tanks.map(t=>{const p=t.percent??0;return `<div class="card"><div class="row"><b>${esc(t.name)}</b><span><a class="lnk" href="/history?mac=${okMac(t.mac)}">History &amp; forecast</a> <button onclick="edit('${okMac(t.mac)}')">Edit</button></span></div>
   <div class="row" style="margin-top:6px"><span class="big">${t.litres==null?'–':Math.round(t.litres)+' L'}</span><span class="big">${t.percent==null?'':t.percent+'%'}</span></div>
@@ -155,6 +191,15 @@ async function saveWifi(e){e.preventDefault();try{await api('/api/wifi',{ssid:$(
 $('dlg').addEventListener('input',draw);$('m_nr').addEventListener('change',()=>ribInputs());
 $('dlg').addEventListener('focusin',e=>{focusF=e.target.dataset&&e.target.dataset.f||null;draw()});
 $('dlg').addEventListener('focusout',()=>{focusF=null;draw()});
+// ---------- security card ----------
+function secRender(){$('secT').textContent=S.pin_set?'PIN is set':'No PIN yet';
+ $('secM').textContent=S.pin_set?(SESS?'This browser is signed in (or will be asked on the next change).':'Changes ask for the PIN.'):'Anyone on your Wi-Fi can change settings until you set one.';
+ $('secB').textContent=S.pin_set?'Change PIN':'Set PIN';$('secOut').style.visibility=S.pin_set&&SESS?'visible':'hidden';
+ if(document.activeElement!==$('maint'))$('maint').checked=!!S.maint}
+async function secClick(){if(S.pin_set&&!SESS&&!(await askPin('login')))return;if(await askPin(S.pin_set?'change':'setup'))load()}
+async function signOut(){await authFetch('/api/pin/logout',{method:'POST'}).catch(()=>{});saveSess(null);load()}
+async function setMaint(cb){const on=cb.checked;try{const r=await authFetch('/api/maint',{method:'POST',body:JSON.stringify({on})});if(!r.ok)cb.checked=!on}catch(e){cb.checked=!on}load()}
+
 // ---------- updates ----------
 let UPD=null;
 async function updClick(){const b=$('updBtn'),box=$('updBox');
@@ -201,10 +246,10 @@ async function importBackup(f){$('impf').value='';if(!f)return;let o;
  const names=macs.map(m=>o.tanks[m].name||m).join(', ');
  if(!confirm('Import from the backup of '+(o.exported||'?').slice(0,10)+'?\n\n'+macs.length+' tank(s): '+names+'\n'+nD+' deliveries, '+nR+' readings\n\nThose tanks\' settings and deliveries will be replaced; readings are merged with the ones already here.'))return;
  try{bst('Importing settings…');const t={},d={};for(const m of macs){t[m]=o.tanks[m];d[m]=dl[m]||[]}
-  let r=await fetch('/api/restore',{method:'POST',body:JSON.stringify({tanks:t,deliveries:d})});if(!r.ok)throw new Error(await r.json().catch(()=>r.status));
+  let r=await authFetch('/api/restore',{method:'POST',body:JSON.stringify({tanks:t,deliveries:d})});if(!r.ok)throw new Error(await r.json().catch(()=>r.status));
   for(const m of macs)if(recs[m]&&recs[m].length){bst('Importing readings for '+(o.tanks[m].name||m)+'…');const b=new DataView(new ArrayBuffer(recs[m].length*6));
    recs[m].forEach(([ts,mm],i)=>{b.setUint32(i*6,ts,true);b.setUint16(i*6+4,mm,true)});
-   r=await fetch('/api/hist?mac='+m,{method:'POST',body:b.buffer});if(!r.ok)throw new Error(await r.json().catch(()=>r.status))}
+   r=await authFetch('/api/hist?mac='+m,{method:'POST',body:b.buffer});if(!r.ok)throw new Error(await r.json().catch(()=>r.status))}
   bst('Imported '+macs.length+' tank(s), '+nD+' deliveries and '+nR+' readings.');load()}catch(e){bst('Import failed: '+e.message)}}
 
 load();setInterval(()=>{if(!dlg.open&&!wdlg.open)load()},10000);

@@ -1,11 +1,11 @@
 {
- "version": "1.0.2",
- "ref": "v1.0.2",
- "notes": "Tanks are listed in name order (Tank 1 before Tank 2, Tank 2 before Tank 10).",
+ "version": "1.1.0",
+ "ref": "v1.1.0",
+ "notes": "Security: signed releases, admin PIN for changes, maintenance access off by default, power-cut-safe updates with automatic rollback, upload/request limits. Picos first installed with 1.0.x need tools/install.sh once over USB.",
  "files": {
   "app.py": [
-   "b25e2c29fe46c5b295f2bfd26a53f85ec83849bb5737d07ac4af4fe8b374e7d8",
-   25258
+   "66d108ca5d95a33f2ccca0ea38031beb7cd339ceada4780b9e2a5f25636d4ee1",
+   33724
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -16,8 +16,8 @@
    2120
   ],
   "hist.html": [
-   "c304a05cf080917cc6096b042d13869e20d383357dc01ecf3307b9d9d1ac391e",
-   33151
+   "644bedc5efd0c4483ae8d7fbde3b15d01ed74215160a010104f2c87499525bdc",
+   36370
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
@@ -28,16 +28,20 @@
    5821
   ],
   "ui.html": [
-   "02ea259ece5ebcde2cd5d89921c216262ae9bd431125de899f05c017cfb1ec24",
-   24337
+   "745c7e0fbc7c2fbef9ac542f887f5f7fe2d954b6dbd3ce17d1f67f20323c4dc6",
+   29288
   ],
   "updater.py": [
-   "47d6f9cb198a7ff5caf754cc4787d00d4376da7728ad9f6f957ae044b5f261b1",
-   5694
+   "b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b",
+   9064
   ],
   "version.py": [
-   "bc035bc56a89f1c39b7b23c9907e81272e239c162edc4c5b2848b43a594c007d",
+   "98ba2020cd6c60e0da5979e9902dcc51a59258845515c705292dd880aab9ac34",
    18
   ]
+ },
+ "signed": {
+  "body": "{\"files\": {\"app.py\": [\"66d108ca5d95a33f2ccca0ea38031beb7cd339ceada4780b9e2a5f25636d4ee1\", 33724], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"644bedc5efd0c4483ae8d7fbde3b15d01ed74215160a010104f2c87499525bdc\", 36370], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"tankcalc.py\": [\"dfb23fbcf59fe23b1b085fe8ec66e6f8bf2d58fa8835fe64696d51b482b9b663\", 5821], \"ui.html\": [\"745c7e0fbc7c2fbef9ac542f887f5f7fe2d954b6dbd3ce17d1f67f20323c4dc6\", 29288], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"98ba2020cd6c60e0da5979e9902dcc51a59258845515c705292dd880aab9ac34\", 18]}, \"notes\": \"Security: signed releases, admin PIN for changes, maintenance access off by default, power-cut-safe updates with automatic rollback, upload/request limits. Picos first installed with 1.0.x need tools/install.sh once over USB.\", \"ref\": \"v1.1.0\", \"version\": \"1.1.0\"}",
+  "sig": "868332989de32f056a7b4bb3ec51d25855744a12427055521584c0090af95a82163bc40ab30e887f09bef83356c5fcc0a38a98e3c4e420a021139329bb4a38adb84f745558e8fa699149ebc0a92a688bed2180474360c56786f431b8e173808051683cfa3ad959ff4ca8da8c13590788928b9bdc8381b599da9c1847404ed552c4e8e8253b849fcd2a17ab1697a273f2c1c96e0f7b3e92f516dcad575e8187a33e2b381dce71dc24e6e00507f605e38ab43d5a1bffffc6e1e3aaaeb9ebb487c6c641fec77bc3e8f507f9ecc88886d81a25b89205bd7af155f117391f9e4580dad1ed09c4a601a84269de3c5de96df037d02971783cd9805d1f0fa2749bf9143f"
  }
 }

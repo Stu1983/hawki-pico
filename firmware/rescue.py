@@ -22,16 +22,41 @@ s = socket.socket()
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 s.bind(('0.0.0.0', 80))
 s.listen(2)
+
+
+class Lines:
+    """readline() with a 15 s deadline for the whole request and 1 KB per line."""
+    def __init__(self, c, t0):
+        self.c, self.t0, self.buf = c, t0, b''
+
+    def readline(self):
+        while b'\n' not in self.buf:
+            if len(self.buf) > 1024 or time.ticks_diff(time.ticks_ms(), self.t0) > 15000:
+                raise OSError('bad or slow request')
+            d = self.c.recv(256)
+            if not d:
+                break
+            self.buf += d
+        i = self.buf.find(b'\n') + 1 or len(self.buf)
+        ln, self.buf = self.buf[:i], self.buf[i:]
+        return ln
+
+
 while True:
     c, _ = s.accept()
+    c.settimeout(10)  # one silent client must not block recovery for everyone
     try:
-        f = c.makefile('rwb', 0)
+        t0 = time.ticks_ms()
+        f = Lines(c, t0)
         req = f.readline().decode()
         method, path = req.split(' ')[:2]
         n = 0
-        while True:
+        t0 = time.ticks_ms()
+        for _ in range(30):  # bounded: a client dripping headers can't hold the only slot
+            if time.ticks_diff(time.ticks_ms(), t0) > 15000:
+                raise OSError('slow request')
             h = f.readline()
-            if h in (b'\r\n', b''):
+            if h in (b'\r\n', b'\n', b''):
                 break
             if h.lower().startswith(b'content-length:'):
                 n = int(h.split(b':')[1])
@@ -45,14 +70,17 @@ while True:
                 out = open('crash.log').read()
             except Exception:
                 out = 'no crash.log'
-        elif q.get('t') == tok and path == '/file' and method == 'PUT':
-            data = b''
+        elif tok and q.get('t') == tok and path == '/file' and method == 'PUT':
+            data = f.buf[:n]  # bytes the line reader already took
             while len(data) < n:
-                data += c.recv(n - len(data))
+                d = c.recv(min(2048, n - len(data)))
+                if not d:
+                    raise OSError('short upload')
+                data += d
             with open(q['name'], 'wb') as fh:
                 fh.write(data)
             out = 'wrote %d' % len(data)
-        elif q.get('t') == tok and path == '/reboot':
+        elif tok and q.get('t') == tok and path == '/reboot':
             c.send(b'HTTP/1.0 200 OK\r\n\r\nrebooting')
             c.close()
             time.sleep(0.5)

@@ -1,13 +1,18 @@
-"""Updates from GitHub (runs on MicroPython; the HTTPS part also on CPython for testing).
+"""Updates from GitHub (runs on MicroPython; also on CPython for the tests).
 
-A release is one commit on GitHub, tagged vX.Y.Z, holding firmware/* and manifest.json:
-  {"version": "1.0.1", "ref": "v1.0.1", "notes": "...", "files": {"app.py": [sha256, size], ...}}
-The Pico reads manifest.json from the main branch, then downloads each file from the TAG (never
-changes, so files and hashes always match) over HTTPS with the certificate checked against
-ca.pem. Every file is checked against its SHA-256 before anything is replaced; then the old
-files are kept as .bak and upd.pending is written. main.py/rollback.py put the .bak files back
-if the new version fails to start, and app.py deletes upd.pending once it's running happily.
-Only the person at the web page can start an install; nothing updates by itself.
+A release is one tagged commit (vX.Y.Z) holding firmware/* and manifest.json:
+  {"signed": {"body": "<JSON text>", "sig": "<hex RSA signature of body>"}, ...}
+body = {"version", "ref" (the tag), "notes", "files": {name: [sha256, size]}}.
+The Pico reads manifest.json from main, CHECKS THE SIGNATURE against the public key below
+(the private key never leaves the maintainer's machine), then downloads each listed file from
+the tag over HTTPS (certificate checked against ca.pem) and checks its SHA-256 against the
+signed body. So neither a hijacked GitHub account nor a tampered download can produce an
+update a Pico will install. Top-level version/files fields are for 1.0.x Picos only and are
+never trusted here.
+
+Install is journalled: upd.pending (stage "swapping") is written BEFORE any file is replaced,
+so a power cut part-way is undone at the next boot (main.py -> rollback.undo). Only the person
+at the web page (with the PIN) can start an install; nothing updates by itself.
 """
 import json, os, socket, ssl
 try:
@@ -18,8 +23,43 @@ except ImportError:
 REPO = 'Stu1983/hawki-pico'
 HOST = 'raw.githubusercontent.com'
 BRANCH = 'main'
-# Never replaced over the air: the boot path and the rescue/rollback code that must always work.
-KEEP = ('main.py', 'rescue.py', 'rollback.py', 'config.json', 'deliv.json')
+# Release signing key (RSA-2048, e=65537, PKCS#1 v1.5 + SHA-256): public modulus.
+PUB_N = int(
+    '961278eef48b634563dcd464b5b42a88af95fbee268d95a86c8deba0935e2206'
+    '05289ca6e1555d5d69a23d265591c1f0b131e700b1f75d73aa86f6ba8c7b84f1'
+    '0c4ba2eca7c68ce03f8959ea6f7397c62d977ef6919019ca895a37952ed30d23'
+    'fb15856b3053427533ad003c20086ce5981a28c2f46cb2bb54e67655e318d8c4'
+    '5640fb0498d6b95cefa961af01c878d4ecca1c0b367eb199846fbfe43631ed64'
+    '278d9342e9146007382f09c4e10332efde2ac034134abf9e6aad065345923801'
+    '285ca8ef369a0e02846430c084c8acf4dac8885e347003a43fc0ca8dd44bd94a'
+    '7e74a9d6d1d368fdd038e3b44ef29e499b542982417d76d6ebc7dc7a175e5301', 16)
+PUB_E = 65537
+# Files an update may never write: the boot path (boot.py runs before main.py!), recovery code
+# and the user's data.
+NEVER = ('boot.py', 'main.py', 'rescue.py', 'rollback.py', 'config.json', 'deliv.json')
+_DI = bytes.fromhex('3031300d060960864801650304020105000420')  # DigestInfo prefix for SHA-256
+
+
+def _hex(b):
+    return ''.join('%02x' % x for x in b)
+
+
+def verify(body, sig_hex):
+    """True if sig_hex is the release key's signature over body (bytes)."""
+    try:
+        sig = bytes.fromhex(sig_hex)
+    except (ValueError, TypeError):
+        return False
+    k = 256
+    if len(sig) != k:
+        return False
+    s = int.from_bytes(sig, 'big')
+    if s >= PUB_N:
+        return False
+    em = pow(s, PUB_E, PUB_N)
+    h = hashlib.sha256(body).digest()
+    want = b'\x00\x01' + b'\xff' * (k - 3 - len(_DI) - 32) + b'\x00' + _DI + h
+    return em == int.from_bytes(want, 'big')
 
 
 def _ctx():
@@ -79,28 +119,71 @@ def vtuple(v):
     return tuple(int(x) for x in str(v).lstrip('v').split('.'))
 
 
-def check(current):
-    m = json.loads(_get('/%s/%s/manifest.json' % (REPO, BRANCH)))
-    return {'current': current, 'latest': m['version'], 'notes': m.get('notes', ''),
-            'newer': vtuple(m['version']) > vtuple(current), 'manifest': m}
-
-
-def _ok_name(n):
-    if n in KEEP or '/' in n or '..' in n or not (n.endswith('.py') or n.endswith('.html') or n.endswith('.pem')):
+def ok_name(n):
+    if n in NEVER or n.startswith('upd.') or '/' in n or '..' in n:
+        return False
+    if not (n.endswith('.py') or n.endswith('.html') or n.endswith('.pem')):
         return False
     return all(c.isalpha() or c.isdigit() or c in '_.' for c in n)
 
 
+def parse(raw):
+    """Signed manifest text -> trusted body dict, or raise."""
+    m = json.loads(raw)
+    s = m.get('signed') or {}
+    body = s.get('body')
+    if not isinstance(body, str) or not verify(body.encode(), s.get('sig')):
+        raise ValueError('the release is not signed by the hawki-pico release key')
+    b = json.loads(body)
+    vtuple(b['version'])
+    for n, v in b['files'].items():
+        if not ok_name(n):
+            raise ValueError('release lists a file it may not replace: %s' % n)
+        if len(v) != 2 or len(v[0]) != 64 or not 0 < int(v[1]) <= 200000:
+            raise ValueError('bad entry for %s' % n)
+    return b
+
+
+def check(current):
+    m = parse(_get('/%s/%s/manifest.json' % (REPO, BRANCH), limit=20000))
+    return {'current': current, 'latest': m['version'], 'notes': m.get('notes', ''),
+            'newer': vtuple(m['version']) > vtuple(current), 'verified': True, 'manifest': m}
+
+
+def _rm(n):
+    try:
+        os.remove(n)
+    except OSError:
+        pass
+
+
+def _exists(n):
+    try:
+        os.stat(n)
+        return True
+    except OSError:
+        return False
+
+
 def install(m, current):
+    """m must come from parse()/check(). Downloads + verifies everything, then swaps it in."""
     files = m['files']
     for n in files:
-        if not _ok_name(n):
+        if not ok_name(n):
             raise ValueError('refusing to write %s' % n)
-    need = sum(v[1] for v in files.values()) * 2 + 20000  # .new copies + .bak copies
+    if _exists('upd.pending'):
+        raise OSError('the last update is still being confirmed: try again in a few minutes')
+    import rollback  # main.py/rollback.py never come over the air: make sure they can undo THIS kind of install
+    try:
+        boot_ok = b'why = rollback.boot_check()' in open('main.py', 'rb').read()
+    except OSError:
+        boot_ok = False
+    if not hasattr(rollback, 'boot_check') or not boot_ok:
+        raise OSError('this Pico needs its start-up files (main.py, rollback.py) updated over USB first: run tools/install.sh')
+    need = sum(v[1] for v in files.values()) * 2 + 40000  # .new copies + .bak copies + slack
     st = os.statvfs('/')
     if st[0] * st[3] < need:
         raise OSError('not enough flash for the update')
-    done = []
     try:
         for n, (sha, size) in files.items():
             h = hashlib.sha256()
@@ -109,33 +192,33 @@ def install(m, current):
                     h.update(c)
                     f.write(c)
                 got = _get('/%s/%s/firmware/%s' % (REPO, m['ref'], n), sink, size + 1)
-            done.append(n)
-            dig = ''.join('%02x' % b for b in h.digest())
-            if got != size or dig != sha:
+            if got != size or _hex(h.digest()) != sha:
                 raise ValueError('%s did not match the release (download damaged?)' % n)
     except Exception:
-        for n in done + [x for x in files if x not in done]:
-            try:
-                os.remove(n + '.new')
-            except OSError:
-                pass
+        for n in files:
+            _rm(n + '.new')
         raise
-    # everything downloaded and verified: swap in, keeping the old files for rollback
-    had = []
+    # everything downloaded and verified. Journal first, then swap.
     for n in files:
-        try:
-            os.stat(n)
-            try:
-                os.remove(n + '.bak')
-            except OSError:
-                pass
-            os.rename(n, n + '.bak')
-            had.append(n)
-        except OSError:
-            pass
-        os.rename(n + '.new', n)
-    with open('upd.pending', 'w') as f:
-        json.dump({'from': current, 'to': m['version'], 'files': list(files), 'had': had}, f)
+        _rm(n + '.bak')
+    had = [n for n in files if _exists(n)]
+    j = {'from': current, 'to': m['version'], 'files': list(files), 'had': had, 'stage': 'swapping', 'boots': 0}
+    with open('upd.tmp', 'w') as f:
+        json.dump(j, f)
+    os.rename('upd.tmp', 'upd.pending')
+    try:
+        for n in files:
+            if n in had:
+                os.rename(n, n + '.bak')
+            os.rename(n + '.new', n)
+        j['stage'] = 'installed'
+        with open('upd.tmp', 'w') as f:
+            json.dump(j, f)
+        os.rename('upd.tmp', 'upd.pending')
+    except Exception as ex:  # e.g. flash full: put everything back now (a power cut is handled at boot)
+        rollback.undo('install failed while replacing files: %r' % ex)
+        _rm('upd.tmp')
+        raise
     return m['version']
 
 
@@ -145,12 +228,11 @@ def commit():
         p = json.load(open('upd.pending'))
     except (OSError, ValueError):
         return None
+    if p.get('stage') == 'swapping':
+        return None  # never confirm a half-finished install
     for n in p.get('had', []):
-        try:
-            os.remove(n + '.bak')
-        except OSError:
-            pass
-    os.remove('upd.pending')
+        _rm(n + '.bak')
+    _rm('upd.pending')
     with open('upd.last', 'w') as f:
         json.dump({'ok': True, 'from': p.get('from'), 'to': p.get('to')}, f)
     return p

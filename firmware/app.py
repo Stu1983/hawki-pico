@@ -23,7 +23,11 @@
 #   POST /api/restore         {tanks: {mac: cfg}, deliveries: {mac: [...]}} from a backup file
 #   GET  /api/update/check    newest release on GitHub vs this version (updater.py)
 #   POST /api/update/install  download + verify + install it, then restart (rolls back if it won't run)
-# Maintenance (token): PUT /file?name=x&t=TOK, GET /reboot?t=TOK, GET /run?name=x.py&t=TOK
+# Changes (every POST) need a session from the admin PIN:  GET /api/auth, POST /api/pin/login {pin},
+#   POST /api/pin/set {pin} (first setup, or signed in), POST /api/pin/logout. Header: X-Auth.
+#   Forgot the PIN: hold the Pico's BOOTSEL button for 5 seconds while it's running.
+# Maintenance (token, and only if switched on in Software settings - off by default):
+#   PUT /file?name=x&t=TOK, GET /reboot?t=TOK, GET /run?name=x.py&t=TOK
 # Debug: GET /devices[?name=&addr=], GET /reset
 #
 # No Wi-Fi configured, or it can't connect for 60 s: the Pico also opens a setup network
@@ -262,6 +266,129 @@ def curve(t):
     return {'step': 10, 'h': H, 'l': out}
 
 
+# ---------- admin PIN + sessions ----------
+# The PIN is stored salted + hashed; sessions are random tokens kept (hashed) in config.json so a
+# restart doesn't sign everyone out. Wrong PINs lock sign-in for 30 s after 5 tries, doubling to 1 h.
+lock = {'fails': 0, 'until': 0, 'wait': 30}
+
+
+def _sha(s):
+    import hashlib
+    return binascii.hexlify(hashlib.sha256(s.encode()).digest()).decode()
+
+
+def pin_ok(pin):
+    return bool(cfg.get('pin')) and _sha(cfg.get('pin_salt', '') + str(pin)) == cfg['pin']
+
+
+def new_session():
+    tok = binascii.hexlify(os.urandom(16)).decode()
+    cfg['sessions'] = (cfg.get('sessions') or [])[-7:] + [_sha(tok)]
+    save_cfg(cfg)
+    return tok
+
+
+def authed(tok):
+    return bool(tok) and bool(cfg.get('pin')) and _sha(tok) in (cfg.get('sessions') or [])
+
+
+def set_pin(pin):
+    pin = str(pin or '')
+    if not 4 <= len(pin) <= 12:
+        raise ValueError('use 4 to 12 characters')
+    cfg['pin_salt'] = binascii.hexlify(os.urandom(8)).decode()
+    cfg['pin'] = _sha(cfg['pin_salt'] + pin)
+    cfg['sessions'] = []  # everyone else has to sign in with the new PIN
+    return new_session()
+
+
+FIRST_PIN_SECS = 1800
+
+
+first_pin_window = [True]
+
+
+async def close_first_pin_window():
+    await asyncio.sleep(FIRST_PIN_SECS)
+    first_pin_window[0] = False
+
+
+def may_set_first_pin(peer):
+    # Without a PIN, whoever sets one first owns the Pico. So a FIRST PIN can only be set from the
+    # setup network (while it's actually up), or within 30 minutes of the Pico starting.
+    on_setup_ap = ap.active() and peer.startswith(ap.ifconfig()[0].rsplit('.', 1)[0] + '.')
+    return on_setup_ap or first_pin_window[0]
+
+
+def try_login(pin):
+    now = time.time()
+    if now < lock['until']:
+        raise ValueError('too many wrong PINs: try again in %d seconds' % (lock['until'] - now))
+    if pin_ok(pin):
+        lock.update(fails=0, wait=30)
+        return new_session()
+    lock['fails'] += 1
+    if lock['fails'] >= 5:
+        lock['until'] = now + lock['wait']
+        lock['wait'] = min(3600, lock['wait'] * 2)
+        lock['fails'] = 0
+    raise ValueError('wrong PIN')
+
+
+async def bootsel_reset():
+    # Physical PIN reset: hold BOOTSEL for 5 s (needs someone at the Pico).
+    try:
+        import rp2
+        rp2.bootsel_button()
+    except Exception:
+        return
+    held = 0
+    while True:
+        await asyncio.sleep(0.5)
+        held = held + 1 if rp2.bootsel_button() else 0
+        if held == 10:
+            for k in ('pin', 'pin_salt', 'sessions'):
+                cfg.pop(k, None)
+            save_cfg(cfg)
+            print('PIN cleared by BOOTSEL')
+            for _ in range(10):
+                led.toggle()
+                await asyncio.sleep(0.1)
+
+
+def free_bytes():
+    st = os.statvfs('/')
+    return st[0] * st[3]
+
+
+async def read_body_to(r, name, clen, pre=b'', secs=120):
+    pre = pre[:clen]
+    got, dl = len(pre), time.ticks_add(time.ticks_ms(), secs * 1000)
+    with open(name, 'wb') as fh:
+        fh.write(pre)
+        while got < clen:
+            left = time.ticks_diff(dl, time.ticks_ms())
+            if left <= 0:
+                raise OSError('upload too slow')
+            chunk = await asyncio.wait_for(r.read(min(1024, clen - got)), left / 1000)
+            if not chunk:
+                break
+            fh.write(chunk)
+            got += len(chunk)
+    return got
+
+
+def rm(name):
+    try:
+        os.remove(name)
+    except OSError:
+        pass
+
+
+MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
+            '/api/update/install', '/api/maint')
+
+
 # ---------- views ----------
 
 def tank_view(mac, t, now):
@@ -338,7 +465,8 @@ def state():
             'ssid': cfg.get('ssid') if wlan.isconnected() else None,
             'ip': wlan.ifconfig()[0] if wlan.isconnected() else None,
             'wifi_rssi': wlan.status('rssi') if wlan.isconnected() else None,
-            'ap': AP_NAME if ap.active() else None, 'update': update_info()}
+            'ap': AP_NAME if ap.active() else None, 'update': update_info(),
+            'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint'))}
 
 
 def num(v, lo, hi):
@@ -491,7 +619,7 @@ async def send(w, code, body, ctype='application/json'):
     w.write(('HTTP/1.0 %d OK\r\nContent-Type: %s\r\nContent-Length: %d\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n'
              % (code, ctype, len(b))).encode())
     w.write(b)
-    await w.drain()
+    await asyncio.wait_for(w.drain(), 20)  # a client that stops reading can't hold a slot forever
 
 
 async def send_file(w, name, ctype):
@@ -503,58 +631,137 @@ async def send_file(w, name, ctype):
             if not chunk:
                 break
             w.write(chunk)
-            await w.drain()
+            await asyncio.wait_for(w.drain(), 20)
+
+
+conns = [0]
+installing = [False]
+hist_busy = [False]
 
 
 async def handle(r, w):
+    conns[0] += 1
     try:
-        line = (await r.readline()).decode()
+        if conns[0] > 6:  # don't let a pile of idle connections starve the Pico
+            return
+        dl = time.ticks_add(time.ticks_ms(), 15000)  # the whole request line + headers within 15 s
+
+        buf = [b'']
+
+        async def rl():  # our own readline: never buffers more than ~2 KB per line
+            while b'\n' not in buf[0]:
+                if len(buf[0]) > 2048:
+                    raise OSError('header too long')
+                left = time.ticks_diff(dl, time.ticks_ms())
+                if left <= 0:
+                    raise OSError('slow request')
+                c = await asyncio.wait_for(r.read(256), left / 1000)
+                if not c:
+                    ln, buf[0] = buf[0], b''
+                    return ln
+                buf[0] += c
+            i = buf[0].index(b'\n') + 1
+            if i > 2048:
+                raise OSError('header too long')
+            ln, buf[0] = buf[0][:i], buf[0][i:]
+            return ln
+        try:
+            peer = w.get_extra_info('peername')[0]
+        except Exception:
+            peer = ''
+        line = (await rl()).decode()
         method, path, _ = line.split(' ', 2)
-        clen = 0
-        while True:
-            h = await r.readline()
+        clen, auth = 0, ''
+        for _ in range(40):
+            h = await rl()
             if h in (b'\r\n', b'\n', b''):
                 break
-            if h.lower().startswith(b'content-length:'):
+            hl = h.lower()
+            if hl.startswith(b'content-length:'):
                 clen = int(h.split(b':')[1])
+                if clen < 0:
+                    raise ValueError('bad length')
+            elif hl.startswith(b'x-auth:'):
+                auth = h.split(b':', 1)[1].strip().decode()
         path, q = parse_q(path)
-        if method == 'PUT' and path == '/file' and q.get('t') == TOKEN:
+        maint = bool(cfg.get('maint')) and q.get('t') == TOKEN
+        if method == 'PUT' and path == '/file' and maint:
             # stream uploads straight to flash: big files don't fit in one read
-            got = 0
-            with open(q['name'] + '.part', 'wb') as fh:
-                while got < clen:
-                    chunk = await r.read(min(1024, clen - got))
-                    if not chunk:
-                        break
-                    fh.write(chunk)
-                    got += len(chunk)
-            if got != clen:
-                return await send(w, 400, '"short upload %d/%d"' % (got, clen))
-            os.rename(q['name'] + '.part', q['name'])
+            name = q.get('name', '')
+            if not name or '/' in name or clen > free_bytes() - 60000:
+                return await send(w, 400, '"bad name or not enough space"')
+            try:
+                got = await read_body_to(r, name + '.part', clen, buf[0])
+                if got != clen:
+                    return await send(w, 400, '"short upload %d/%d"' % (got, clen))
+                os.rename(name + '.part', name)
+            finally:
+                rm(name + '.part')
             return await send(w, 200, '"wrote %d"' % got)
+        if method == 'POST' and path in MUTATING and not authed(auth):
+            return await send(w, 401, json.dumps({'auth': 'login' if cfg.get('pin') else 'setup'}))
         if method == 'POST' and path == '/api/hist':
             mac = q.get('mac', '').replace('%3A', ':').replace('%3a', ':').lower()
             if mac not in cfg['tanks'] or clen % 6:
                 return await send(w, 400, '"bad history upload"')
-            got = 0
-            with open('hist.up', 'wb') as fh:  # stream to flash; merged once complete (no awaits)
-                while got < clen:
-                    chunk = await r.read(min(1024, clen - got))
-                    if not chunk:
-                        break
-                    fh.write(chunk)
-                    got += len(chunk)
-            if got != clen:
-                return await send(w, 400, '"short upload"')
-            return await send(w, 200, json.dumps(merge_hist(hist_name(mac), 'hist.up')))
+            try:
+                have = os.stat(hist_name(mac))[6]
+            except OSError:
+                have = 0
+            # upload copy + merged copy (up to have + clen) + headroom for everything else
+            if clen > 600000 or 2 * clen + have + 150000 > free_bytes():
+                return await send(w, 413, '"history too large for the space left on the Pico"')
+            if hist_busy[0]:  # one at a time: they share hist.up and the space check
+                return await send(w, 409, '"another history upload is running"')
+            hist_busy[0] = True
+            try:
+                got = await read_body_to(r, 'hist.up', clen, buf[0])
+                if got != clen:
+                    return await send(w, 400, '"short upload"')
+                n = merge_hist(hist_name(mac), 'hist.up')
+                return await send(w, 200, json.dumps(n))
+            finally:
+                hist_busy[0] = False
+                rm('hist.up')
+                rm(hist_name(mac) + '.new')
         if clen > (16000 if path in ('/api/restore', '/api/delivery') else 4000):
             return await send(w, 413, '"too large"')
-        body = await r.readexactly(clen) if clen and method == 'POST' else b''
+        body = b''
+        if clen and method == 'POST':
+            body = buf[0][:clen]
+            if len(body) < clen:
+                body += await asyncio.wait_for(r.readexactly(clen - len(body)), 20)
 
         if path in ('/', '/index.html'):
             return await send_file(w, 'ui.html', 'text/html; charset=utf-8')
         if path == '/api/state':
             return await send(w, 200, json.dumps(state()))
+        if path == '/api/auth':
+            return await send(w, 200, json.dumps({'pin_set': bool(cfg.get('pin')), 'ok': authed(auth)}))
+        if path in ('/api/pin/login', '/api/pin/set', '/api/pin/logout') and method == 'POST':
+            try:
+                b = json.loads(body or '{}')
+                if path == '/api/pin/login':
+                    return await send(w, 200, json.dumps({'session': try_login(b.get('pin'))}))
+                if path == '/api/pin/set':
+                    if cfg.get('pin') and not authed(auth):
+                        return await send(w, 401, json.dumps({'auth': 'login'}))
+                    if not cfg.get('pin') and not may_set_first_pin(peer):
+                        return await send(w, 403, json.dumps(
+                            'for safety a first PIN can only be set within 30 minutes of the Pico starting, or from '
+                            'its setup network. Unplug the Pico, plug it back in, then try again'))
+                    tok = set_pin(b.get('pin'))
+                    return await send(w, 200, json.dumps({'session': tok}))
+                if authed(auth):
+                    cfg['sessions'] = [x for x in cfg.get('sessions', []) if x != _sha(auth)]
+                    save_cfg(cfg)
+                return await send(w, 200, '"ok"')
+            except Exception as ex:
+                return await send(w, 400, json.dumps(str(ex)))
+        if path == '/api/maint' and method == 'POST':
+            cfg['maint'] = bool(json.loads(body or '{}').get('on'))
+            save_cfg(cfg)
+            return await send(w, 200, json.dumps(cfg['maint']))
         if path == '/api/tank' and method == 'POST':
             try:
                 set_tank(json.loads(body))
@@ -564,23 +771,31 @@ async def handle(r, w):
         if path == '/api/update/check':
             try:
                 import updater
-                r = updater.check(VERSION)
-                manifest[0] = r.pop('manifest')
+                res = updater.check(VERSION)
+                manifest[0] = res.pop('manifest')
             except Exception as ex:
-                r = {'current': VERSION, 'error': str(ex) or repr(ex)}
+                res = {'current': VERSION, 'error': str(ex) or repr(ex)}
             gc.collect()
-            return await send(w, 200, json.dumps(r))
+            return await send(w, 200, json.dumps(res))
         if path == '/api/update/install' and method == 'POST':
+            if installing[0]:
+                return await send(w, 409, json.dumps('An update is already being installed'))
+            installing[0] = True
             try:
                 import updater
                 m = manifest[0] or updater.check(VERSION)['manifest']
                 if updater.vtuple(m['version']) <= updater.vtuple(VERSION):
+                    installing[0] = False
                     return await send(w, 400, json.dumps('Already up to date'))
                 v = updater.install(m, VERSION)
             except Exception as ex:
                 gc.collect()
+                installing[0] = False  # updater.install() undoes its own half-done swap
                 return await send(w, 400, json.dumps('Update failed, nothing was changed: %s' % (str(ex) or repr(ex))))
-            await send(w, 200, json.dumps(v))
+            try:
+                await send(w, 200, json.dumps(v))
+            except Exception:
+                pass  # the browser went away: restart onto the new version anyway
             await asyncio.sleep(1)
             machine.reset()
         if path == '/api/deliveries':
@@ -636,10 +851,10 @@ async def handle(r, w):
                    if (not f or f in v['name'].lower()) and (not a or k.startswith(a))}
             return await send(w, 200, json.dumps({'uptime': time.ticks_diff(time.ticks_ms(), boot_ms) // 1000, 'now': time.time(),
                                                   'count': len(seen), 'mem': gc.mem_free(), 'devices': out}))
-        if path == '/reset':
-            seen.clear()
-            return await send(w, 200, '"ok"')
-        if q.get('t') == TOKEN:
+        if maint:
+            if path == '/reset':
+                seen.clear()
+                return await send(w, 200, '"ok"')
             if path == '/reboot':
                 await send(w, 200, '"rebooting"')
                 await asyncio.sleep(0.5)
@@ -662,6 +877,7 @@ async def handle(r, w):
     except Exception as ex:
         print('http err', ex)
     finally:
+        conns[0] -= 1
         try:
             w.close()
             await w.wait_closed()
@@ -674,6 +890,8 @@ async def main():
     asyncio.create_task(wifi_keeper())
     asyncio.create_task(recorder())
     asyncio.create_task(update_guard())
+    asyncio.create_task(bootsel_reset())
+    asyncio.create_task(close_first_pin_window())
     await asyncio.start_server(handle, '0.0.0.0', 80)
     while True:
         await asyncio.sleep(60)

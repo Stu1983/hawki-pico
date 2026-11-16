@@ -96,9 +96,39 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <div class="card mut" id="how"></div>
 <div id="tip" hidden></div>
 </main>
+<dialog id="pdlg"><form method="dialog" onsubmit="return pinSubmit(event)">
+<b id="pT">Enter the PIN</b><div class="mut" id="pM" style="margin:4px 0 10px"></div>
+<label>PIN<input id="p1" type="password" inputmode="numeric" autocomplete="current-password" maxlength="12"></label>
+<label id="p2l" style="margin-top:8px">Type it again<input id="p2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12"></label>
+<div class="hint" id="pErr" style="color:var(--bad)"></div>
+<div class="acts"><button type="button" onclick="pinCancel()">Cancel</button><button class="pri">OK</button></div></form></dialog>
 <script>
 'use strict';
 const $=id=>document.getElementById(id),H=3600,DAY=86400,NS='http://www.w3.org/2000/svg';
+// ---------- admin PIN: changes need a signed-in browser ----------
+const SK='hawkiSession';let SESS=null,PMODE='login',pinRes=null;try{SESS=localStorage.getItem(SK)}catch(e){}
+function saveSess(s){SESS=s;try{s?localStorage.setItem(SK,s):localStorage.removeItem(SK)}catch(e){}}
+function askPin(mode){return new Promise(res=>{pinRes=res;PMODE=mode;const setup=mode!=='login';
+ $('pT').textContent=mode==='setup'?'Choose a PIN':mode==='change'?'Choose a new PIN':'Enter the PIN';
+ $('pM').textContent=mode==='setup'?'Protects this Pico: changes (tanks, Wi-Fi, deliveries, updates) will need it. 4 to 12 characters. Forgot it? Hold the Pico\'s BOOTSEL button for 5 seconds.':mode==='change'?'Everyone else will have to sign in again.':'Needed to change anything on this Pico. This browser stays signed in.';
+ $('p1').value='';$('p2').value='';$('pErr').textContent='';$('p2l').style.display=setup?'':'none';$('p1').autocomplete=setup?'new-password':'current-password';
+ $('pdlg').showModal();setTimeout(()=>$('p1').focus(),50)})}
+async function pinSubmit(e){e.preventDefault();const p=$('p1').value;
+ if(PMODE!=='login'&&p!==$('p2').value){$('pErr').textContent='The two PINs don\'t match.';return false}
+ const h={'Content-Type':'application/json'};if(SESS)h['X-Auth']=SESS;
+ const r=await fetch(PMODE==='login'?'/api/pin/login':'/api/pin/set',{method:'POST',headers:h,body:JSON.stringify({pin:p})});
+ const j=await r.json().catch(()=>null);
+ if(r.status===401){$('pErr').textContent='Sign in with the current PIN first.';PMODE='login';$('p2l').style.display='none';return false}
+ if(!r.ok){$('pErr').textContent=typeof j==='string'?j.charAt(0).toUpperCase()+j.slice(1)+'.':'Could not sign in.';return false}
+ saveSess(j.session);$('pdlg').close();const f=pinRes;pinRes=null;f&&f(true);return false}
+function pinCancel(){$('pdlg').close();const f=pinRes;pinRes=null;f&&f(false)}
+document.addEventListener('DOMContentLoaded',()=>$('pdlg').addEventListener('cancel',()=>{const f=pinRes;pinRes=null;f&&f(false)}));
+// fetch that adds the session and, on "sign in needed", asks for the PIN once and retries
+async function authFetch(u,o){if(typeof u!=='string'||!/^\/[A-Za-z0-9_\-.\/?=&%:]*$/.test(u)||u[1]==='/')throw new Error('local paths only');o=Object.assign({},o||{});o.headers=Object.assign({},o.headers||{});if(SESS)o.headers['X-Auth']=SESS;
+ let r=await fetch(u,o);if(r.status!==401)return r;
+ const j=await r.clone().json().catch(()=>({}));if(j.auth==='login')saveSess(null);
+ if(!(await askPin(j.auth==='setup'?'setup':'login')))return r;
+ o.headers['X-Auth']=SESS;return fetch(u,o)}
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 // Typical UK heating degree days per month (base 15.5 °C): the built-in shape of a year's heating.
 const HDD=[340,300,280,210,140,75,45,50,90,170,260,320];
@@ -333,7 +363,7 @@ function price(src){const l=+$('d_l').value,p=$('d_p').value,c=$('d_c').value;
  if((src==='p'||src==='l')&&p!=='')$('d_c').value=(l*p/100).toFixed(2);
  else if(src==='c'&&c!=='')$('d_p').value=(c/l*100).toFixed(2);
  else if(src==='l'&&c!=='')$('d_p').value=(c/l*100).toFixed(2)}
-async function postDel(b){const r=await fetch('/api/delivery',{method:'POST',body:JSON.stringify(b)});if(!r.ok){alert(await r.json().catch(()=>'Could not save'));return false}
+async function postDel(b){const r=await authFetch('/api/delivery',{method:'POST',body:JSON.stringify(b)});if(!r.ok){alert(await r.json().catch(()=>'Could not save'));return false}
  D=await (await fetch('/api/deliveries')).json();renderDeliveries();costs();drawMonths();return true}
 async function saveDel(e){e.preventDefault();const t=Math.floor(new Date($('d_t').value).getTime()/1000);if(!(t>0))return false;
  const num=id=>$(id).value===''?null:+$(id).value;

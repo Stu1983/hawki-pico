@@ -41,7 +41,7 @@ Nothing is sent anywhere except to GitHub, and only when you check for updates.
 - **Install and restart.** It swaps the files in, keeps the old ones, and restarts.
 - **Automatic rollback.** If the new version crashes, or can't get back onto your Wi-Fi within 10 minutes, the Pico puts the old version back by itself and the page says so.
 
-Nothing updates without someone pressing the button. `main.py`, `rescue.py` and `rollback.py` are never replaced over the air, so the recovery path always stays intact.
+Nothing updates without someone pressing the button. `main.py`, `rescue.py` and `rollback.py` are never replaced over the air, so the recovery path always stays intact. A Pico first installed with 1.0.x needs `tools/install.sh` run once over USB to get the 1.1 start-up files; until then it refuses further updates and says so.
 
 ### Making a release (maintainers)
 
