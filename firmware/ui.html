@@ -232,6 +232,9 @@ function tankSvg(p){
   for(const [b0,b1] of bands){l+=` V${Y(b0)} H${X(0)-d} V${Y(b1)} H${X(0)}`;
    o+=`<line class="rl" x1="${X(0)}" y1="${Y(b0)}" x2="${X(L)}" y2="${Y(b0)}"/><line class="rl" x1="${X(0)}" y1="${Y(b1)}" x2="${X(L)}" y2="${Y(b1)}"/>`}
   let rs=`V${Y(top)} H${X(L)}`;for(const [b0,b1] of bands.slice().reverse())rs+=` V${Y(b1)} H${X(L)+d} V${Y(b0)} H${X(L)}`;
+  if(lv!=null)for(const [b0,b1] of bands){const t0=Math.min(b1,lv);if(t0<=b0)continue;  // the ribs are hollow: oil fills them too
+   for(const [y0,y1,c] of [[b0,Math.min(t0,out),'oil oilx'],[Math.max(b0,out),t0,'oil']])if(y1>y0)
+    o+=`<rect class="${c}" x="${X(0)-d}" y="${Y(y1)}" width="${d}" height="${(y1-y0)*sc}"/><rect class="${c}" x="${X(L)}" y="${Y(y1)}" width="${d}" height="${(y1-y0)*sc}"/>`}
   o+=`<path class="tk" d="${l} ${rs} V${Y(0)} Z"/>`}
  else{
  ribs.forEach((c,i)=>{o+=`<rect class="${cls('rib','rib'+i,rv[i]==null)}" x="${X(0)-rd*sc*3}" y="${Y(c+rh/2)}" width="${L*sc+rd*sc*6}" height="${rh*sc}"/><text class="lbl" x="${X(0)-rd*sc*3-2}" y="${Y(c)+3}" text-anchor="end">${rv[i]==null?'?':c}</text>`;
