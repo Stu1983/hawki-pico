@@ -32,10 +32,10 @@ dialog::backdrop{background:#0008}
 .card .row button{white-space:nowrap}
 .ch{width:100%;height:auto;display:block;margin-top:6px;touch-action:pan-y}.ch text{font:11px system-ui,sans-serif;fill:var(--mut)}
 .ch .gl{stroke:var(--line);stroke-width:1}.ch .ax{stroke:var(--mut);stroke-width:1}.ch .bx{fill:var(--acc2)}.ch .avg{fill:none;stroke:var(--acc);stroke-width:2}
-.ch .lv{fill:none;stroke:var(--oil);stroke-width:2}.ch .fc{fill:none;stroke:var(--mut);stroke-width:2;stroke-dasharray:5 4}.ch .rs{stroke:var(--bad);stroke-width:1.5;stroke-dasharray:2 3}
+.ch .lv{fill:none;stroke:var(--oil);stroke-width:2}.ch .gp{fill:none;stroke:var(--oil);stroke-width:1.5;stroke-dasharray:1 4;stroke-linecap:round}.ch .fc{fill:none;stroke:var(--mut);stroke-width:2;stroke-dasharray:5 4}.ch .rs{stroke:var(--bad);stroke-width:1.5;stroke-dasharray:2 3}
 .ch .xh{stroke:var(--mut);stroke-width:1}.ch .dot{stroke:var(--card);stroke-width:2}.ch .nod{font-size:13px}
 .lg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:6px}.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-.sw.ln{height:2px;width:14px;vertical-align:3px}.sw.dash{background:repeating-linear-gradient(90deg,var(--mut) 0 5px,transparent 5px 9px)}
+.sw.ln{height:2px;width:14px;vertical-align:3px}.sw.dot{background:repeating-linear-gradient(90deg,var(--bad) 0 2px,transparent 2px 5px)}.sw.gpk{background:repeating-linear-gradient(90deg,var(--oil) 0 2px,transparent 2px 6px)}.sw.dash{background:repeating-linear-gradient(90deg,var(--mut) 0 5px,transparent 5px 9px)}
 #tip{position:fixed;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:13px;box-shadow:0 4px 14px #0003;z-index:5;white-space:nowrap}
 .pill{font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:2px 8px;margin-right:8px}
 </style></head><body><main>
@@ -52,7 +52,7 @@ dialog::backdrop{background:#0008}
 <div class="card"><div class="row"><b>Litres a day</b><span class="mut">last 30 days</span></div><svg id="c_rate" class="ch" viewBox="0 0 640 190" role="img" aria-label="Litres used each day over the last 30 days"></svg>
 <div class="lg"><span><i class="sw" style="background:var(--acc2)"></i>each day</span><span><i class="sw ln" style="background:var(--acc)"></i>7-day average</span></div></div>
 <div class="card"><div class="row"><b>Oil in the tank</b><span class="mut">30 days back, 30 ahead</span></div><svg id="c_lvl" class="ch" viewBox="0 0 640 190" role="img" aria-label="Litres in the tank over the last 30 days, with the forecast"></svg>
-<div class="lg"><span><i class="sw ln" style="background:var(--oil)"></i>oil in the tank</span><span><i class="sw ln dash"></i>forecast (cautious)</span><span><i class="sw ln" style="background:var(--bad)"></i>reorder level</span></div></div>
+<div class="lg"><span><i class="sw ln" style="background:var(--oil)"></i>oil in the tank</span><span><i class="sw ln gpk"></i>no readings</span><span><i class="sw ln dash"></i>forecast (cautious)</span><span><i class="sw ln dot"></i>reorder level</span></div></div>
 </section>
 
 <section id="p_tanks" hidden>
@@ -69,6 +69,20 @@ dialog::backdrop{background:#0008}
 <div class="card"><div class="row"><div><div id="wifi">…</div><div class="mut" id="wifi2">&nbsp;</div></div><button onclick="openWifi()">Change</button></div>
 <div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Name on the network: <b id="hn">…</b></div><div class="mut" id="hn2">&nbsp;</div></div><button onclick="changeHost()">Change</button></div>
 <div class="mut" id="ipnote" style="margin-top:10px;min-height:36px">&nbsp;</div></div>
+
+<h2>Notifications</h2>
+<div class="card"><div class="mut" style="margin-bottom:10px">Alerts go to your phone through <b>Pushover</b> (pushover.net) or <b>ntfy</b> (free, no account: install the ntfy app and subscribe to the topic below), or both.</div>
+<div class="grid">
+<label>Pushover user key<input id="n_pu" autocomplete="off" spellcheck="false"></label>
+<label>Pushover app token<input id="n_pt" autocomplete="off" spellcheck="false"></label>
+<label>ntfy topic<input id="n_nt" autocomplete="off" spellcheck="false"><div class="hint"><a href="#" class="lnk" style="margin:0" onclick="newTopic();return false">Make up a topic</a> (anyone who knows it can read your alerts)</div></label>
+<label>ntfy server<input id="n_nh" placeholder="ntfy.sh" spellcheck="false"></label>
+</div>
+<label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--fg)"><input type="checkbox" id="n_ro" style="width:auto;margin:0"> Tell me when a tank reaches its reorder level</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_dr" style="width:auto;margin:0"> Warn me if oil drops faster than the burner can use it (leak or theft)</label>
+<label style="margin-top:8px;max-width:260px">Burner's maximum, litres an hour<input id="n_bl" type="number" min="1" max="30" step="0.5" placeholder="6"><div class="hint">On the boiler's data plate (kW ÷ 10 is close). 6 suits almost any home boiler. The warning comes within about 2 hours.</div></label>
+<div class="acts" style="justify-content:flex-start"><button class="pri" onclick="saveNotify()">Save</button><button onclick="testNotify()">Send a test</button></div>
+<div class="mut" id="n_st" style="min-height:18px;margin-top:6px"></div></div>
 
 <h2>Software</h2>
 <div class="card"><div class="row"><div><div id="ver">Version …</div><div class="mut" id="ver2">&nbsp;</div></div><button id="updBtn" onclick="updClick()">Check for updates</button></div>
@@ -160,6 +174,9 @@ async function authFetch(u,o){if(typeof u!=='string'||!/^\/[A-Za-z0-9_\-.\/?=&%:
  o.headers['X-Auth']=SESS;return fetch(u,o)}
 const ago=s=>s==null?'never':s<90?Math.round(s)+' s ago':s<5400?Math.round(s/60)+' min ago':Math.round(s/3600)+' h ago';
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// when the shown level was measured: the time, plus a warning once it's overdue (sensor out of range or flat)
+function readAt(t){const r=t.listen&&t.listen.read_at,now=Date.now()/1000;if(!r)return ago(t.age);const d=new Date(r*1000),late=now-r>2*3600;
+ return (late?'<b style="color:var(--bad)">no new reading since ':'read at ')+(late&&now-r>20*3600?d.toLocaleDateString([], {day:'numeric',month:'short'})+' ':'')+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(late?'</b>':'')}
 const okMac=m=>/^[0-9a-f:]{17}$/.test(m)?m:'';
 async function api(p,body){const r=await authFetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(r.status===401)throw new Error("The PIN is needed to change this.");if(!r.ok)throw new Error(await r.text());return r.json()}
 async function load(){try{S=await api('/api/state');render()}catch(e){$('status').textContent='Cannot reach the Pico: '+e.message}}
@@ -167,14 +184,14 @@ function render(){
  $('status').textContent=S.ap?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
  if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
   $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
- secRender();netRender();if(!$('p_dash').hidden)dash();
+ secRender();netRender();notifyRender();if(!$('p_dash').hidden)dash();
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
  $('tanks').innerHTML=S.tanks.length?S.tanks.map(t=>{const p=t.percent??0;return `<div class="card"><div class="row"><b>${esc(t.name)}</b><button onclick="edit('${okMac(t.mac)}')">Edit</button></div>
   <div class="row" style="margin-top:8px;min-height:34px"><a class="lnk" href="/history?mac=${okMac(t.mac)}">History &amp; forecast</a>${S.tanks.length>1?(t.mac===S.primary?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('${okMac(t.mac)}')">Show on dashboard</button>`):'<span></span>'}</div>
   <div class="row" style="margin-top:6px"><span class="big">${t.litres==null?'–':Math.round(t.litres)+' L'}</span><span class="big">${t.percent==null?'':t.percent+'%'}</span></div>
   <div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div>
   <div class="mut" style="min-height:18px">${t.litres_standard!=null?'Measured shape · Magnus-style maths says '+Math.round(t.litres_standard)+' L':'&nbsp;'}</div>
-  <div class="row mut"><span>${t.level==null?'no reading yet':t.level+' mm to oil'} · battery ${t.battery??'–'}%</span><span>${ago(t.age)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div></div>`}).join('')
+  <div class="row mut"><span>${t.level==null?'no reading yet':t.level+' mm to oil'} · battery ${t.battery??'–'}%</span><span>${readAt(t)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div></div>`}).join('')
   :'<div class="empty">No tanks yet: add one from the sensors below.</div>';
  $('found').innerHTML=S.found.length?S.found.map(f=>`<div class="card row"><div><b>${esc(f.name||f.mac)}</b><div class="mut">${f.rssi} dBm · ${ago(f.age)}${f.level!=null?' · '+f.level+' mm':''}</div></div><button class="pri" onclick="add('${okMac(f.mac)}')">Add</button></div>`).join('')
   :'<div class="empty">None heard right now. HAWKi monitors broadcast every few seconds; give it a minute.</div>';
@@ -294,9 +311,29 @@ async function importBackup(f){$('impf').value='';if(!f)return;let o;
 // ---------- tabs ----------
 function tab(p){if(!['dash','tanks','cfg'].includes(p))p='dash';
  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.p===p));
- for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash()}
+ for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash();if(p==='cfg')seek()}
+// Sensors nearby: the Pico normally only listens when a reading is due; ask it to look around while this is open
+function seek(){if(!$('p_cfg').hidden&&!document.hidden)fetch('/api/discover').catch(()=>{})}
+setInterval(seek,60000);
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{history.replaceState(null,'','#'+b.dataset.p);tab(b.dataset.p)});
 addEventListener('hashchange',()=>tab(location.hash.slice(1)));
+
+// ---------- notifications ----------
+let NDIRTY=false;
+function notifyRender(){const n=S.notify;if(!n||NDIRTY)return;
+ $('n_pu').value='';$('n_pt').value='';$('n_nt').value='';$('n_nh').value=n.ntfy_host==='ntfy.sh'?'':n.ntfy_host;
+ $('n_pu').placeholder=n.po_user?'saved (type to replace)':'';$('n_pt').placeholder=n.po_token?'saved (type to replace)':'';
+ $('n_nt').placeholder=n.ntfy_topic?'saved: '+n.ntfy_topic+' (type to replace)':'';$('n_ro').checked=n.reorder!==false;$('n_dr').checked=n.drops!==false;$('n_bl').value=n.burner_lph&&n.burner_lph!=6?n.burner_lph:'';
+ if(!$('n_st').dataset.msg)$('n_st').textContent=n.channels.length?'Sending to '+n.channels.join(' and ')+'.':'Not set up yet.'}
+['n_pu','n_pt','n_nt','n_nh','n_ro','n_dr','n_bl'].forEach(i=>$(i).addEventListener('input',()=>{NDIRTY=true}));
+function newTopic(){const a=new Uint8Array(12);crypto.getRandomValues(a);$('n_nt').value='oil-'+[...a].map(b=>'abcdefghijkmnpqrstuvwxyz23456789'[b%32]).join('');NDIRTY=true}
+async function saveNotify(){const b={reorder:$('n_ro').checked,drops:$('n_dr').checked,burner_lph:$('n_bl').value||6},v=i=>$(i).value.trim();
+ if(v('n_pu'))b.po_user=v('n_pu');if(v('n_pt'))b.po_token=v('n_pt');if(v('n_nt'))b.ntfy_topic=v('n_nt');b.ntfy_host=v('n_nh');
+ const st=$('n_st');st.dataset.msg=1;try{await api('/api/notify',b);NDIRTY=false;st.textContent='Saved.'+(v('n_nt')?' Subscribe to '+v('n_nt')+' in the ntfy app.':'');load()}catch(x){st.textContent=x.message.replace(/^"|"$/g,'')}
+ setTimeout(()=>{delete st.dataset.msg},8000)}
+async function testNotify(){const st=$('n_st');st.dataset.msg=1;st.textContent='Sending…';
+ try{const r=await api('/api/notify/test',{});st.textContent=Object.entries(r).map(([k,v])=>k+': '+(v==='ok'?'sent':v)).join(' · ')}catch(x){st.textContent=x.message.replace(/^"|"$/g,'')}
+ setTimeout(()=>{delete st.dataset.msg},10000)}
 
 // ---------- network name ----------
 function netRender(){$('hn').textContent=S.hostname||'hawki-pico';$('hn2').textContent=S.hostname?'http://'+S.hostname+'.local/ also works on most phones and computers':' ';
@@ -375,9 +412,13 @@ function drawLvl(o){const svg=$('c_lvl');if(!o){noData(svg,'No readings yet');re
  const fc=A.cautious?A.cautious.path.filter(p=>p[0]<=t1):[];
  const f=frame(svg,t0,t1,Math.max(reserve,...pts.map(p=>p[1]),...fc.map(p=>p[1]),1)*1.05,'L');
  el('line',{class:'rs',x1:ML,x2:CW-MR,y1:f.Y(reserve),y2:f.Y(reserve)},svg);
- const path=(a,gap)=>{let d='',prev=null;for(const[t,v]of a){d+=(prev!=null&&t-prev>gap?'M':d?'L':'M')+f.X(t).toFixed(1)+','+f.Y(v).toFixed(1);prev=t}return d};
- if(pts.length)el('path',{class:'lv',d:path(pts,6*H)},svg);
- if(fc.length)el('path',{class:'fc',d:path(fc,2*DAY)},svg);
+ // solid where readings are hourly; a dotted bridge across gaps (missed or imported readings)
+ const XY=([t,v])=>f.X(t).toFixed(1)+','+f.Y(v).toFixed(1);
+ const solid=(a,gap)=>a.map((p,i)=>(i&&p[0]-a[i-1][0]<=gap?'L':'M')+XY(p)).join('');
+ const bridges=a=>a.slice(1).map((p,i)=>p[0]-a[i][0]>6*H?'M'+XY(a[i])+'L'+XY(p):'').join('');
+ if(pts.length){el('path',{class:'gp',d:bridges(pts)},svg);el('path',{class:'lv',d:solid(pts,6*H)},svg);
+  for(let i=0;i<pts.length;i++){const a=pts[i-1],b=pts[i+1],t=pts[i][0];if((!a||t-a[0]>6*H)&&(!b||b[0]-t>6*H))el('circle',{cx:f.X(t),cy:f.Y(pts[i][1]),r:2,fill:'var(--oil)'},svg)}}
+ if(fc.length)el('path',{class:'fc',d:solid(fc,1e12)},svg);
  el('line',{class:'ax',x1:f.X(now),x2:f.X(now),y1:MT,y2:CH-MB,'stroke-dasharray':'1 3'},svg);
  const xs=[];let last=-1e9;for(const[t,v]of pts){const x=f.X(t);if(x-last>=3){xs.push([x,[new Date(t*1000).toLocaleString(undefined,{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}),L0(v)+' ('+Math.round(100*v/cap)+'%)'],v]);last=x}}
  for(const[t,v]of fc.slice(1)){xs.push([f.X(t),[fmtD(t)+' (forecast)','about '+L0(v)+' if it turns cold'],v])}

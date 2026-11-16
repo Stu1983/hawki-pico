@@ -37,6 +37,9 @@ from hawki_decode import decode, mfr_from_adv
 from tankcalc import reading, litres, SHAPES
 import histstore
 from version import VERSION
+from listen import Listener
+import notify
+import drops
 
 # HAWKi service UUID 00001923-1322-ffdd-3533-886fdadce133, as it appears in the advert (LE)
 HAWKI_UUID = bytes(reversed(binascii.unhexlify('000019231322ffdd3533886fdadce133')))
@@ -96,7 +99,7 @@ def irq(ev, data):
         k = binascii.hexlify(bytes(addr), ':').decode()
         e = seen.get(k)
         if e is None:
-            if len(seen) > 200:  # memory guard
+            if len(seen) > 200 and k not in cfg['tanks']:  # memory guard (never shuts out our own tanks)
                 return
             e = seen[k] = {'at': at, 'n': 0, 'max': rssi, 'name': '', 'adv': {}}
         e['n'] += 1
@@ -118,21 +121,30 @@ def irq(ev, data):
                 d['rx'] = time.time()
                 d['name'] = e['name']
                 hawki[k] = d
+                if k in cfg['tanks']:  # new hourly measurement? (its payload changes) -> queue it for saving
+                    r = listener.heard(k, d['raw'], d.get('level'), int(time.time()))
+                    if r and r[1] not in (None, 16383):
+                        pending.append((k, r[0], r[1]))
         h = hx(adv)
         lst = e['adv'].setdefault(str(adv_type), [])
         if h not in lst:
             lst.append(h)
             if len(lst) > 4:
                 lst.pop(0)
-    elif ev == 6:  # _IRQ_SCAN_DONE -> restart unless paused for GATT work
-        if scan_on[0]:
-            start_scan()
+    elif ev == 6:  # _IRQ_SCAN_DONE (stopped or mode change): carry on in the wanted mode, if any
+        scan_running[0] = False
+        start_scan()
     elif hook[0]:
         hook[0](ev, data)
 
 
-scan_on = [True]
+scan_on = [True]   # False while /run experiments do GATT work
+scan_mode = [None]  # None (radio left to Wi-Fi), 'passive' (tank readings), 'active' (also asks for names)
+scan_running = [False]
 hook = [None]  # experiments (/run) receive every non-scan BLE event here
+listener = Listener()
+pending = []  # (mac, time, level) new measurements, saved by recorder()
+discover_until = [None]  # ticks_ms: listen actively (names, new sensors) until then; None when off
 
 ble = bluetooth.BLE()
 ble.active(True)
@@ -140,10 +152,57 @@ ble.irq(irq)
 
 
 def start_scan():
-    ble.gap_scan(0, 60000, 30000, True)  # forever, active (gets names)
+    if scan_mode[0] and scan_on[0] and not scan_running[0]:
+        scan_running[0] = True
+        try:
+            ble.gap_scan(0, 60000, 30000, scan_mode[0] == 'active')  # until stopped, 50% duty
+        except Exception as ex:
+            scan_running[0] = False  # the scheduler tries again in 2 s
+            print('scan start err', ex)
 
 
-start_scan()
+def stop_scan():
+    try:
+        ble.gap_scan(None)  # SCAN_DONE then restarts it in the wanted mode (or leaves it off)
+    except Exception as ex:
+        print('scan stop err', ex)  # still running: the scheduler tries again in 2 s
+
+
+def want_scan(mode):
+    if mode != scan_mode[0]:
+        scan_mode[0] = mode
+        if scan_running[0]:
+            return stop_scan()
+    if mode is None:
+        if scan_running[0]:
+            stop_scan()  # a stop that failed (or SCAN_DONE not in yet): ask again
+    else:
+        start_scan()  # (re)start if it stopped
+
+
+def discover(secs):
+    discover_until[0] = time.ticks_add(time.ticks_ms(), secs * 1000)
+
+
+async def scan_scheduler():
+    # Listen only when it's useful: while a tank's hourly reading is due (until it arrives), and
+    # actively while looking for sensors (first minutes after boot, or the Sensors nearby list is open).
+    discover(180)
+    while True:
+        try:
+            tanks = list(cfg['tanks'])
+            if discover_until[0] is not None and time.ticks_diff(discover_until[0], time.ticks_ms()) <= 0:
+                discover_until[0] = None  # expired: clear it, so the tick counter wrapping can't revive it
+            if not tanks or discover_until[0] is not None:
+                mode = 'active'
+            elif listener.due(tanks, int(time.time())):
+                mode = 'passive'
+            else:
+                mode = None
+            want_scan(mode)
+        except Exception as ex:
+            print('scan err', ex)
+        await asyncio.sleep(2)
 
 def ok_hostname(h):
     h = str(h or '').strip().lower()
@@ -212,29 +271,16 @@ async def wifi_keeper():
 
 
 # ---------- history ----------
-# Every minute, note each configured tank's latest distance; on the hour, append the hour's
-# median to h_<last 6 hex of mac>.bin as <uint32 epoch (mid-hour), uint16 mm>: 52 KB a year
+# Each new hourly measurement (listen.py) is appended to h_<last 6 hex of mac>.bin as
+# <uint32 epoch (when it appeared), uint16 mm>: 52 KB a year
 # per tank. Distances, not litres, so changing a tank's shape re-maps the whole history.
 # Daily at 03:00 UTC, readings older than KEEP_HOURLY_DAYS shrink to one per day (that day's
 # median; histstore.py), so history stays ~110 KB per tank for good.
-samples = {}
 KEEP_HOURLY_DAYS = 730
 
 
 def hist_name(mac):
     return 'h_' + mac.replace(':', '')[-6:] + '.bin'
-
-
-def flush_hour(hr):
-    for mac, l in samples.items():
-        if l and mac in cfg['tanks']:
-            l.sort()
-            try:
-                with open(hist_name(mac), 'ab') as f:
-                    f.write(struct.pack('<IH', hr * 3600 + 1800, l[len(l) // 2]))
-            except Exception as ex:
-                print('hist err', ex)
-    samples.clear()
 
 
 async def compact_all(now):
@@ -247,22 +293,32 @@ async def compact_all(now):
 
 
 async def recorder():
-    cur = None
+    # Save each new measurement with the time it appeared (one per sensor per hour).
+    done_day = None
     while True:
-        await asyncio.sleep(60)
+        await asyncio.sleep(10)
         now = time.time()
-        if now < 1700000000:  # clock not set yet
-            continue
-        hr = now // 3600
-        if cur is not None and hr != cur:
-            flush_hour(cur)
-            if hr % 24 == 3:
-                await compact_all(now)
-        cur = hr
-        for mac in cfg['tanks']:
-            d = hawki.get(mac)
-            if d and now - d['rx'] < 180 and d.get('level') not in (None, 16383):
-                samples.setdefault(mac, []).append(d['level'])
+        while len(pending) > 100:  # bound: a stuck flash can't eat the memory
+            pending.pop(0)
+        while pending:
+            mac, t, lvl = pending[0]
+            if t >= 1700000000 and mac in cfg['tanks']:  # clock set, tank still configured
+                try:
+                    with open(hist_name(mac), 'ab') as f:
+                        f.write(struct.pack('<IH', t, lvl))
+                except Exception as ex:
+                    print('hist err', ex)
+                    break  # keep it; try again next time
+                pending.pop(0)
+                try:
+                    await drop_check(mac, t, lvl)
+                except Exception as ex:
+                    print('drop check err', ex)
+                continue
+            pending.pop(0)
+        if now >= 1700000000 and (now // 3600) % 24 >= 3 and done_day != now // 86400:
+            done_day = now // 86400
+            await compact_all(now)
 
 
 def curve(t):
@@ -394,7 +450,7 @@ def rm(name):
 
 
 MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
-            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname')
+            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test')
 
 
 # ---------- views ----------
@@ -407,7 +463,7 @@ def tank_view(mac, t, now):
     if t.get('window_model') == 'measured' and lvl is not None:
         std = reading(dict(t, window_model='standard'), lvl)[0]
     return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct,
-            'litres_standard': std, 'unusable': unusable(t),
+            'litres_standard': std, 'unusable': unusable(t), 'listen': listener.info(mac),
             'battery': d.get('battery'), 'rssi': d.get('rssi'),
             'age': (now - d['rx']) if d.get('rx') else None,
             'cfg': {k: t.get(k) for k in CFG_KEYS}}
@@ -423,6 +479,119 @@ def unusable(t):
     except Exception:  # odd stored values must never break /api/state
         pass
     return None
+
+
+# ---------- notifications ----------
+# cfg['notify'] = {po_user, po_token, ntfy_topic, ntfy_host, reorder (bool)}; secrets never leave the Pico.
+# cfg['alerted'][mac] = {'reorder': epoch}: what has been sent, so a restart doesn't repeat it.
+REARM_L = 100  # an alert re-arms once the tank is this far back above its level (i.e. after a delivery)
+
+
+def notify_view():
+    n = cfg.get('notify') or {}
+    t = n.get('ntfy_topic') or ''
+    return {'channels': notify.channels(n), 'po_user': bool(n.get('po_user')), 'po_token': bool(n.get('po_token')),
+            'ntfy_topic': (t[:3] + '…') if t else '', 'ntfy_host': n.get('ntfy_host') or 'ntfy.sh',
+            'reorder': n.get('reorder', True), 'drops': n.get('drops', True), 'burner_lph': n.get('burner_lph', 6)}
+
+
+def set_notify(b):
+    n = dict(cfg.get('notify') or {})
+    if 'po_user' in b:
+        n['po_user'] = notify.ok_key(b['po_user'], 'Pushover user key')
+    if 'po_token' in b:
+        n['po_token'] = notify.ok_key(b['po_token'], 'Pushover app token')
+    if 'ntfy_topic' in b:
+        n['ntfy_topic'] = notify.ok_topic(b['ntfy_topic'])
+    if 'ntfy_host' in b:
+        n['ntfy_host'] = notify.ok_host(b['ntfy_host'])
+    for k in ('reorder', 'drops'):
+        if k in b:
+            n[k] = bool(b[k])
+    if b.get('burner_lph') not in (None, ''):
+        n['burner_lph'] = num(b['burner_lph'], 1, 30)
+    cfg['notify'] = {k: v for k, v in n.items() if v not in ('', None)}
+    save_cfg(cfg)
+
+
+async def send_alert(title, msg, urgent=False):
+    await asyncio.sleep(0)
+    res = notify.send(cfg.get('notify'), title, msg, urgent)  # blocks ~1-2 s per channel (TLS)
+    print('notify', title, res)
+    return res
+
+
+recent = {}  # mac -> [(epoch, mm)] of the last few hours, for the sudden-drop check (distances, so a tank edit re-maps them)
+
+
+def seed_recent(mac):
+    # after a restart: the last few saved readings, so a drop isn't missed across a reboot
+    try:
+        n = os.stat(hist_name(mac))[6] // 6
+        with open(hist_name(mac), 'rb') as f:
+            f.seek(max(0, n - 8) * 6)
+            raw = f.read()
+        recent[mac] = [(ts, mm) for ts, mm in (struct.unpack('<IH', raw[i:i + 6]) for i in range(0, len(raw) - 5, 6))
+                       if mm != 16383 and ts > time.time() - drops.WINDOW]
+    except Exception:
+        recent[mac] = []
+
+
+async def drop_check(mac, t, lvl):
+    # a new reading: oil going faster than the burner could burn it -> urgent alert (at most every 12 h)
+    tank = cfg['tanks'].get(mac)
+    if tank is None:
+        return
+    if mac not in recent:
+        seed_recent(mac)
+    r = recent[mac]
+    if not r or r[-1][0] != t:  # (just after a restart the seed already holds this reading)
+        r.append((t, lvl))
+    r[:] = [x for x in r if t - x[0] <= drops.WINDOW][-10:]
+    n = cfg.get('notify') or {}
+    if not (n.get('drops', True) and notify.channels(n)):
+        return
+    hit = drops.check([(ts, reading(tank, mm)[0]) for ts, mm in r], float(n.get('burner_lph', 6)))  # current shape
+    a = cfg.setdefault('alerted', {}).setdefault(mac, {})
+    if hit and time.time() - a.get('drop', 0) > 12 * 3600:
+        res = await send_alert('%s: oil dropping fast' % tank.get('name', mac),
+                               '%d L gone in %.0f hours, more than the burner can use (%s L/h). Check for a leak or theft.'
+                               % (hit[0], max(1, hit[1]), n.get('burner_lph', 6)), urgent=True)
+        if 'ok' in res.values():
+            a['drop'] = int(time.time())
+            save_cfg(cfg)
+
+
+async def alerts():
+    # Every few minutes: tell the phone(s) once when a tank reaches its reorder level.
+    await asyncio.sleep(120)
+    while True:
+        try:
+            n = cfg.get('notify') or {}
+            if notify.channels(n) and wlan.isconnected():
+                al = cfg.setdefault('alerted', {})
+                for mac, t in list(cfg['tanks'].items()):
+                    d = hawki.get(mac) or {}
+                    lvl = d.get('level')
+                    if lvl in (None, 16383) or time.time() - d.get('rx', 0) > 3 * 3600:
+                        continue
+                    lit = reading(t, lvl)[0]
+                    if lit is None:
+                        continue
+                    a = al.setdefault(mac, {})
+                    reserve = float(t['reserve_l']) if t.get('reserve_l') is not None else 200.0
+                    if a.get('reorder') and lit >= reserve + REARM_L:
+                        a.pop('reorder')  # topped up: arm it again
+                        save_cfg(cfg)
+                    elif n.get('reorder', True) and not a.get('reorder') and lit <= reserve:
+                        res = await send_alert('%s: time to order oil' % t.get('name', mac),
+                                               '%d L left, at or below your reorder level of %d L.' % (lit, reserve))
+                        if 'ok' in res.values():
+                            a['reorder'] = int(time.time())
+                            save_cfg(cfg)
+        except Exception as ex:
+            print('alerts err', ex)
+        await asyncio.sleep(300)
 
 
 def update_info():
@@ -488,7 +657,7 @@ def state():
             'ap': AP_NAME if ap.active() else None, 'update': update_info(),
             'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint')),
             'primary': cfg.get('primary') if cfg.get('primary') in cfg['tanks'] else (tanks[0]['mac'] if tanks else None),
-            'hostname': HOSTNAME, 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
+            'hostname': HOSTNAME, 'scan': scan_mode[0], 'notify': notify_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
 
 
 def num(v, lo, hi):
@@ -608,7 +777,7 @@ def merge_hist(name, tmp):
                 r, ra = ra, nxt(a)
             else:
                 r, rb = rb, nxt(b)
-            if r[0] != last:
+            if r[0] != last and r[1] not in (16383, 0xffff):  # skip 'unknown level' readings
                 o.write(struct.pack('<IH', r[0], r[1]))
                 last, n = r[0], n + 1
     if a:
@@ -794,6 +963,18 @@ async def handle(r, w):
             await send(w, 200, '"ok"')
             await asyncio.sleep(1)
             machine.reset()
+        if path in ('/api/notify', '/api/notify/test') and method == 'POST':
+            try:
+                b = json.loads(body or '{}')
+                if path == '/api/notify':
+                    set_notify(b)
+                    return await send(w, 200, json.dumps(notify_view()))
+                if not notify.channels(cfg.get('notify')):
+                    raise ValueError('set up Pushover or ntfy first')
+                res = await send_alert('Oil Monitor test', 'Notifications from %s are working.' % HOSTNAME)
+                return await send(w, 200, json.dumps(res))
+            except Exception as ex:
+                return await send(w, 400, json.dumps(str(ex)))
         if path == '/api/primary' and method == 'POST':
             mac = str(json.loads(body or '{}').get('mac', '')).lower()
             if mac not in cfg['tanks']:
@@ -870,6 +1051,9 @@ async def handle(r, w):
             await send(w, 200, '"ok"')
             await asyncio.sleep(1)
             machine.reset()
+        if path == '/api/discover':  # the Sensors nearby list is open: listen actively for a while
+            discover(120)
+            return await send(w, 200, '"ok"')
         if path == '/hawki':
             return await send(w, 200, hawki_json())
         if path == '/history':
@@ -930,6 +1114,8 @@ async def handle(r, w):
 async def main():
     asyncio.create_task(wifi_keeper())
     asyncio.create_task(recorder())
+    asyncio.create_task(scan_scheduler())
+    asyncio.create_task(alerts())
     asyncio.create_task(update_guard())
     asyncio.create_task(bootsel_reset())
     asyncio.create_task(close_first_pin_window())

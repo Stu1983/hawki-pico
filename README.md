@@ -71,6 +71,7 @@ git add -A && git commit -m "Release v1.0.1" && git tag v1.0.1 && git push origi
 ## How it works
 
 - **Readings.** HAWKi monitors broadcast ordinary (legacy) BLE adverts every few seconds. The 10-byte manufacturer-data field packs the distance from the sensor to the oil in mm, plus battery, temperature, a float flag, error bits and firmware version. `firmware/hawki_decode.py` unpacks them, and `tests/test_decode.py` holds a reading confirmed against the Magnus app.
+- **Listening.** A HAWKi measures once an hour, at its own fixed minute, and repeats that reading in every broadcast until the next one. The Pico works out each sensor's minute and listens from just before it until the new reading arrives (`firmware/listen.py`). For the rest of the hour the shared radio is left to Wi-Fi. It listens passively, so it never makes the sensors transmit extra replies. It only asks sensors for their names during the first few minutes after starting, or while **Config → Sensors nearby** is open. Each reading is saved with the time the sensor took it.
 - **Litres.** `firmware/tankcalc.py` turns distance into litres. Its "standard" model for rectangular tanks with windows reproduces the Magnus app's figures to within 1 L.
 - **History.** Stored as 6-byte records (time, mm) in `h_<sensor>.bin`. History keeps distances, not litres, so changing a tank's shape re-draws all past readings.
 

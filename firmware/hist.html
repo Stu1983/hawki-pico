@@ -67,6 +67,12 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
  <details><summary>Show as a table</summary><div style="overflow-x:auto"><table id="tbl"></table></div></details>
 </div>
 
+<h2>Use by hour of day</h2>
+<div class="card">
+ <svg id="c3" viewBox="0 0 640 200" role="img" aria-label="Average litres used in each hour of the day, last 30 days"></svg>
+ <div class="mut" id="hrNote" style="min-height:36px;margin-top:6px">&nbsp;</div>
+</div>
+
 <h2>Deliveries</h2>
 <div class="card"><div id="fills"><div class="empty">Loading…</div></div><div class="acts" style="justify-content:flex-start;margin-top:8px"><button onclick="editDel(null)">Add a delivery</button></div></div>
 
@@ -210,6 +216,28 @@ function drawMonths(){
  const hr=document.createElement('tr');['Month'].concat(years.map(String)).forEach(h=>{const th=document.createElement('th');th.textContent=h;hr.appendChild(th)});$('tbl').appendChild(hr);
  for(let m=0;m<12;m++){const tr=document.createElement('tr'),td=document.createElement('td');td.textContent=MON[m];tr.appendChild(td);
   years.forEach(yr=>{const o=val(yr,m),c=document.createElement('td');const pc=o&&priceAt(new Date(yr,m+1,0).getTime()/1000);c.textContent=o?Math.round(o.used)+' L'+(pc!=null?' · '+gbp0(o.used*pc/100):'')+(o.days<new Date(yr,m+1,0).getDate()?' ('+o.days+'d)':''):(yr===cy&&fc[m]>0?'≈'+Math.round(fc[m])+' L':'–');tr.appendChild(c)});$('tbl').appendChild(tr)}}
+// Average L/hour for each hour of the day over the last 30 days, from consecutive hourly readings
+// (deliveries skipped). Readings move in ~5 L steps and with temperature, so single hours mean little;
+// a month of them averages out to a usable pattern.
+function hourly(P,fills,tnow){const b=Array.from({length:24},()=>({l:0,h:0,n:0}));let days=new Set();
+ for(let i=1;i<P.length;i++){const[t0,l0]=P[i-1],[t1,l1]=P[i],dt=t1-t0;
+  if(t1<tnow-30*DAY||dt<=0||dt>1.6*H||l1-l0>10||fills.some(f=>f.t>t0-6*H&&f.t<=t1+6*H))continue;  // skip top-ups, deliveries, gaps
+  const k=new Date((t0+t1)/2*1000).getHours();b[k].l+=l0-l1;b[k].h+=dt/H;b[k].n++;days.add(midnight(t1))}
+ return{bins:b.map(x=>x.h?{lph:x.l/x.h,n:x.n}:null),days:days.size}}
+function drawHours(){const svg=$('c3');svg.textContent='';const W=640,Hh=200,ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
+ const r=hourly(P,(A&&A.fills)||[],now),vals=r.bins.filter(Boolean).map(x=>x.lph);
+ $('hrNote').textContent=r.days<3?'Needs a few days of hourly readings (imported history is too far apart). Check back in a week; it is best after a month.'
+  :'Average over the last '+Math.min(30,r.days)+' days of hourly readings. The sensor reads in roughly 5 L steps, and the oil shrinks a little as it cools at night and grows as it warms, so treat this as the shape of your day rather than exact figures.';
+ if(r.days<3){el('text',{x:W/2,y:Hh/2,'text-anchor':'middle'},svg,'Not enough hourly readings yet');return}
+ const st=niceStep(Math.max(0.5,...vals),4),max=Math.ceil(Math.max(0.5,...vals)/st)*st,y=v=>mt+ph-Math.max(0,v)/max*ph;
+ for(let v=0;v<=max+1e-9;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},svg);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},svg,(st%1?v.toFixed(1):v)+(v+st>max+1e-9?' L/h':''))}
+ el('line',{x1:ml,x2:W-mr,y1:mt+ph,y2:mt+ph,class:'ax'},svg);
+ const gw=pw/24,bw=gw-3;
+ r.bins.forEach((x,k)=>{const bx=ml+k*gw+1.5;if(k%3===0)el('text',{x:bx+bw/2,y:Hh-6,'text-anchor':'middle'},svg,String(k).padStart(2,'0')+':00');
+  if(!x)return;const top=y(x.lph),h=mt+ph-top;
+  const lines=[(x.lph<0?'0':x.lph.toFixed(1))+' L an hour',String(k).padStart(2,'0')+':00–'+String((k+1)%24).padStart(2,'0')+':00 · '+x.n+' hours of readings'+(x.lph<0?' (the oil warmed up)':'')];
+  const e=el('path',{d:h>0.5?bar(bx,top,bw,h):`M${bx},${mt+ph-1}h${bw}v1h${-bw}Z`,fill:'var(--s1)',class:'bar',tabindex:0},svg);
+  e.addEventListener('pointermove',ev=>showTip(ev,lines));e.addEventListener('pointerleave',hideTip)})}
 function bar(x,y,w,h){const r=Math.min(4,w/2,h);return `M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`}
 
 // ---------- tiles, deliveries, explanation ----------
@@ -306,7 +334,7 @@ async function load(){
  A=analyse(P,{now,reserve:T.cfg.reserve_l??200});
  $('sub').textContent=P.length?'Readings since '+fmtDY(P[0][0])+' · '+(A.span<1?Math.round(A.span*24)+' hours':Math.round(A.span)+' days'):'No readings saved yet';
  const rg=$('rng');rg.textContent='';[['7','7 days'],['30','30 days'],['365','1 year'],['all','All']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',k===R);b.onclick=()=>{R=k;try{localStorage.hawkiRange=k}catch(e){}[...rg.children].forEach(c=>c.setAttribute('aria-pressed',c===b));drawLevel()};rg.appendChild(b)});
- tiles();drawLevel();drawMonths()}
+ tiles();drawLevel();drawMonths();drawHours()}
 try{R=localStorage.hawkiRange||'30'}catch(e){}
 load().catch(e=>{$('sub').textContent='Could not load: '+e});
 </script></body></html>

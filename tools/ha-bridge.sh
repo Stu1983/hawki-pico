@@ -28,7 +28,7 @@ post() {  # entity json
 }
 
 echo "$J" | jq -c '.sensors as $s | (.tanks // {}) | to_entries[]
-  | select(.value.level != null and .value.age != null and .value.age < 1800)
+  | select(.value.level != null and .value.age != null and .value.age < 5400)
   | {sfx: (.key | gsub(":"; "") | .[8:]), t: .value, v: $s[.key]}' |
 while read -r row; do
   sfx=$(jq -r .sfx <<<"$row")
