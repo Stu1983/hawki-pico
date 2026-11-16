@@ -20,7 +20,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 dialog::backdrop{background:#0008}
 #viz{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
 #viz .tk{fill:none;stroke:var(--fg);stroke-width:1.2}#viz .rib{fill:#2f9ee533;stroke:#2f9ee5}#viz .win{fill:var(--card);stroke:#e0473f}
-#viz .inn{fill:none;stroke:#f08a24;stroke-dasharray:3 2}#viz .oil{fill:var(--oil);opacity:.35}#viz .gnd{stroke:var(--mut)}
+#viz .inn{fill:none;stroke:#f08a24;stroke-dasharray:3 2}#viz .oil{fill:var(--oil);opacity:.35}#viz .oilx{opacity:.15;stroke:var(--oil);stroke-dasharray:4 3}#viz .gnd{stroke:var(--mut)}
 #viz .dim{stroke:var(--mut);stroke-width:.8;fill:none}#viz text{font:9px system-ui,sans-serif;fill:var(--mut)}#viz .g{stroke-dasharray:4 3;opacity:.6}
 #viz .hl{stroke-width:2.6!important;opacity:1}#viz .lbl{fill:var(--fg);font-weight:600}.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .lnk{color:var(--acc);font-size:14px;margin-right:8px;text-decoration:none}.empty{color:var(--mut);font-size:14px;padding:6px 2px}.hint{font-size:12px;color:var(--mut);margin-top:3px}
@@ -100,12 +100,14 @@ dialog::backdrop{background:#0008}
 </section>
 <dialog id="dlg"><form method="dialog" onsubmit="return saveTank(event)">
 <div class="row"><b id="dlgT">Add tank</b><span class="mut" id="dlgMac"></span></div>
-<div style="margin:12px 0"><button type="button" onclick="preset()">Fill in Titan R1225</button><div class="hint">Its height is 130 cm less the height of the top of your outlet (121.5 if that is 8.5 cm up): measure yours.</div></div>
+<div style="margin:12px 0"><button type="button" onclick="preset()">Fill in Titan R1225</button><div class="hint">Fills in 130 cm to the monitor and 8.5 cm to the outlet if both are empty: measure yours.</div></div>
 <div class="grid">
 <label style="grid-column:1/-1">Name<input id="f_name" required maxlength="24" placeholder="e.g. Back tank"></label>
 <label>Shape<select id="f_shape" onchange="wmShow()"><option value="cuboid">Rectangular (cuboid)</option><option value="horizontal">Horizontal cylinder</option><option value="vertical">Vertical cylinder</option><option value="other">Other (linear)</option></select></label>
 <label>Windows (holes through)<select id="f_windows"><option value="0">None</option><option value="1">1</option><option value="2">2</option></select></label>
-<label style="grid-column:1/-1">Height, cm<input id="f_h" type="number" step="0.1" min="10" required><div class="hint">Maximum fill height: from the bottom of the monitor down to the top of the outlet.</div></label>
+<label>Ground to the bottom of the monitor, cm<input id="f_top" type="number" step="0.1" min="10" required data-f="top"></label>
+<label>Ground to the top of the outlet, cm<input id="f_out" type="number" step="0.5" min="0" placeholder="0" data-f="outlet"></label>
+<div class="hint" style="grid-column:1/-1;margin-top:-4px" id="f_hh">&nbsp;</div>
 <label>Length, cm<input id="f_l" type="number" step="0.1" min="1"></label>
 <label>Width, cm<input id="f_w" type="number" step="0.1" min="1"></label>
 <label>Capacity above the outlet, litres<input id="f_c" type="number" step="1" min="1" required><div class="hint">Oil between the top of the outlet and the monitor: less than the brochure figure, which counts from the tank floor.</div></label>
@@ -118,7 +120,6 @@ dialog::backdrop{background:#0008}
 <div class="hint" style="margin-bottom:8px">Measure from the <b>ground</b>, in cm. Rough is fine: the total is always scaled to the capacity, so errors only move litres between heights. Dashed parts of the drawing are guesses until you fill them in.</div>
 <svg id="viz" viewBox="0 0 400 230" role="img" aria-label="Tank drawing"></svg>
 <div class="grid">
-<label style="grid-column:1/-1">Top of the outlet pipe<input id="m_outlet" type="number" step="0.5" min="0" data-f="outlet"></label>
 <label>Window opening: bottom<input id="m_wb" type="number" step="0.5" min="0" data-f="win"></label>
 <label>Window opening: top<input id="m_wt" type="number" step="0.5" min="0" data-f="win"></label>
 <label>Opening width<input id="m_wo" type="number" step="0.5" min="0" data-f="win"></label>
@@ -197,15 +198,15 @@ function render(){
  $('found').innerHTML=S.found.length?S.found.map(f=>`<div class="card row"><div><b>${esc(f.name||f.mac)}</b><div class="mut">${f.rssi} dBm · ${ago(f.age)}${f.level!=null?' · '+f.level+' mm':''}</div></div><button class="pri" onclick="add('${okMac(f.mac)}')">Add</button></div>`).join('')
   :'<div class="empty">None heard right now. HAWKi monitors broadcast every few seconds; give it a minute.</div>';
 }
-const MF={m_outlet:'outlet_cm',m_wb:'win_bottom_cm',m_wt:'win_top_cm',m_wo:'win_outer_w_cm',m_wi:'win_inner_w_cm',m_hi:'win_inner_h_cm',m_rh:'rib_h_cm',m_rd:'rib_depth_cm'};
+const MF={m_wb:'win_bottom_cm',m_wt:'win_top_cm',m_wo:'win_outer_w_cm',m_wi:'win_inner_w_cm',m_hi:'win_inner_h_cm',m_rh:'rib_h_cm',m_rd:'rib_depth_cm'};
 let curLevel=null,focusF=null;
 function ribInputs(vals){const n=+$('m_nr').value,old=vals||[...document.querySelectorAll('#ribbox input')].map(i=>i.value);
  $('ribbox').innerHTML=Array.from({length:n},(_,i)=>`<label>Rib ${i+1} centre (from bottom rib up)<input type="number" step="0.5" min="0" data-f="rib${i}" value="${esc(old[i]??'')}"></label>`).join('');draw()}
 function ribVals(){return [...document.querySelectorAll('#ribbox input')].map(i=>i.value===''?null:+i.value)}
 function draw(){const sv=$('viz');if(!sv||$('meas').style.display=='none')return;
  const g=k=>{const v=$(k).value;return v===''?null:+v};
- const L=+$('f_l').value||178,W=+$('f_w').value||75,Hf=+$('f_h').value||121.5,nW=+$('f_windows').value;
- const og=g('m_outlet'),out=og??8,top=out+Hf+4;
+ const L=+$('f_l').value||178,W=+$('f_w').value||75,nW=+$('f_windows').value;
+ const og=g('f_out'),out=og??8.5,top=Math.max(out+10,g('f_top')??130),Hf=top-out;
  const wb0=g('m_wb'),wt0=g('m_wt'),wo0=g('m_wo');const mid=out+Hf/2;
  const wb=wb0??mid-12,wt=wt0??mid+12,wo=wo0??30,wi=g('m_wi')??wo/2,hi=g('m_hi')??(wt-wb)/2;
  const rh=g('m_rh')??12,rd=g('m_rd')??1.5,rv=ribVals(),nr=rv.length;
@@ -214,8 +215,12 @@ function draw(){const sv=$('viz');if(!sv||$('meas').style.display=='none')return
  const LM=28,GAP=30,RM=26,sc=Math.min((400-LM-GAP-RM)/(L+W),190/top),gy=215,X=x=>LM+x*sc,Y=y=>gy-y*sc,ex=x=>LM+L*sc+GAP+x*sc;
  const cls=(base,f,guess)=>base+(guess?' g':'')+(focusF&&f&&focusF==f?' hl':'');
  let o=`<line class="gnd" x1="4" y1="${gy}" x2="396" y2="${gy}"/>`;
- const lv=curLevel!=null?out+(Hf-curLevel/10):null;
- if(lv!=null&&lv>out)o+=`<rect class="oil" x="${X(0)}" y="${Y(Math.min(lv,top))}" width="${L*sc}" height="${(Math.min(lv,top)-out)*sc}"/><text x="${X(0)+4}" y="${Y(Math.min(lv,top))+10}">oil now</text>`;
+ const lv=curLevel!=null?Math.max(0,Math.min(top,top-curLevel/10)):null;  // oil surface, cm above the ground
+ if(lv!=null&&lv>0){const lo=Math.min(lv,out);  // below the outlet: there, but the boiler can't draw it
+  o+=`<rect class="oil oilx" x="${X(0)}" y="${Y(lo)}" width="${L*sc}" height="${lo*sc}"/>`;
+  if(lv>out)o+=`<rect class="oil" x="${X(0)}" y="${Y(lv)}" width="${L*sc}" height="${(lv-out)*sc}"/><text x="${X(0)+4}" y="${Y(lv)+10}">oil now</text>`;
+  else o+=`<text x="${X(L/2)}" y="${Y(out)-4}" text-anchor="middle">oil now: below the outlet</text>`;
+  if(out>0)o+=`<line class="dim" x1="${X(0)}" y1="${Y(out)}" x2="${X(L)}" y2="${Y(out)}" stroke-dasharray="4 3"/><text x="${X(L)-3}" y="${Y(out)+9}" text-anchor="end">can't be used</text>`}
  ribs.forEach((c,i)=>{o+=`<rect class="${cls('rib','rib'+i,rv[i]==null)}" x="${X(0)-rd*sc*3}" y="${Y(c+rh/2)}" width="${L*sc+rd*sc*6}" height="${rh*sc}"/><text class="lbl" x="${X(0)-rd*sc*3-2}" y="${Y(c)+3}" text-anchor="end">${rv[i]==null?'?':c}</text>`;
   o+=`<rect class="${cls('rib','rib'+i,rv[i]==null)}" x="${ex(0)-rd*sc*3}" y="${Y(c+rh/2)}" width="${W*sc+rd*sc*6}" height="${rh*sc}"/>`});
  o+=`<rect class="tk" x="${X(0)}" y="${Y(top)}" width="${L*sc}" height="${(top-0)*sc}"/>`;
@@ -228,19 +233,22 @@ function draw(){const sv=$('viz');if(!sv||$('meas').style.display=='none')return
   o+=`<text class="lbl" x="${d+3}" y="${Y(wt)+3}">${wt0??'?'}</text><text class="lbl" x="${d+3}" y="${Y(wb)+3}">${wb0??'?'}</text>`;
   const cx=L/(nW+1);o+=`<text class="lbl" x="${X(cx)}" y="${Y(wt)-3}" text-anchor="middle">${wo0??'?'} wide</text>`}
  o+=`<circle class="${cls('tk','outlet',og==null)}" cx="${X(0)+6}" cy="${Y(out)}" r="3"/><text class="lbl" x="${X(0)+12}" y="${Y(out)+3}">outlet ${og??'?'}</text>`;
- o+=`<line class="dim" x1="${X(L)+10}" y1="${Y(out)}" x2="${X(L)+10}" y2="${Y(out+Hf)}"/><text x="${X(L)+20}" y="${Y(out+Hf/2)}" text-anchor="middle" transform="rotate(-90 ${X(L)+20} ${Y(out+Hf/2)})">fill height ${Hf}</text>`;
+ o+=`<line class="dim" x1="${X(L)+10}" y1="${Y(0)}" x2="${X(L)+10}" y2="${Y(top)}"/><text x="${X(L)+20}" y="${Y(top/2)}" text-anchor="middle" transform="rotate(-90 ${X(L)+20} ${Y(top/2)})">monitor ${+top.toFixed(1)} up</text>`;
  o+=`<text x="${X(L/2)}" y="${gy+11}" text-anchor="middle">front ${L} cm</text><text x="${ex(W/2)}" y="${gy+11}" text-anchor="middle">end ${W} cm</text>`;
  sv.innerHTML=o}
-function uEst(){const l=+$('f_l').value,w=+$('f_w').value,o=+$('m_outlet').value;const e=$('f_shape').value=='cuboid'&&$('f_wm').value=='measured'&&l&&w&&o?Math.round(l*w*o/1000):null;$('f_u').placeholder=e!=null?'about '+e+' (length × width × outlet height)':'not set'}
+function hfOf(){const t=$('f_top').value,o=$('f_out').value;return t===''?null:+t-(o===''?0:+o)}
+function uEst(){const hf=hfOf();$('f_hh').textContent=hf==null?'Both from the ground.':hf<10?'The monitor must be at least 10 cm above the outlet.':'Fill height '+(+hf.toFixed(1))+' cm: the oil below the outlet is shown but not counted.';
+ const l=+$('f_l').value,w=+$('f_w').value,o=+$('f_out').value;const e=$('f_shape').value=='cuboid'&&l&&w&&o?Math.round(l*w*o/1000):null;$('f_u').placeholder=e!=null?'about '+e+' (length × width × outlet height)':'not set'}
 function wmShow(){uEst();const cub=$('f_shape').value=='cuboid';$('wm_row').style.display=cub?'':'none';$('meas').style.display=(cub&&$('f_wm').value=='measured')?'':'none';draw()}
-function fill(c){$('f_name').value=c.name||'';$('f_shape').value=c.shape||'cuboid';$('f_windows').value=c.windows??0;$('f_h').value=c.height_cm??'';$('f_l').value=c.length_cm??'';$('f_w').value=c.width_cm??'';$('f_c').value=c.capacity_l??'';$('f_r').value=c.reserve_l??'';$('f_u').value=c.unusable_l??'';
+function fill(c){$('f_name').value=c.name||'';$('f_shape').value=c.shape||'cuboid';$('f_windows').value=c.windows??0;$('f_top').value=c.height_cm!=null?Math.round((c.height_cm+(c.outlet_cm||0))*100)/100:'';$('f_out').value=c.outlet_cm??'';$('f_l').value=c.length_cm??'';$('f_w').value=c.width_cm??'';$('f_c').value=c.capacity_l??'';$('f_r').value=c.reserve_l??'';$('f_u').value=c.unusable_l??'';
  $('f_wm').value=c.window_model||'standard';for(const k in MF)$(k).value=c[MF[k]]??'';const r=c.ribs_cm||[];$('m_nr').value=r.length;ribInputs(r);wmShow()}
 function add(mac){cur=mac;curLevel=(S.found.find(f=>f.mac==mac)||{}).level??null;$('dlgT').textContent='Add tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='hidden';fill({});fromList();dlg.showModal()}
 function edit(mac){const t=S.tanks.find(x=>x.mac==mac);cur=mac;curLevel=t.level;$('dlgT').textContent='Edit tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='visible';fill(Object.assign({name:t.name},t.cfg));fromList();dlg.showModal()}
-function preset(){$('f_shape').value='cuboid';$('f_windows').value=2;if(!$('f_h').value)$('f_h').value=121.5;$('f_l').value=178;$('f_w').value=75;$('f_c').value=1180;wmShow()}
+function preset(){$('f_shape').value='cuboid';$('f_windows').value=2;if(!$('f_top').value&&$('f_out').value===''){$('f_top').value=130;$('f_out').value=8.5}/* never re-base a height already there */$('f_l').value=178;$('f_w').value=75;$('f_c').value=1180;wmShow()}
 function fromList(){const o=S.tanks.filter(t=>t.mac!==cur);$('m_from').innerHTML=o.length?o.map(t=>`<option value="${okMac(t.mac)}">${esc(t.name)}</option>`).join(''):'<option value="">no other tanks yet</option>';$('m_from').disabled=$('m_copy').disabled=!o.length}
 function copyFrom(){const t=S.tanks.find(x=>x.mac===$('m_from').value);if(!t)return;const keep={name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value};fill(Object.assign({},t.cfg,keep))}
-async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:+$('f_h').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,capacity_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,unusable_l:$('f_u').value===''?null:+$('f_u').value,window_model:$('f_wm').value};
+async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:Math.round((hfOf()??0)*100)/100,outlet_cm:$('f_out').value===''?null:+$('f_out').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,capacity_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,unusable_l:$('f_u').value===''?null:+$('f_u').value,window_model:$('f_wm').value};
+ if(!(b.height_cm>=10)){alert('The monitor must be at least 10 cm above the top of the outlet.');return false}
  if(b.window_model=='measured'){for(const k in MF)b[MF[k]]=$(k).value===''?null:+$(k).value;const r=ribVals();if(r.some(v=>v==null)){alert('Fill in every rib height, or reduce the number of ribs.');return false}b.ribs_cm=r}
  if(b.shape=='cuboid'&&(!b.length_cm||!b.width_cm)){alert('A rectangular tank needs length and width.');return false}
  try{await api('/api/tank',b);dlg.close();load()}catch(x){alert(x.message)}return false}

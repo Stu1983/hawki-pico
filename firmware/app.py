@@ -680,6 +680,8 @@ def set_tank(b, restore=False):
     for k in ('reserve_l', 'unusable_l'):
         if b.get(k) not in (None, ''):
             t[k] = num(b[k], 0, 100000)
+    if b.get('outlet_cm') not in (None, ''):  # ground to the top of the outlet (any shape)
+        t['outlet_cm'] = num(b['outlet_cm'], 0, 1000)
     if shape == 'cuboid':
         t['length_cm'] = num(b['length_cm'], 1, 2000)
         t['width_cm'] = num(b['width_cm'], 1, 2000)
