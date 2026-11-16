@@ -68,7 +68,7 @@ dialog::backdrop{background:#0008}
 
 <h2>Wi-Fi &amp; network</h2>
 <div class="card"><div class="row"><div><div id="wifi">…</div><div class="mut" id="wifi2">&nbsp;</div></div><button onclick="openWifi()">Change</button></div>
-<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Name on the network: <b id="hn">…</b></div><div class="mut" id="hn2">&nbsp;</div></div><button onclick="changeHost()">Change</button></div>
+<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Name on the network: <b id="hn" style="white-space:nowrap">…</b></div><div class="mut" id="hn2">&nbsp;</div></div><button onclick="changeHost()">Change</button></div>
 <div class="mut" id="ipnote" style="margin-top:10px;min-height:36px">&nbsp;</div></div>
 
 <h2>Notifications</h2>
@@ -76,14 +76,15 @@ dialog::backdrop{background:#0008}
 <div class="grid">
 <label>Pushover user key<input id="n_pu" autocomplete="off" spellcheck="false"></label>
 <label>Pushover app token<input id="n_pt" autocomplete="off" spellcheck="false"></label>
-<label>ntfy topic<input id="n_nt" autocomplete="off" spellcheck="false"><div class="hint"><a href="#" class="lnk" style="margin:0" onclick="newTopic();return false">Make up a topic</a> (anyone who knows it can read your alerts)</div></label>
+<label>ntfy topic<input id="n_nt" autocomplete="off" spellcheck="false"></label>
 <label>ntfy server<input id="n_nh" placeholder="ntfy.sh" spellcheck="false"></label>
+<div class="hint" style="grid-column:1/-1;margin-top:-4px"><a href="#" class="lnk" style="margin:0" onclick="newTopic();return false">Make up a topic</a> (anyone who knows it can read your alerts)</div>
 </div>
 <label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--fg)"><input type="checkbox" id="n_ro" style="width:auto;margin:0"> Tell me when a tank reaches its reorder level</label>
 <label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_bt" style="width:auto;margin:0"> Tell me when a monitor's battery is low (20% or less)</label>
 <label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_sl" style="width:auto;margin:0"> Tell me if a monitor goes quiet (no reading for 6 hours)</label>
 <label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_dr" style="width:auto;margin:0"> Warn me if oil drops faster than the burner can use it (leak or theft)</label>
-<label style="margin-top:8px;max-width:260px">Burner's maximum, litres an hour<input id="n_bl" type="number" min="1" max="30" step="0.5" placeholder="6"><div class="hint">On the boiler's data plate (kW ÷ 10 is close). 6 suits almost any home boiler. The warning comes within about 2 hours.</div></label>
+<label style="margin-top:8px">Burner's maximum, litres an hour<input style="max-width:160px;display:block" id="n_bl" type="number" min="1" max="30" step="0.5" placeholder="6"><div class="hint">On the boiler's data plate (kW ÷ 10 is close). 6 suits almost any home boiler. The warning comes within about 2 hours.</div></label>
 <div class="acts" style="justify-content:flex-start"><button class="pri" onclick="saveNotify()">Save</button><button onclick="testNotify()">Send a test</button></div>
 <div class="mut" id="n_st" style="min-height:18px;margin-top:6px"></div></div>
 
@@ -103,7 +104,8 @@ dialog::backdrop{background:#0008}
 </section>
 <dialog id="dlg"><form method="dialog" onsubmit="return saveTank(event)">
 <div class="row"><b id="dlgT">Add tank</b><span class="mut" id="dlgMac"></span></div>
-<div style="margin:12px 0"><button type="button" onclick="preset()">Fill in Titan R1225</button><div class="hint">Fills in 130 cm to the monitor and 8.5 cm to the outlet if both are empty: measure yours.</div></div>
+<div class="row" id="m_row" style="gap:8px;margin:12px 0 0;justify-content:flex-start"><label style="flex:1;margin:0">Same tank as another? Copy its settings from<select id="m_from"></select></label><button type="button" id="m_copy" onclick="copyFrom()" style="align-self:flex-end">Copy</button></div>
+<div style="margin:12px 0"><button type="button" onclick="preset()">Fill in Titan R1225</button><div class="hint">A Titan R1225 as measured on one. Check the two heights on yours: they depend on how it was installed.</div></div>
 <div class="grid">
 <label style="grid-column:1/-1">Name<input id="f_name" required maxlength="24" placeholder="e.g. Back tank"></label>
 <label>Shape<select id="f_shape" onchange="wmShow()"><option value="cuboid">Rectangular (cuboid)</option><option value="horizontal">Horizontal cylinder</option><option value="vertical">Vertical cylinder</option><option value="other">Other (linear)</option></select></label>
@@ -113,20 +115,19 @@ dialog::backdrop{background:#0008}
 <div class="hint" style="grid-column:1/-1;margin-top:-4px" id="f_hh">&nbsp;</div>
 <label>Length, cm<input id="f_l" type="number" step="0.1" min="1"></label>
 <label>Width, cm<input id="f_w" type="number" step="0.1" min="1"></label>
-<label style="grid-column:1/-1">Tank capacity, litres<input id="f_c" type="number" step="1" min="1" required><div class="hint">From the spec sheet (brimful, if it gives one). The oil below the outlet is worked out from your heights and left out. After a delivery, if you're sure of the heights, adjust this until the “sensor saw” figure on the history page matches the litres on the delivery note.</div></label>
+<label style="grid-column:1/-1">Tank capacity, litres<input id="f_c" type="number" step="1" min="1" required><div class="hint">From the spec sheet (brimful, if it gives one). After a delivery, if you're sure of the heights, adjust this until the “sensor saw” figure on the history page matches the litres on the delivery note.</div></label>
 <label style="grid-column:1/-1">Reorder below, litres<input id="f_r" type="number" step="10" min="0" placeholder="200"><div class="hint">Forecast warns before this.</div></label>
 <label style="grid-column:1/-1" id="wm_row">Window &amp; rib shape<select id="f_wm" onchange="wmShow()"><option value="standard">Standard (same maths as the Magnus app)</option><option value="measured">Measured</option></select></label>
 </div>
 <div id="meas" style="display:none;margin-top:10px">
-<div class="row" style="gap:8px;margin-bottom:8px;justify-content:flex-start"><label style="flex:1;margin:0">Copy everything except the name and reorder level from<select id="m_from"></select></label><button type="button" id="m_copy" onclick="copyFrom()" style="align-self:flex-end">Copy</button></div>
 <div class="hint" style="margin-bottom:8px">Measure from the <b>ground</b>, in cm. Rough is fine: the total is always scaled to the capacity, so errors only move litres between heights. Dashed parts of the drawing are guesses until you fill them in.</div>
 <svg id="viz" viewBox="0 0 400 230" role="img" aria-label="Tank drawing"></svg>
 <div class="grid">
-<label>Window opening: bottom<input id="m_wb" type="number" step="0.5" min="0" data-f="win"></label>
-<label>Window opening: top<input id="m_wt" type="number" step="0.5" min="0" data-f="win"></label>
+<label>Window bottom<input id="m_wb" type="number" step="0.5" min="0" data-f="win"></label>
+<label>Window top<input id="m_wt" type="number" step="0.5" min="0" data-f="win"></label>
 <label>Opening width<input id="m_wo" type="number" step="0.5" min="0" data-f="win"></label>
-<label>Narrowest width (middle)<input id="m_wi" type="number" step="0.5" min="0" placeholder="half the opening" data-f="inner"></label>
-<label style="grid-column:1/-1">Narrowest height (middle)<input id="m_hi" type="number" step="0.5" min="0" placeholder="half the opening" data-f="inner"></label>
+<label>Narrowest width<input id="m_wi" type="number" step="0.5" min="0" placeholder="half the opening" data-f="inner"></label>
+<label style="grid-column:1/-1">Narrowest height (in the middle)<input id="m_hi" type="number" step="0.5" min="0" placeholder="half the opening" data-f="inner"></label>
 <label>Number of ribs<select id="m_nr"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
 <label>Rib band height<input id="m_rh" type="number" step="0.5" min="0" placeholder="12" data-f="ribs"></label>
 <label style="grid-column:1/-1">Rib sticks out by<input id="m_rd" type="number" step="0.1" min="0" placeholder="1.5" data-f="ribs"></label>
@@ -195,7 +196,7 @@ function render(){
   <div class="row" style="margin-top:6px"><span class="big">${t.litres==null?'–':Math.round(t.litres)+' L'}</span><span class="big">${t.percent==null?'':t.percent+'%'}</span></div>
   <div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div>
   <div class="mut" style="min-height:18px">${t.litres_standard!=null?'Measured shape · Magnus-style maths says '+Math.round(t.litres_standard)+' L':'&nbsp;'}</div>
-  <div class="row mut"><span>${t.level==null?'no reading yet':t.level+' mm to oil'} · battery ${t.battery??'–'}%</span><span>${readAt(t)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div></div>`}).join('')
+  <div class="row mut" style="flex-wrap:wrap;gap:2px 12px"><span style="white-space:nowrap">${t.level==null?'no reading yet':t.level+' mm to oil'} · battery ${t.battery??'–'}%</span><span style="white-space:nowrap">${readAt(t)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div></div>`}).join('')
   :'<div class="empty">No tanks yet: add one from the sensors below.</div>';
  $('found').innerHTML=S.found.length?S.found.map(f=>`<div class="card row"><div><b>${esc(f.name||f.mac)}</b><div class="mut">${f.rssi} dBm · ${ago(f.age)}${f.level!=null?' · '+f.level+' mm':''}</div></div><button class="pri" onclick="add('${okMac(f.mac)}')">Add</button></div>`).join('')
   :'<div class="empty">None heard right now. HAWKi monitors broadcast every few seconds; give it a minute.</div>';
@@ -262,8 +263,11 @@ function fill(c){$('f_name').value=c.name||'';$('f_shape').value=c.shape||'cuboi
  $('f_wm').value=c.window_model||'standard';for(const k in MF)$(k).value=c[MF[k]]??'';const r=c.ribs_cm||[];$('m_nr').value=r.length;ribInputs(r);wmShow()}
 function add(mac){cur=mac;curLevel=(S.found.find(f=>f.mac==mac)||{}).level??null;$('dlgT').textContent='Add tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='hidden';fill({});fromList();dlg.showModal()}
 function edit(mac){const t=S.tanks.find(x=>x.mac==mac);cur=mac;curLevel=t.level;$('dlgT').textContent='Edit tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='visible';fill(Object.assign({name:t.name},t.cfg));fromList();dlg.showModal()}
-function preset(){$('f_shape').value='cuboid';$('f_windows').value=2;if(!$('f_top').value&&$('f_out').value===''){$('f_top').value=130;$('f_out').value=8.5}/* never re-base a height already there */$('f_l').value=178;$('f_w').value=75;$('f_c').value=1323;wmShow()}
-function fromList(){const o=S.tanks.filter(t=>t.mac!==cur);$('m_from').innerHTML=o.length?o.map(t=>`<option value="${okMac(t.mac)}">${esc(t.name)}</option>`).join(''):'<option value="">no other tanks yet</option>';$('m_from').disabled=$('m_copy').disabled=!o.length}
+// a Titan R1225 as measured on one (heights from the ground; capacity checked against a metered delivery)
+const R1225={shape:'cuboid',windows:2,height_cm:123,outlet_cm:9.5,length_cm:178,width_cm:75,tank_l:1315,window_model:'measured',
+ win_bottom_cm:45,win_top_cm:79,win_outer_w_cm:39,win_inner_w_cm:17,win_inner_h_cm:14,ribs_cm:[31.5,62.5,93.5],rib_h_cm:12.5,rib_depth_cm:1.5};
+function preset(){fill(Object.assign({},R1225,{name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value}))}
+function fromList(){const o=S.tanks.filter(t=>t.mac!==cur);$('m_from').innerHTML=o.map(t=>`<option value="${okMac(t.mac)}">${esc(t.name)}</option>`).join('');$('m_row').style.display=o.length?'':'none'}
 function copyFrom(){const t=S.tanks.find(x=>x.mac===$('m_from').value);if(!t)return;const keep={name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value};fill(Object.assign({},t.cfg,keep))}
 async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:Math.round((hfOf()??0)*100)/100,outlet_cm:$('f_out').value===''?null:+$('f_out').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,tank_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,window_model:$('f_wm').value};
  if(!(b.height_cm>=10)){alert('The monitor must be at least 10 cm above the top of the outlet.');return false}
