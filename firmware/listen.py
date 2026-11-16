@@ -20,7 +20,12 @@ class Listener:
 
     def heard(self, mac, raw, level, t):
         """A tank sensor's advert. Returns a (time, level) to save, or None."""
+        if t < 1700000000:  # clock not set yet (just after boot): times would be meaningless
+            return None
         e = self.s.get(mac)
+        last = None if e is None else (e['chg'] if e['chg'] is not None else e['first'])
+        if e is not None and (t < last or t - last > 7 * 86400):
+            e = None  # the clock jumped: start this sensor afresh
         if e is None:  # first advert since boot: its reading is of unknown age; wait for the next one
             self.s[mac] = {'raw': raw, 'chg': None, 'period': PERIOD, 'next': None, 'first': t, 'saved': None}
             return None

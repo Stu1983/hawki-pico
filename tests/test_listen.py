@@ -41,13 +41,14 @@ ok(not L.due([A, B], T0 + 3 * 3600 + 300), 'both learned -> free')
 # a sensor whose payload never changes still gets saved hourly
 C = 'aa:bb:cc:00:00:03'
 M = Listener()
-M.heard(C, 'x', 900, 0)
-saved = [t for t in range(4, 6 * 3600, 4) if M.heard(C, 'x', 900, t)]
+B0 = 1_800_000_000
+M.heard(C, 'x', 900, B0)
+saved = [t - B0 for t in range(B0 + 4, B0 + 6 * 3600, 4) if M.heard(C, 'x', 900, t)]
 ok(len(saved) in (4, 5) and saved[0] >= 2 * 3600, 'unchanging payload: saved hourly after 2 h (%d saves)' % len(saved))
 # drifting sensor clock: +20 s an hour is tracked
 D = Listener()
-D.heard(A, 'p', 1, 0)
-t = 1000
+D.heard(A, 'p', 1, 1_800_000_000)
+t = 1_800_001_000
 ok_window = False
 for i in range(1, 30):
     t += 3620
@@ -58,7 +59,13 @@ for i in range(1, 30):
 ok(ok_window, 'clock drift of 20 s/h stays inside the window (period %s)' % D.info(A)['period'])
 # the clock corrected backwards by a day after a reading: listening resumes instead of waiting a day
 E = Listener()
-E.heard(A, 'q0', 1, 100000)
-E.heard(A, 'q1', 1, 100004)
-ok(E.due([A], 100004 - 86400), 'clock moved back a day -> listens again')
+E.heard(A, 'q0', 1, 1_800_100_000)
+E.heard(A, 'q1', 1, 1_800_100_004)
+ok(E.due([A], 1_800_100_004 - 86400), 'clock moved back a day -> listens again')
+# adverts heard before the clock is set must not trigger the 'unchanging payload' save once it is
+F = Listener()
+F.heard(A, 'z', 700, 5)              # clock not set yet (1970)
+F.heard(A, 'z', 700, 1_800_000_000)  # NTP has set it: same payload
+ok(F.heard(A, 'z', 700, 1_800_000_060) is None, 'clock set after boot: no spurious save')
+ok(F.due([A], 1_800_000_060), 'still listening for the first real reading')
 sys.exit(1 if fails else 0)
