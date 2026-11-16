@@ -310,9 +310,23 @@ async def update_guard():
 manifest = [None]
 
 
+def name_key(name):
+    """Natural sort: 'Tank 2' before 'Tank 10', case ignored."""
+    out, num = [], ''
+    for c in str(name).lower() + ' ':
+        if c.isdigit():
+            num += c
+            continue
+        if num:
+            out.append((0, int(num), ''))
+            num = ''
+        out.append((1, 0, c))
+    return out
+
+
 def state():
     now = time.time()
-    tanks = [tank_view(m, t, now) for m, t in cfg['tanks'].items()]
+    tanks = sorted((tank_view(m, t, now) for m, t in cfg['tanks'].items()), key=lambda v: name_key(v['name']))
     found = []
     for m, d in hawki.items():
         if m in cfg['tanks'] or now - d['rx'] > 900:
