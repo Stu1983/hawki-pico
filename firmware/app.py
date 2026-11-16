@@ -72,7 +72,41 @@ cfg = load_cfg()
 TOKEN = cfg['token']
 led = machine.Pin('LED', machine.Pin.OUT)
 hawki = {}   # mac -> latest decoded reading
-seen = {}    # mac -> every BLE device heard (debug)
+seen = {}    # mac -> BLE devices heard lately (debug + names); pruned, see prune_seen()
+SEEN_MAX = 60
+SEEN_AGE = 600  # forget other devices (phones change address every ~15 min) after 10 minutes
+
+
+def prune_seen(all_others=False):
+    # Long-lived little objects scattered through the heap chop it up, and a secure (TLS) connection
+    # needs one big unbroken block of ~40 KB: keep this list short.
+    old = time.time() - SEEN_AGE
+    for k in list(seen):  # a snapshot: the BLE callback can add devices between our steps
+        e = seen.get(k)
+        if e is not None and k not in cfg['tanks'] and (all_others or e.get('last', 0) < old):
+            if k not in hawki:  # (re-checked last: the callback may have just identified it)
+                seen.pop(k, None)
+
+
+def make_room():
+    # before a TLS connection: drop the debug list and collect, so the biggest free block is as big as it gets
+    try:
+        prune_seen(True)
+    except Exception:  # even out of memory: carry on with the action
+        pass
+    gc.collect()
+
+
+def with_room(fn, *a):
+    # one retry when the heap was too chopped up for TLS (MemoryError, or mbedtls' OSError ENOMEM)
+    make_room()
+    try:
+        return fn(*a)
+    except Exception as ex:
+        if not (isinstance(ex, MemoryError) or getattr(ex, 'errno', None) == 12 or (ex.args and ex.args[0] == 12)):
+            raise
+    make_room()
+    return fn(*a)
 boot = time.time()
 boot_ms = time.ticks_ms()
 
@@ -99,7 +133,8 @@ def irq(ev, data):
         k = binascii.hexlify(bytes(addr), ':').decode()
         e = seen.get(k)
         if e is None:
-            if len(seen) > 200 and k not in cfg['tanks']:  # memory guard (never shuts out our own tanks)
+            if (len(seen) >= SEEN_MAX and k not in cfg['tanks'] and k not in hawki
+                    and not (adv_type == 0 and HAWKI_UUID in bytes(adv))):  # memory guard (never shuts out a HAWKi, even a new one)
                 return
             e = seen[k] = {'at': at, 'n': 0, 'max': rssi, 'name': '', 'adv': {}}
         e['n'] += 1
@@ -129,7 +164,7 @@ def irq(ev, data):
         lst = e['adv'].setdefault(str(adv_type), [])
         if h not in lst:
             lst.append(h)
-            if len(lst) > 4:
+            if len(lst) > 2:
                 lst.pop(0)
     elif ev == 6:  # _IRQ_SCAN_DONE (stopped or mode change): carry on in the wanted mode, if any
         scan_running[0] = False
@@ -184,6 +219,9 @@ def discover(secs):
     discover_until[0] = time.ticks_add(time.ticks_ms(), secs * 1000)
 
 
+pruned = [0]
+
+
 async def scan_scheduler():
     # Listen only when it's useful: while a tank's hourly reading is due (until it arrives), and
     # actively while looking for sensors (first minutes after boot, or the Sensors nearby list is open).
@@ -200,6 +238,9 @@ async def scan_scheduler():
             else:
                 mode = None
             want_scan(mode)
+            if time.ticks_diff(time.ticks_ms(), pruned[0]) > 60000:
+                pruned[0] = time.ticks_ms()
+                prune_seen()
         except Exception as ex:
             print('scan err', ex)
         await asyncio.sleep(2)
@@ -516,6 +557,7 @@ def set_notify(b):
 
 async def send_alert(title, msg, urgent=False):
     await asyncio.sleep(0)
+    make_room()
     res = notify.send(cfg.get('notify'), title, msg, urgent)  # blocks ~1-2 s per channel (TLS)
     print('notify', title, res)
     return res
@@ -993,7 +1035,7 @@ async def handle(r, w):
         if path == '/api/update/check':
             try:
                 import updater
-                res = updater.check(VERSION)
+                res = with_room(updater.check, VERSION)
                 manifest[0] = res.pop('manifest')
             except Exception as ex:
                 res = {'current': VERSION, 'error': str(ex) or repr(ex)}
@@ -1005,10 +1047,11 @@ async def handle(r, w):
             installing[0] = True
             try:
                 import updater
-                m = manifest[0] or updater.check(VERSION)['manifest']
+                m = manifest[0] or with_room(updater.check, VERSION)['manifest']
                 if updater.vtuple(m['version']) <= updater.vtuple(VERSION):
                     installing[0] = False
                     return await send(w, 400, json.dumps('Already up to date'))
+                make_room()
                 v = updater.install(m, VERSION)
             except Exception as ex:
                 gc.collect()
