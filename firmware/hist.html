@@ -312,7 +312,8 @@ async function fitCap(){const gen=++FITGEN,box=$('fit');FIT=null;box.textContent
    if(!(sb>0)){x=Math.round(x*1.5);continue}/* flat here (some shapes): look further out */const nx=Math.round(sa/sb);if(!isFinite(nx)||nx<1||nx>200000)break;if(Math.abs(nx-x)<1){x=nx;break}x=nx}
   if(best[0]!==Math.round(x)&&x>=1&&x<=200000){const kx=await cv(x);if(gen!==FITGEN)return;const ex=err(kx);if(ex<best[1])best=[Math.round(x),ex]}}catch(e){if(!best)return}
  if(!best||gen!==FITGEN)return;const fit=best[0],n=xs.length;box.textContent='';
- box.textContent='Tank capacity that fits '+(n===1?'this delivery':'these '+n+' deliveries')+' best: '+fit.toLocaleString()+' L (set now: '+Math.round(base).toLocaleString()+' L).'+(n===1?' One delivery is a rough guide; it firms up with more.':'');
+ const what=n===1?'this delivery':'these '+n+' deliveries',same=Math.abs(fit-base)<1,rough=n===1?' One delivery is a rough guide; it firms up with more.':'';
+ box.textContent=same?'Your tank capacity ('+Math.round(base).toLocaleString()+' L) fits '+what+'.'+rough:'A tank capacity of '+fit.toLocaleString()+' L would fit '+what+' better than your '+Math.round(base).toLocaleString()+' L.'+rough;
  if(Math.abs(fit-base)>=1){FIT={mac,v:fit};const b=document.createElement('button');b.textContent='Use '+fit.toLocaleString()+' L';b.style.marginLeft='8px';b.onclick=useFit;box.append(' ',b)}}
 async function useFit(){if(!FIT||!T||FIT.mac!==T.mac||!confirm('Set the tank capacity to '+FIT.v+' L? Every reading and the history will be re-worked with it.'))return;
  const b=Object.assign({},T.cfg,{mac:T.mac,name:T.name,tank_l:FIT.v});delete b.tank_l_equiv;
