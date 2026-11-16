@@ -258,7 +258,7 @@ function tiles(){
  renderDeliveries();costs();
  const h=$('how');h.textContent='';
  const p=s=>{const e=document.createElement('p');e.style.margin='0 0 8px';e.textContent=s;h.appendChild(e)};
- p('The Pico saves one reading an hour for each tank (about 50 KB a year), so this history keeps growing for years.');
+ p('The Pico keeps one reading an hour for each tank for 2 years (about 50 KB a year), then one a day (about 2 KB a year), so there is room for decades of history.');
  if(!ok){p('Forecasts start once there are 2 days of readings.');return}
  p(howText(A));}
 
