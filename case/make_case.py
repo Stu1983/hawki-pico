@@ -34,6 +34,13 @@ PLUG_W, PLUG_H, PLUG_R = 11.0, 7.5, 2.0       # opening for the cable's plug (9.
 LIP, LIP_CLR = 3.0, 0.2                        # lid lip depth, clearance per side (PETG friction fit)
 EAR, SCREW_D, HEAD_D = 11.0, 4.5, 8.5          # screw ears for ~4 mm wood screws, countersunk
 TEXT, SUB = 'Oil Monitor', 'HAWKi'
+# cable-tie strain relief off the USB end: a tab, then a saddle (past the plug's 20 mm overmould) with a groove for the
+# cable and a slot under it for the tie
+PLUG_LEN = 20.0                                # straight plug overmould length out of the case
+TAB_OUT, TAB_WIDE, TAB_THK = 32.0, 16.0, 4.0   # how far the tab sticks out, its width and thickness
+SAD_L, SAD_W = 8.0, 12.0                       # saddle length (along the cable) and width
+CABLE_D = 4.0                                  # cable groove fits up to this diameter
+TIE_W, TIE_H = 5.0, 2.2                        # tie slot (ties up to ~4.8 x 1.5)
 # flexible BOOTSEL button: a tongue cut from the lid, hinged on the side away from USB, flexing along the print layers
 TAB_W, TAB_LEN, TAB_TIP, SLOT = 7.0, 12.0, 2.5, 0.8   # width, hinge to tip, tip past the button centre, slot round it
 TAB_T = 1.44                                   # tongue thickness (the lid is thinned under it)
@@ -100,6 +107,20 @@ def base():
     cuts = [cav, plug]
     for y in (-EAR / 2, OUT_W + EAR / 2):
         cuts += [cyl(OUT_L / 2, y, -1, 5, SCREW_D), cone(OUT_L / 2, y, 4 - (HEAD_D - SCREW_D) / 2, 4.01, SCREW_D, HEAD_D)]
+    # strain relief: tab + saddle, cable groove on top at the cable's height, tie slot through under it
+    cy = Y0 + PCB_W / 2
+    sx1 = -(PLUG_LEN - WALL) - 3.0                 # saddle starts 3 mm past the end of the plug overmould
+    sx0 = max(sx1 - SAD_L, -TAB_OUT + 2)
+    groove_bot = usb_z - CABLE_D / 2
+    tab = rbox(-TAB_OUT, cy - TAB_WIDE / 2, 0, 3.0, cy + TAB_WIDE / 2, TAB_THK, 3)
+    saddle = rbox(sx0, cy - SAD_W / 2, 0, sx1, cy + SAD_W / 2, groove_bot + 1.2, 1.5)
+    body = U(body, tab, saddle)
+    groove = cyl(0, 0, sx0 - 1, sx1 + 1, CABLE_D + 0.4)
+    groove.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
+    groove.apply_translation(((sx0 + sx1) / 2 - groove.centroid[0], cy - groove.centroid[1], usb_z - groove.centroid[2]))
+    slot_top = groove_bot - 1.6
+    tie = box((sx0 + sx1) / 2 - TIE_W / 2, cy - SAD_W / 2 - 1, slot_top - TIE_H, (sx0 + sx1) / 2 + TIE_W / 2, cy + SAD_W / 2 + 1, slot_top)
+    cuts += [groove, tie]
     body = D(body, *cuts)
     posts = []
     for x, y in holes:

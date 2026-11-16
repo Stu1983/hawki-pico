@@ -8,10 +8,11 @@ A wall- or beam-mounted case for the Pico 2 W, with or without headers. ![previe
 | `hawki_lid_2colour.3mf` | Lid, already **face down**, with "Oil Monitor", the oil drop and "HAWKi" as a second object: give it the second filament (H2D: assign the other nozzle). The text is inlaid flush, 0.6 mm deep. |
 | `hawki_lid.stl` + `hawki_lid_text.stl` | The same lid as two STLs, the right way up (flip them face down in the slicer). |
 
-**Settings:** PETG, 0.2 mm layers, 3 walls, 20% infill. Use the default inner-then-outer wall order. Outside: 57.5 × 26.2 × 18.5 mm, 48 mm wide across the screw ears. Use about 4 mm countersunk wood screws.
+**Settings:** PETG, 0.2 mm layers, 3 walls, 20% infill. Use the default inner-then-outer wall order. Outside: 57.5 × 26.2 × 18.5 mm, 48 mm wide across the screw ears, plus the 32 mm strain-relief tab at the USB end. Use about 4 mm countersunk wood screws.
 
 **Fitting:**
 - Drop the Pico onto the four pegs, USB end towards the opening. The pegs hold it 10 mm up, so soldered headers fit underneath.
+- Plug the USB cable in, lay it in the groove on the saddle at the end of the tab, and pass a cable tie (up to 4.8 mm wide) through the slot under it. That takes the strain off the Pico's USB socket. The saddle sits just past a 20 mm plug moulding; change `PLUG_LEN` if yours is longer. ![strain relief](preview_strain_relief.png)
 - Push the lid on: its posts hold the board down. The lid is a friction fit, so prise it off at the corners.
 
 **Button and LED:**
