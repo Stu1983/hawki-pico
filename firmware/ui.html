@@ -386,8 +386,11 @@ async function dash(){if(!S.update)return;const t=S.tanks.find(x=>x.mac===S.prim
  const u=t.unusable;$('d_l2').textContent=(t.percent!=null?t.percent+'% · ':'')+(u?'(+ '+(u[1]==='estimate'?'about ':'')+L0(u[0])+' unusable below the outlet)':'(unusable amount not set: Tanks → Edit)');
  $('d_bar').style.width=Math.max(0,Math.min(100,t.percent??0))+'%';
  const ok=A.recent!=null&&A.span>=2;
- $('d_r').textContent=ok?A.recent.toFixed(1)+' L/day':'–';$('d_r2').textContent=ok?Math.round(A.recentDays)+'-day average':(P.length?'needs 2 days of readings':'no readings yet');
- const av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–';$('d_r3').textContent=ok?'7-day '+av(7)+' · 3-day '+av(3):' ';
+ // shortest first: the 3-day average big (once there are 3 days), then 7-day and 14-day; the forecast uses the 14-day
+ const av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;
+ $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
+ $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average':(P.length?'needs 2 days of readings':'no readings yet');
+ $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';
  const wt=$('d_wt');wt.className='card tile';
  if(ok){const c=A.cautious,l=A.likely,wk=x=>(x-now)/(7*DAY);
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
