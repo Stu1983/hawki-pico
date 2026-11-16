@@ -1,11 +1,11 @@
 {
- "version": "1.2.5",
- "ref": "v1.2.5",
- "notes": "Fixes 'ENOMEM' when checking for updates or sending alerts after the Pico has run for a long time. Includes 1.2.1-1.2.4.",
+ "version": "1.2.6",
+ "ref": "v1.2.6",
+ "notes": "Tank settings take one capacity: the whole tank, as on the spec sheet. The oil below the outlet is worked out from your heights. After a delivery, adjust the capacity until the history page's 'sensor saw' matches the delivery note. Includes 1.2.1-1.2.5 (incl. the ENOMEM fix).",
  "files": {
   "app.py": [
-   "feb6cb97dd7dd7efb68424f8c6b59af745e85fe3b821efcbb96856310c0d0eee",
-   46589
+   "fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6",
+   47902
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -40,24 +40,24 @@
    4530
   ],
   "tankcalc.py": [
-   "688642de44b8eeaa3e5f29a330f75c41d6881464f32e74f2a8e99d2627d1018f",
-   6077
+   "defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12",
+   8204
   ],
   "ui.html": [
-   "debaa8874535598f75be5eb5277b9f4a76800e0caa3c7b681bca1644a35d56b1",
-   51356
+   "c793f3f4d24fff25cf2143b0a4ab380648f07e925df211fa5325ec84d36642cd",
+   51003
   ],
   "updater.py": [
    "b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b",
    9064
   ],
   "version.py": [
-   "775914c87ed8e9f16a768febb123edbce43d10225090aa87235ca905d6a46a17",
+   "1f12fc84377ed2a0b0d2038b1dcaf27ebbf1108598caa9ee6a2bd5ad443658f7",
    18
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"feb6cb97dd7dd7efb68424f8c6b59af745e85fe3b821efcbb96856310c0d0eee\", 46589], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"688642de44b8eeaa3e5f29a330f75c41d6881464f32e74f2a8e99d2627d1018f\", 6077], \"ui.html\": [\"debaa8874535598f75be5eb5277b9f4a76800e0caa3c7b681bca1644a35d56b1\", 51356], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"775914c87ed8e9f16a768febb123edbce43d10225090aa87235ca905d6a46a17\", 18]}, \"notes\": \"Fixes 'ENOMEM' when checking for updates or sending alerts after the Pico has run for a long time. Includes 1.2.1-1.2.4.\", \"ref\": \"v1.2.5\", \"version\": \"1.2.5\"}",
-  "sig": "0a4a7b2b5de16cc2ef1d1bcaa1667cfc445f38a23a7c2d0e4edf9afcb28a365b469fd99d02287b5b57163f3b6ce30665744d020967acd627c0e9b22b0aab3ff25490ca5967f1ecb5e237af8e647aad17843f273d95e6dfb9278fdfa64c1aedb6f4db38fbedd9b3f9d98bdfb3948d682840f5b31b6b8f0fd0eb6fe7874da443b503809fe44313ed4c4e2cf4da8e5806070a7b9281b4b32599e6d5386edbf938c08a678ba200dfb7116dbf8ffc0cf21a2c3a8064acf2c369404ae6b950f159e3aa3518492549b9ca3a49022954ee342e1846cc3c75a533670a581751facbf56427a60205e30496e8afbbfae3c39dc93fb750c82510ddb9c4ba038460c3b69027d2"
+  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"c793f3f4d24fff25cf2143b0a4ab380648f07e925df211fa5325ec84d36642cd\", 51003], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"1f12fc84377ed2a0b0d2038b1dcaf27ebbf1108598caa9ee6a2bd5ad443658f7\", 18]}, \"notes\": \"Tank settings take one capacity: the whole tank, as on the spec sheet. The oil below the outlet is worked out from your heights. After a delivery, adjust the capacity until the history page's 'sensor saw' matches the delivery note. Includes 1.2.1-1.2.5 (incl. the ENOMEM fix).\", \"ref\": \"v1.2.6\", \"version\": \"1.2.6\"}",
+  "sig": "6a9ba333838ba7a84e77aae8df7f8ac6c35903cd19d46e29a08a33c974ef948e41ed5b3669258eb1c243ec62174d888eae1bbbb14044f6b6dcbab026a1f0cce78d124dfaa9586726b5d87dbcbf3e318c83ddf991fc5b5203a71790a7f6afa37907004e27aba85bc9cf21d655e5ca5a92b083153d34db5aafa4857f1f1cc40c2c66dc16dc1cd5c6e9ec7ba942bbf47cd9a081b4ceea0d9a7ff1472e9915ad723cd5dcf777996eafc4e621864f35f42d8c1546d1097b100370d79964984c8c23e2ebf5428922132f771162f00d51bd0a7de50e03569dbc6a0b0aedc8da203e56b506156ede6ee523ac42252df79bcdd73c41b96a1ee3221ee9a879ee7ec6520c5c"
  }
 }
