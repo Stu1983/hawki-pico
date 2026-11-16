@@ -1,7 +1,7 @@
 {
- "version": "1.2.21",
- "ref": "v1.2.21",
- "notes": "Dashboard tank drawing: the reorder line runs into the ribs.",
+ "version": "1.2.22",
+ "ref": "v1.2.22",
+ "notes": "One forecast with nothing added (the 25% cautious margin is gone). With a previous year of data, it scales by how this year compares over up to a whole year, so a steady change carries forward.",
  "files": {
   "app.py": [
    "095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b",
@@ -12,8 +12,8 @@
    7065
   ],
   "common.js.html": [
-   "14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824",
-   10488
+   "55df1935462611e18fe76cac107ca9a8a75b8f22669ae00325f05bb85ac5a37f",
+   11046
   ],
   "drops.py": [
    "bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81",
@@ -24,8 +24,8 @@
    2120
   ],
   "hist.html": [
-   "38c9e22ddc174ee645565dbd4efa386e3c4b9fbb73f6b294daf562ace5002774",
-   37201
+   "012fc31f5df8966f02e77f7cc9ac1c4037aa8f883a0b252c30fb503509494f8d",
+   37005
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
@@ -44,20 +44,20 @@
    8588
   ],
   "ui.html": [
-   "f590ceb442f85acd362c5cb2824babde4bf226d5dbb18ec07c7493198051374e",
-   56870
+   "053e774404df9315ebb3c370b2b0292fe0f28a90bffe3a230a5082debd9aab35",
+   56808
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "55e75f3023d5d5fe0ada9dc5f075c1fdec1410f4693cd20ab0edf68d5d3c786a",
+   "b09fbb6b3866fd1a0a0add40b8013825dd98e4cf92a1f8e28d436fc264efcf40",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b\", 52263], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"38c9e22ddc174ee645565dbd4efa386e3c4b9fbb73f6b294daf562ace5002774\", 37201], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"f590ceb442f85acd362c5cb2824babde4bf226d5dbb18ec07c7493198051374e\", 56870], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"55e75f3023d5d5fe0ada9dc5f075c1fdec1410f4693cd20ab0edf68d5d3c786a\", 19]}, \"notes\": \"Dashboard tank drawing: the reorder line runs into the ribs.\", \"ref\": \"v1.2.21\", \"version\": \"1.2.21\"}",
-  "sig": "7f43dee00b3ef13f1b99b611c6d801f38d89cc2418c5d1e5d397d491a77715d4097ba235e86d2ecd565fa10d08dcffd3733eed7f341b32d67494260e0a03d9db5bfb2c20cc5b0cf4619fee84aa516de8918e4a0c7dcd917d92b84f3f5e6df4416ac4881a57d1cfb1308a9d004615bfb24b4eb47bd52688688d1e1a5ad45fd382882314a841b6da03bb29c3e6ca4af0ab202bcdc78b4f74c0396e25524546c7656daf29ce50aefe398bd5f7c9fc3f07569a4462f07a920a29dc5bd41be7f4585afccce573c2066aca4f5b4923d7ae550befff6b2cd23cea7f1a6253212c6a161443805a61bebc54f9c31c813b058efb18ce59684e368c72b435224db2bb1b3b37"
+  "body": "{\"files\": {\"app.py\": [\"095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b\", 52263], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"55df1935462611e18fe76cac107ca9a8a75b8f22669ae00325f05bb85ac5a37f\", 11046], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"012fc31f5df8966f02e77f7cc9ac1c4037aa8f883a0b252c30fb503509494f8d\", 37005], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"053e774404df9315ebb3c370b2b0292fe0f28a90bffe3a230a5082debd9aab35\", 56808], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"b09fbb6b3866fd1a0a0add40b8013825dd98e4cf92a1f8e28d436fc264efcf40\", 19]}, \"notes\": \"One forecast with nothing added (the 25% cautious margin is gone). With a previous year of data, it scales by how this year compares over up to a whole year, so a steady change carries forward.\", \"ref\": \"v1.2.22\", \"version\": \"1.2.22\"}",
+  "sig": "78a2269a3a65b0034dced83653d4057ef06a9b2007aaeece86c17af60f98a5b64a98d2fd6d47a49543c46ce56ef9f1323f2d9b8c5cd3a9c5ec413027ee7783df3a11b4a07fb2f67207d8899f04c4ebf8f2d991b9c1233a5168eecf396a370696fc8e0182177446d2c6ffab15cb2162bc9f54036f5d189a75323b4feaaa3a42787fc5294f71f2bfac8430f004672cb4ed3be14047c98c456f048c7916e640ba6b3f4038e65197e642637b97e8c95d3b23be36c9ed37603f188f66ddc1c63a0d51b373fdf937b0b0bef6e96169fb78a51689a8062bd05ab583eb33a6d16c269827f9986ddf873cda8d71c2c7935daeea3e5153c22c9756edaf5aa2de855874726a"
  }
 }
