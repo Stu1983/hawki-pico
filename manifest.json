@@ -1,11 +1,11 @@
 {
- "version": "1.2.3",
- "ref": "v1.2.3",
- "notes": "Copy a tank's shape and measurements from another tank. Capacity is now 'above the outlet' (a Titan R1225 is about 1180 L there); the R1225 button fills in 121.5 cm / 1180 L. Includes 1.2.1-1.2.2: scheduled listening, Pushover/ntfy alerts, 3/7/14-day averages.",
+ "version": "1.2.4",
+ "ref": "v1.2.4",
+ "notes": "Tank settings now ask for the height from the ground to the monitor and to the top of the outlet (the fill height is worked out). The drawing shows the whole tank, with oil below the outlet dashed as unusable. Includes 1.2.1-1.2.3.",
  "files": {
   "app.py": [
-   "87aa2f27765bd5bf942e6bdd5369f901dd762a8107ec8a486ffb9b395f7252fa",
-   44760
+   "60292e9e974b4a6d6edd58e9d2758eac5d679955687d7de232da47272d5f5a3c",
+   44906
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -44,20 +44,20 @@
    6077
   ],
   "ui.html": [
-   "f35bfba1e563e958df365a88c21eb219df2a00978e851f47a893a90dbe434aea",
-   50180
+   "debaa8874535598f75be5eb5277b9f4a76800e0caa3c7b681bca1644a35d56b1",
+   51356
   ],
   "updater.py": [
    "b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b",
    9064
   ],
   "version.py": [
-   "3ace16991ef60a0043ac7d8eaeecbd3859dfc8568c81a401051cd3d646ead2ba",
+   "b5edfedf4b3f2dd520b64c05c66a8d633a4dd72e9342c4f94d69b62d9c36adde",
    18
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"87aa2f27765bd5bf942e6bdd5369f901dd762a8107ec8a486ffb9b395f7252fa\", 44760], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"688642de44b8eeaa3e5f29a330f75c41d6881464f32e74f2a8e99d2627d1018f\", 6077], \"ui.html\": [\"f35bfba1e563e958df365a88c21eb219df2a00978e851f47a893a90dbe434aea\", 50180], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"3ace16991ef60a0043ac7d8eaeecbd3859dfc8568c81a401051cd3d646ead2ba\", 18]}, \"notes\": \"Copy a tank's shape and measurements from another tank. Capacity is now 'above the outlet' (a Titan R1225 is about 1180 L there); the R1225 button fills in 121.5 cm / 1180 L. Includes 1.2.1-1.2.2: scheduled listening, Pushover/ntfy alerts, 3/7/14-day averages.\", \"ref\": \"v1.2.3\", \"version\": \"1.2.3\"}",
-  "sig": "3476be959885d30d2582e7f1151e216117bdae4e61df16fa1ece4583a26e8e60014be167db7852b9ce3550088cefcdfc72a8e8d7d206edda3ec9e61b38a96696f25ea6d308c339c050a5fa2139bfb8c2b2a21e4b085499d4e63660e9e9d7402f4401f3333f75d92d0139cc858c204e4e8f251e12ffb01117a895b47565918835a5d96e56260c55781f67159d1016c26ae87b9c300b5c638925facd212ee5d3826f01e0cc874fecd2f162a12f49ac58e2fc95534ddb75617c997e7d6e41717368deb2e1b33407aae8ffd51ffc6d45c8ed40ab6f43a66581f19e5eb65fbad62cb3e85b80a15565600c6eaa16b62df5b2f55eb0446cb87d6a33df128ded1528a2c1"
+  "body": "{\"files\": {\"app.py\": [\"60292e9e974b4a6d6edd58e9d2758eac5d679955687d7de232da47272d5f5a3c\", 44906], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"688642de44b8eeaa3e5f29a330f75c41d6881464f32e74f2a8e99d2627d1018f\", 6077], \"ui.html\": [\"debaa8874535598f75be5eb5277b9f4a76800e0caa3c7b681bca1644a35d56b1\", 51356], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"b5edfedf4b3f2dd520b64c05c66a8d633a4dd72e9342c4f94d69b62d9c36adde\", 18]}, \"notes\": \"Tank settings now ask for the height from the ground to the monitor and to the top of the outlet (the fill height is worked out). The drawing shows the whole tank, with oil below the outlet dashed as unusable. Includes 1.2.1-1.2.3.\", \"ref\": \"v1.2.4\", \"version\": \"1.2.4\"}",
+  "sig": "92c2b44fa72aa18bcdeb4dd720d1e8f3f8684452345f76190f0b87d001be901e664f345a12c0438cdbfe28bd550a5efc6605cb9dc2ca78ef9a4c26863f40a1e113a040aaad044b168c0764b0955e7ed831b8d228289951b1a9328bb1a10fff9e9bb91a3e1cbec8f2b6b6dd2b830b87686c0441264f38d845df081b5024e86dd72d24bb2210d90598fce826753258d748f6ad68b3e88c35e3793c7b887ead0291c95704036b9561985357b3127d724f3ae8f149f9df5aba189bb77e7840cf5b1b2b70499cfac64a67ddc27c079ddb0fd501de2074e53a72f661dfdf1b244e7812e6e569215c67e0f2f728bdf790c41da784bdfb1d06355de7b6c076e4068da7ff"
  }
 }
