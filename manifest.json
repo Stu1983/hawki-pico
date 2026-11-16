@@ -1,7 +1,7 @@
 {
- "version": "1.2.14",
- "ref": "v1.2.14",
- "notes": "Alert if a monitor goes quiet (no new reading for 6 hours): a flat battery or out of range. Includes the low-battery alert and the 3-day-first Using tile.",
+ "version": "1.2.15",
+ "ref": "v1.2.15",
+ "notes": "Dashboard tank drawing: oil fills the hollow ribs up to the level. Includes the low-battery and no-readings alerts.",
  "files": {
   "app.py": [
    "825633c7bbc9382efb687119b942d41cc3fa6315c15a226f6f0b50b26039660c",
@@ -44,20 +44,20 @@
    8204
   ],
   "ui.html": [
-   "80c0e64c12cb456084f5904f6d1483bbba28321c89efcbb7b3383d408abde603",
-   55372
+   "0a1eee3135f05561cfe882b7e0c372a5dfe359353bb689dd707ab124bbf596bd",
+   55777
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "5f428f07aad6dfa1061f55ec75c39d4a58594b59ffaf7ed7ee8d3af5813a8887",
+   "88a7b9bacd80187d0dc0ff757f8bc4ad18523bb9b513a0456838d69b40e206ac",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"825633c7bbc9382efb687119b942d41cc3fa6315c15a226f6f0b50b26039660c\", 51933], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"80c0e64c12cb456084f5904f6d1483bbba28321c89efcbb7b3383d408abde603\", 55372], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"5f428f07aad6dfa1061f55ec75c39d4a58594b59ffaf7ed7ee8d3af5813a8887\", 19]}, \"notes\": \"Alert if a monitor goes quiet (no new reading for 6 hours): a flat battery or out of range. Includes the low-battery alert and the 3-day-first Using tile.\", \"ref\": \"v1.2.14\", \"version\": \"1.2.14\"}",
-  "sig": "0369f49e37b87409c41d483ba6b5a61594d7b4defe16a56a3953c3412b463240b4b749f4bc11bd6e19c9fc8325dac74fe5f1f5aef84d9ffc535e2ffe6bec1facfe6af0afca9d1a6225330c5c21c1af25ff40f7b5a283c409cb9c174b26acd63edbfee279b7b1b89dd68d38dba118ba6f8313d97180b05d75cb13cb8539126a39906aa1d4e7129a95066a20067b23fbdbf3107f4ab4701539112e862702870e4a29969b9b809bab032c6ac4db0a5a5bb7abd4399c4eb143a495e43e0c26347f18eb1fd590053f8bd2c2a37744c7476a653d2521d959f0cd2f3873280ce07099d464fd5a25e53e2330d6a43670cd631ceb335c5b72d69c399223a570971e95c4fc"
+  "body": "{\"files\": {\"app.py\": [\"825633c7bbc9382efb687119b942d41cc3fa6315c15a226f6f0b50b26039660c\", 51933], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"0a1eee3135f05561cfe882b7e0c372a5dfe359353bb689dd707ab124bbf596bd\", 55777], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"88a7b9bacd80187d0dc0ff757f8bc4ad18523bb9b513a0456838d69b40e206ac\", 19]}, \"notes\": \"Dashboard tank drawing: oil fills the hollow ribs up to the level. Includes the low-battery and no-readings alerts.\", \"ref\": \"v1.2.15\", \"version\": \"1.2.15\"}",
+  "sig": "6c10ef8684c8309fdc3b5c74835d50677a3d2085d9b8ba3f0ba1904b9071ee638056f6d2bb518104d6ee4946c24dccc44f8c5c60aef83b0e491bb007ea4175869c274e712d4ec4dfab70badb01039e96e61acb804918b0e8473ab34ecfc837de7882e8c036316e138b72a6cb4a688b3becadad0ac25fc2f036d5208ab5d173f9000bb23f43c72abd36950cd25a9d51bc6d1a89cfe4c0fb4150b9660df822374e878076181fc804c3b794f4288c35c3180a8139a380725c8504116e14971db7395a8134e00b20a4db41cb06415896e28e3de3a42b263ec65ef3b29c7706b979deca5897e35a1aa3d429d832c76af54026374fd3c9eb2be571ac795288a32926d8"
  }
 }
