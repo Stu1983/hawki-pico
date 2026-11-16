@@ -1,7 +1,7 @@
 {
- "version": "1.2.17",
- "ref": "v1.2.17",
- "notes": "History page: each delivery shows the sensor's sum (85 L -> 585 L = 500 L) with the receipt underneath, and suggests the tank capacity that best fits your receipts (Use it with one tap).",
+ "version": "1.2.18",
+ "ref": "v1.2.18",
+ "notes": "Fixes the Pico running short of memory over time (tank maths kept too much), which could make updates and alerts fail. Includes 1.2.17's delivery sums and best-fit capacity.",
  "files": {
   "app.py": [
    "095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b",
@@ -40,8 +40,8 @@
    4530
   ],
   "tankcalc.py": [
-   "defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12",
-   8204
+   "0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6",
+   8588
   ],
   "ui.html": [
    "c749337a5a0400b8c83d8e3728ea65ee51e43bd699d6c4901e72b3d8f636fd7b",
@@ -52,12 +52,12 @@
    9943
   ],
   "version.py": [
-   "821b1fba8526133dfa39fcf1f18c24ae85877a2fc80d163fbf9673907d749663",
+   "5c7ddf621d21ab3b376d1091909c335f2040502c1a6a81bcab1d720c8a843cd7",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b\", 52263], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"3efd89f5e7823aabc3f9cc6cbeb74dc413943ede4a0e9a3557e162a88dc26e5c\", 37055], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"c749337a5a0400b8c83d8e3728ea65ee51e43bd699d6c4901e72b3d8f636fd7b\", 56055], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"821b1fba8526133dfa39fcf1f18c24ae85877a2fc80d163fbf9673907d749663\", 19]}, \"notes\": \"History page: each delivery shows the sensor's sum (85 L -> 585 L = 500 L) with the receipt underneath, and suggests the tank capacity that best fits your receipts (Use it with one tap).\", \"ref\": \"v1.2.17\", \"version\": \"1.2.17\"}",
-  "sig": "2abce58209c301bdaf894064c08a9fce1b3bcd8bd206e204a03899b64ed1d375bbc6276a8e36c212988a61f28c0f902736677965aa3c61f456ccf8a3e80f0d11dafce5f6f68a267d65418565a49fa20dcbc9d5531d712168db44c05378ef9af978d86a9a2137a6376b60985215a91b5e74131e425758e4c583087b04a8b068357a12d190c7433a72762750da1c833ccaa7d596d915aa72bf6febfe3ea582135df4a989f0d55d71ba547f0e0f5659a87e5ab532fb0dc158b86d4adf3cfb3525f560dde38273c6b30311c2dc23d6600a34db2f1c6e11ab8885ce956691e3863f8075c4bcdf69c584972c13947b92234bc593bfd5581bf1e5253c06b83a0d524f28"
+  "body": "{\"files\": {\"app.py\": [\"095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b\", 52263], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"3efd89f5e7823aabc3f9cc6cbeb74dc413943ede4a0e9a3557e162a88dc26e5c\", 37055], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"c749337a5a0400b8c83d8e3728ea65ee51e43bd699d6c4901e72b3d8f636fd7b\", 56055], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"5c7ddf621d21ab3b376d1091909c335f2040502c1a6a81bcab1d720c8a843cd7\", 19]}, \"notes\": \"Fixes the Pico running short of memory over time (tank maths kept too much), which could make updates and alerts fail. Includes 1.2.17's delivery sums and best-fit capacity.\", \"ref\": \"v1.2.18\", \"version\": \"1.2.18\"}",
+  "sig": "8878972acb30e9bbae09d4b05d66f68a6433c976e00e23e6acabb549fa4ed5d326397827b5614202427901de521fd851cdd99f568ca972465a772b7d448c4ccc8277eae9c20a33ad897e476350c46a62e862e00ace9f13acbe17074f0331eab01090e73b7a52b610f18b5dd0fcbb5f7ca50db0a76e53f834ed34004d77f4d64a0591b15fba65542bc2a6d88313b126cb41bb2ec25faf87a4a349396db693aa8e1225b89b82b6be2868b34bca9e8a7dbec3c4f43aa7417e098e2b3112674711a477218ac4719bd8d9b180aa4319b1cc977fdc87bbf5895b5bac6c6ea45d34bcc3b0bd87e9ee311b9a7a1b851c612f6a1aac13caa7de85b8436950f8245ada3d0d"
  }
 }
