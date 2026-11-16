@@ -1,7 +1,7 @@
 {
- "version": "1.2.18",
- "ref": "v1.2.18",
- "notes": "Fixes the Pico running short of memory over time (tank maths kept too much), which could make updates and alerts fail. Includes 1.2.17's delivery sums and best-fit capacity.",
+ "version": "1.2.19",
+ "ref": "v1.2.19",
+ "notes": "Clearer capacity line on the history page. Includes 1.2.18's memory fix.",
  "files": {
   "app.py": [
    "095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b",
@@ -24,8 +24,8 @@
    2120
   ],
   "hist.html": [
-   "3efd89f5e7823aabc3f9cc6cbeb74dc413943ede4a0e9a3557e162a88dc26e5c",
-   37055
+   "38c9e22ddc174ee645565dbd4efa386e3c4b9fbb73f6b294daf562ace5002774",
+   37201
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
@@ -52,12 +52,12 @@
    9943
   ],
   "version.py": [
-   "5c7ddf621d21ab3b376d1091909c335f2040502c1a6a81bcab1d720c8a843cd7",
+   "a0b28fe4e82122047f9ebc3cf087d7fc6ff1a9f5124d5a5d6c969fcec6665d54",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b\", 52263], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"3efd89f5e7823aabc3f9cc6cbeb74dc413943ede4a0e9a3557e162a88dc26e5c\", 37055], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"c749337a5a0400b8c83d8e3728ea65ee51e43bd699d6c4901e72b3d8f636fd7b\", 56055], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"5c7ddf621d21ab3b376d1091909c335f2040502c1a6a81bcab1d720c8a843cd7\", 19]}, \"notes\": \"Fixes the Pico running short of memory over time (tank maths kept too much), which could make updates and alerts fail. Includes 1.2.17's delivery sums and best-fit capacity.\", \"ref\": \"v1.2.18\", \"version\": \"1.2.18\"}",
-  "sig": "8878972acb30e9bbae09d4b05d66f68a6433c976e00e23e6acabb549fa4ed5d326397827b5614202427901de521fd851cdd99f568ca972465a772b7d448c4ccc8277eae9c20a33ad897e476350c46a62e862e00ace9f13acbe17074f0331eab01090e73b7a52b610f18b5dd0fcbb5f7ca50db0a76e53f834ed34004d77f4d64a0591b15fba65542bc2a6d88313b126cb41bb2ec25faf87a4a349396db693aa8e1225b89b82b6be2868b34bca9e8a7dbec3c4f43aa7417e098e2b3112674711a477218ac4719bd8d9b180aa4319b1cc977fdc87bbf5895b5bac6c6ea45d34bcc3b0bd87e9ee311b9a7a1b851c612f6a1aac13caa7de85b8436950f8245ada3d0d"
+  "body": "{\"files\": {\"app.py\": [\"095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b\", 52263], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"38c9e22ddc174ee645565dbd4efa386e3c4b9fbb73f6b294daf562ace5002774\", 37201], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"c749337a5a0400b8c83d8e3728ea65ee51e43bd699d6c4901e72b3d8f636fd7b\", 56055], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"a0b28fe4e82122047f9ebc3cf087d7fc6ff1a9f5124d5a5d6c969fcec6665d54\", 19]}, \"notes\": \"Clearer capacity line on the history page. Includes 1.2.18's memory fix.\", \"ref\": \"v1.2.19\", \"version\": \"1.2.19\"}",
+  "sig": "030fc3c006cf9b59a8f3d096d702e14b981676894fcd9624982d827db50ed542bfb8ba8c53bcd08e93546f27ebacb532824dc0f826b8a83be4406a3dbe391c48b856c09f98895abeb77b2cfe660403ed453d2bddc80826557db7753b1bf108be01a0cf33397838b74a895f57f661dfa3415e7b72ff98e94fc7275ef552cc28cdeac2016b8b062af8b9a610ca29bc0dfb81cd34a363b349c3feddffb9ff10bce92e13791f0b93976a5a6393bb22523d1087c12db4de6fbef012a375af4d80bc1bc71dc3e2cc70d01bf16adbb7a968d6ac5b0b3d7e46f243746bfac993799a2c90b02cf669f293f15b8b22430c796a2a6302a482d9e199d2632975e09049a8ea95"
  }
 }
