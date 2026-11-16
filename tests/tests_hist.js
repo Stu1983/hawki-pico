@@ -35,7 +35,7 @@ setTimeout(()=>{const w=dom.window,d=w.document,A=w.eval('A');
   console.log('recent',A.recent.toFixed(2),'useOwn',A.useOwn,'k',A.k&&A.k.toFixed(2));
   // forecast check vs truth: simulate truth forward
   let l=L,t=NOW,dry=null;for(let i=0;i<730&&dry==null;i++){const m=new Date(t*1000).getUTCMonth();l-=use(t,m);t+=DAY;if(l<=200)dry=t}
-  console.log('true reorder date',new Date(dry*1000).toISOString().slice(0,10),'likely',new Date(A.likely.ord*1000).toISOString().slice(0,10),'cautious',new Date(A.cautious.ord*1000).toISOString().slice(0,10));
+  console.log('true reorder date',new Date(dry*1000).toISOString().slice(0,10),'forecast',new Date(A.fc.ord*1000).toISOString().slice(0,10));
  }
  console.log('fills text:',txt('fills').slice(0,120));console.log('how:',txt('how').slice(0,300));
  if(process.argv[3]){

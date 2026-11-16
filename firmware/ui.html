@@ -53,7 +53,7 @@ dialog::backdrop{background:#0008}
 <div class="card"><div class="row"><b>Litres a day</b><span class="mut">last 30 days</span></div><svg id="c_rate" class="ch" viewBox="0 0 640 190" role="img" aria-label="Litres used each day over the last 30 days"></svg>
 <div class="lg"><span><i class="sw" style="background:var(--acc2)"></i>each day</span><span><i class="sw ln" style="background:var(--acc)"></i>7-day average</span></div></div>
 <div class="card"><div class="row"><b>Oil in the tank</b><span class="mut">30 days back, 30 ahead</span></div><svg id="c_lvl" class="ch" viewBox="0 0 640 190" role="img" aria-label="Litres in the tank over the last 30 days, with the forecast"></svg>
-<div class="lg"><span><i class="sw ln" style="background:var(--oil)"></i>oil in the tank</span><span><i class="sw ln gpk"></i>no readings</span><span><i class="sw ln dash"></i>forecast (cautious)</span><span><i class="sw ln dot"></i>reorder level</span></div></div>
+<div class="lg"><span><i class="sw ln" style="background:var(--oil)"></i>oil in the tank</span><span><i class="sw ln gpk"></i>no readings</span><span><i class="sw ln dash"></i>forecast</span><span><i class="sw ln dot"></i>reorder level</span></div></div>
 </section>
 
 <section id="p_tanks" hidden>
@@ -403,9 +403,9 @@ async function dash(){if(!S.update)return;const t=S.tanks.find(x=>x.mac===S.prim
  $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average':(P.length?'needs 2 days of readings':'no readings yet');
  $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';
  const wt=$('d_wt');wt.className='card tile';
- if(ok){const c=A.cautious,l=A.likely,wk=x=>(x-now)/(7*DAY);
+ if(ok){const c=A.fc,wk=x=>(x-now)/(7*DAY);
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
-  $('d_w2').textContent=(c.ord==null?'':c.ord<=now+DAY?'Order now':'Order by '+fmtD(c.ord))+(l.dry!=null?' · likely '+Math.floor(wk(l.dry))+' weeks':'');
+  $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?'Order now (at '+reserve+' L)':'Order by '+fmtD(c.ord)+' (at '+reserve+' L)';
   if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
  else{$('d_w').textContent='–';$('d_w2').textContent=' '}
  drawTank(t);
@@ -459,7 +459,7 @@ function drawRate(A,now){const svg=$('c_rate');if(!A){noData(svg,'Daily use show
 
 function drawLvl(o){const svg=$('c_lvl');if(!o){noData(svg,'No readings yet');return}
  const{A,P,reserve,now,cap}=o,t0=now-30*DAY,t1=now+30*DAY,pts=P.filter(p=>p[0]>=t0);
- const fc=A.cautious?A.cautious.path.filter(p=>p[0]<=t1):[];
+ const fc=A.fc?A.fc.path.filter(p=>p[0]<=t1):[];
  const f=frame(svg,t0,t1,Math.max(reserve,...pts.map(p=>p[1]),...fc.map(p=>p[1]),1)*1.05,'L');
  el('line',{class:'rs',x1:ML,x2:CW-MR,y1:f.Y(reserve),y2:f.Y(reserve)},svg);
  // solid where readings are hourly; a dotted bridge across gaps (missed or imported readings)

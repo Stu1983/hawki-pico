@@ -58,7 +58,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <div class="card">
  <div class="seg" id="rng"></div>
  <svg id="c1" viewBox="0 0 640 240" role="img" aria-label="Litres in the tank over time"></svg>
- <div class="legend"><span><i class="l" style="border-color:var(--s1)"></i>Litres</span><span><i class="d" style="border-color:var(--s1);border-top-style:dotted"></i>No readings</span><span><i class="d" style="border-color:var(--s1)"></i>Cautious forecast</span><span><i class="d" style="border-color:var(--warn)"></i>Reorder level</span><span><i style="background:var(--card);border:2px solid var(--s3);border-radius:50%;width:10px"></i>Delivery</span></div>
+ <div class="legend"><span><i class="l" style="border-color:var(--s1)"></i>Litres</span><span><i class="d" style="border-color:var(--s1);border-top-style:dotted"></i>No readings</span><span><i class="d" style="border-color:var(--s1)"></i>Forecast</span><span><i class="d" style="border-color:var(--warn)"></i>Reorder level</span><span><i style="background:var(--card);border:2px solid var(--s3);border-radius:50%;width:10px"></i>Delivery</span></div>
 </div>
 
 <h2>Usage by month</h2>
@@ -179,14 +179,14 @@ function drawLevel(){
   if(gap)g+='M'+x(prev[0]).toFixed(1)+' '+y(prev[1]).toFixed(1)+'L'+xy;d+=(prev==null||gap?'M':'L')+xy;prev=p}
  if(g)el('path',{d:g,class:'gap'},svg);
  el('path',{d,class:'ln'},svg);
- if(A&&A.cautious){const fp=A.cautious.path.filter(p=>p[0]<=t1);el('path',{d:fp.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1)).join(''),class:'fc'},svg)}
+ if(A&&A.fc){const fp=A.fc.path.filter(p=>p[0]<=t1);el('path',{d:fp.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1)).join(''),class:'fc'},svg)}
  for(const f of (A&&A.fills)||[])if(f.t>=t0)el('circle',{cx:x(f.t),cy:y(f.to),r:5,class:'fill'},svg);
  // crosshair + tooltip
  const xh=el('line',{y1:mt,y2:mt+ph,class:'xh',visibility:'hidden'},svg),dot=el('circle',{r:4,class:'dot',visibility:'hidden'},svg);
  const hit=el('rect',{x:ml,y:mt,width:pw,height:ph,fill:'transparent'},svg);
  const mv=ev=>{const r=svg.getBoundingClientRect(),tx=t0+((ev.clientX-r.left)*W/r.width-ml)/pw*(t1-t0);
   let lines,px,py;
-  if(tx>last&&A&&A.cautious){const fp=A.cautious.path;let b=fp[0];for(const p of fp)if(Math.abs(p[0]-tx)<Math.abs(b[0]-tx))b=p;px=x(b[0]);py=y(b[1]);lines=['≈ '+L0(b[1]),'cautious forecast · '+fmtD(b[0])]}
+  if(tx>last&&A&&A.fc){const fp=A.fc.path;let b=fp[0];for(const p of fp)if(Math.abs(p[0]-tx)<Math.abs(b[0]-tx))b=p;px=x(b[0]);py=y(b[1]);lines=['≈ '+L0(b[1]),'forecast · '+fmtD(b[0])]}
   else{let lo=0,hi=vis.length-1;while(lo<hi){const m=(lo+hi)>>1;if(vis[m][0]<tx)lo=m+1;else hi=m}
    const b=lo>0&&Math.abs(vis[lo-1][0]-tx)<Math.abs(vis[lo][0]-tx)?vis[lo-1]:vis[lo];if(!b)return;px=x(b[0]);py=y(b[1]);lines=[L0(b[1]),fmtDT(b[0])+(b[2]!=null?' · '+b[2]+' mm':'')]}
   xh.setAttribute('x1',px);xh.setAttribute('x2',px);xh.setAttribute('visibility','visible');dot.setAttribute('cx',px);dot.setAttribute('cy',py);dot.setAttribute('visibility','visible');showTip(ev,lines)};
@@ -250,9 +250,9 @@ function tiles(){
  $('t_now').textContent=T.litres==null?'–':L0(T.litres);$('t_now2').textContent=T.percent==null?'':T.percent+'% · reorder at '+reserve+' L';
  const r=A&&A.recent,ok=r!=null&&A.span>=2;
  $('t_rate').textContent=ok?r.toFixed(1)+' L/day':'–';$('t_rate2').textContent=ok?'last '+Math.round(A.recentDays)+' days':(A&&A.n?'needs 2 days of readings':'no readings yet');
- for(const[id,key]of[['ord','ord'],['dry','dry']]){const c=ok&&A.cautious[key],l=ok&&A.likely[key],tl=$('tl_'+id);tl.className='card tile';
+ for(const[id,key]of[['ord','ord'],['dry','dry']]){const c=ok&&A.fc[key],tl=$('tl_'+id);tl.className='card tile';
   $('t_'+id).textContent=!ok?'–':c==null?'2+ years':c<=now+DAY?'Now':fmtD(c);
-  $('t_'+id+'2').textContent=!ok?'':l==null?'likely 2+ years':'likely '+(l<=now+DAY?'now':fmtDY(l));
+  $('t_'+id+'2').textContent=!ok?'':id==='ord'?'when it reaches '+reserve+' L':c==null?'':c<=now+DAY?'':'in '+Math.floor((c-now)/(7*DAY))+' weeks';
   if(ok&&c!=null&&c<now+(id==='ord'?14:30)*DAY)tl.classList.add(id==='ord'?'warn':'bad')}
  if(!ok&&T.litres!=null&&T.litres<=reserve){$('t_ord').textContent='Now';$('t_ord2').textContent='below the reorder level';$('tl_ord').classList.add('warn')}
  renderDeliveries();costs();
@@ -260,8 +260,7 @@ function tiles(){
  const p=s=>{const e=document.createElement('p');e.style.margin='0 0 8px';e.textContent=s;h.appendChild(e)};
  p('The Pico saves one reading an hour for each tank (about 50 KB a year), so this history keeps growing for years.');
  if(!ok){p('Forecasts start once there are 2 days of readings.');return}
- p(howText(A));
- p('"Order by" and "Could run dry" assume '+Math.round((CAUTION-1)*100)+'% more use than expected, so they come early rather than late. The likely dates are underneath.')}
+ p(howText(A));}
 
 // ---------- deliveries & costs ----------
 let D={},EDIT=null;
@@ -327,7 +326,7 @@ function costs(){const ids=['c_last','c_avg','c_spent','c_run'];ids.forEach(i=>{
  $('c_avg').textContent=(sc/sl*100).toFixed(1)+'p/L';$('c_avg2').textContent=pr.length+' deliver'+(pr.length>1?'ies':'y')+' · '+L0(sl);
  const yr=pr.filter(x=>x.t>now-365*DAY);$('c_spent').textContent=gbp0(yr.reduce((a,x)=>a+totalOf(x),0));$('c_spent2').textContent=L0(yr.reduce((a,x)=>a+litresOf(x),0))+' bought';
  if(A&&A.recent!=null&&A.span>=2){const p=pplOf(last)/100;$('c_run').textContent=gbp(A.recent*p)+'/day';
-  let s30=0;for(let d=0,t=A.likely.path[0][0];d<30;d++,t+=DAY)s30+=A.rate(t);$('c_run2').textContent='next 30 days ≈ '+gbp0(s30*p)}}
+  let s30=0;for(let d=0,t=A.fc.path[0][0];d<30;d++,t+=DAY)s30+=A.rate(t);$('c_run2').textContent='next 30 days ≈ '+gbp0(s30*p)}}
 const pad=v=>String(v).padStart(2,'0');
 const toLocalInput=t=>{const d=new Date(t*1000);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())};
 function editDel(x){EDIT=x;const r=x&&x.r;

@@ -13,7 +13,7 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  const aug=A.rate(T(2027,7,15)),jan=A.rate(T(2027,0,15));
  ok(Math.abs(aug-0.85)<0.1,'next August forecast '+aug.toFixed(2)+' L/day');
  ok(jan>4&&Number.isFinite(jan),'January still forecasts heating (typical share): '+jan.toFixed(1)+' L/day');
- ok(Number.isFinite(A.likely.ord||0),'no NaN with zero heating in the recent window')}
+ ok(Number.isFinite(A.fc.ord||0),'no NaN with zero heating in the recent window')}
 // 2. into the heating season: heating sized from recent use, summer still at the baseline
 {const now=T(2026,10,16),A=ctx.analyse(series(T(2026,5,1),now,4),{now});
  ok(A.heatFit===1,'heating fitted from recent use');
@@ -32,4 +32,14 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  const A=ctx.analyse(p,{now:t0+30*DAY});ok(A.hw&&A.hw.perDay>0.8,'drifting July: baseline '+(A.hw&&A.hw.perDay.toFixed(2))+' L/day (true 1.0)')}
 // 6. under 21 summer days: no baseline yet
 {const p=[];const t0=T(2026,6,1);for(let t=t0;t<t0+16*DAY;t+=H)p.push([t,600-(t-t0)/DAY]);ok(!ctx.analyse(p,{now:t0+16*DAY}).hw,'16 summer days: no baseline yet')}
+// 7. a second year using a steady 10 % more (older boiler): the forecast carries the 10 % on
+{const p=[];let L=5000;const t0=T(2024,8,1),t1=T(2026,2,1);
+ for(let t=t0;t<t1;t+=H){const yr2=t>=T(2025,8,1),d=new Date(t*1000),m=d.getMonth();
+  const base=0.85/ctx.hwShape(T(2026,7,15))*ctx.hwShape(t)+(m<5||m>7?6*ctx.heatShape(t):0);
+  L-=base*(yr2?1.1:1)/24;if(L<300)L+=3000;p.push([t,L])}
+ const A=ctx.analyse(p,{now:t1});
+ ok(A.useOwn&&Math.abs(A.k-1.1)<0.03&&A.kDays>100,'steady +10 % year: scaled by '+(A.k&&A.k.toFixed(3))+' over '+A.kDays+' days');
+ const tt=T(2026,3,15),want=1.1*(0.85/ctx.hwShape(T(2026,7,15))*ctx.hwShape(tt)+6*ctx.heatShape(tt));
+ ok(Math.abs(A.rate(tt)/want-1)<0.08,'April forecast '+A.rate(tt).toFixed(2)+' vs this year\'s rate '+want.toFixed(2)+' L/day');
+ ok(A.fc&&A.fc.dry>t1,'one forecast, no extra margin added')}
 process.exit(fails?1:0);
