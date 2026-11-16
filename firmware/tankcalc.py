@@ -103,7 +103,62 @@ def _interp(tbl, d):
     return vs[i] + (vs[i + 1] - vs[i]) * (d - z0) / (z1 - z0)
 
 
+def whole(tank):
+    """The whole tank, floor to monitor, holding tank_l (what a spec sheet gives)."""
+    o = float(tank.get('outlet_cm') or 0)
+    return dict(tank, height_cm=float(tank['height_cm']) + o, capacity_l=float(tank['tank_l']), outlet_cm=0)
+
+
+def below(tank):
+    """Litres under the top of the outlet (there, but the boiler can't draw it); 0 if not known."""
+    if tank.get('tank_l') in (None, ''):
+        return 0.0
+    w = whole(tank)
+    return _litres(w, float(tank['height_cm']) * 10.0) or 0.0
+
+
+def above(tank):
+    """Usable capacity: from the top of the outlet up to the monitor."""
+    if tank.get('tank_l') in (None, ''):
+        return float(tank['capacity_l'])
+    return float(tank['tank_l']) - below(tank)
+
+
+def tank_equiv(tank):
+    """Older settings (usable capacity_l, no tank_l): the whole-tank capacity that gives the same usable
+    capacity. Usable capacity rises steadily with the whole (piecewise straight), so a few secant steps
+    find it."""
+    if tank.get('tank_l') not in (None, ''):
+        return float(tank['tank_l'])
+    cap = float(tank['capacity_l'])
+    if not float(tank.get('outlet_cm') or 0):
+        return cap
+    f = lambda x: above(dict(tank, tank_l=x)) - cap
+    x0, x1 = cap, cap * 1.2
+    y0, y1 = f(x0), f(x1)
+    for _ in range(8):
+        if abs(y1) < 0.05 or y1 == y0:
+            break
+        x0, x1, y0 = x1, x1 - y1 * (x1 - x0) / (y1 - y0), y1
+        y1 = f(x1)
+    return x1 if abs(y1) < 1 else None  # odd settings (e.g. nothing usable): no suggestion
+
+
 def litres(tank, level_mm):
+    """Usable litres (above the top of the outlet) for a sensor-to-surface distance, or None if unknown.
+    With tank_l the whole tank is modelled from the floor and the oil under the outlet taken off;
+    without it (older settings) capacity_l is the usable capacity, outlet to monitor."""
+    if tank.get('tank_l') in (None, ''):
+        return _litres(tank, level_mm)
+    if level_mm is None or level_mm == 16383:
+        return None
+    if level_mm == 16382:
+        return 0.0
+    v = _litres(whole(tank), level_mm)
+    return None if v is None else max(0.0, v - below(tank))
+
+
+def _litres(tank, level_mm):
     """Return litres of liquid for a sensor-to-surface distance, or None if unknown."""
     if level_mm is None or level_mm == 16383:
         return None
@@ -144,4 +199,4 @@ def reading(tank, level_mm):
     v = litres(tank, level_mm)
     if v is None:
         return None, None
-    return round(v, 1), round(100.0 * v / float(tank['capacity_l']), 1)
+    return round(v, 1), round(100.0 * v / above(tank), 1)

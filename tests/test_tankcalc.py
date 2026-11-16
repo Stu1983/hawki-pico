@@ -61,6 +61,32 @@ def test_measured_model():
     assert abs(litres(plain, 650) - 1323 / 2) < 0.01
 
 
+def test_whole_tank_capacity():
+    from tankcalc import below, above, reading
+    # spec-sheet capacity of the whole tank; the oil under the outlet is worked out and left out
+    t = dict(MEASURED, height_cm=121.5, outlet_cm=8.5, tank_l=1268)
+    t.pop('capacity_l', None)
+    b, a = below(t), above(t)
+    assert 80 < b < 115 and abs(a + b - 1268) < 1e-6, (b, a)
+    assert abs(litres(t, 0) - a) < 0.5  # full = everything above the outlet
+    assert litres(t, 1215) == 0 and litres(t, 1260) == 0  # at / below the top of the outlet: none usable
+    assert litres(t, 16383) is None and litres(t, 16382) == 0
+    assert abs(reading(t, 0)[1] - 100) < 0.1  # percent of the usable capacity
+    # a real R1225 (measured outside): its metered 500 L delivery (1149 -> 601 mm) comes out at 500 with 1268 L
+    real = dict(shape='cuboid', height_cm=121.5, outlet_cm=8.5, length_cm=178, width_cm=75, windows=2, tank_l=1268,
+                window_model='measured', win_bottom_cm=45, win_top_cm=79, win_outer_w_cm=39, win_inner_w_cm=17,
+                win_inner_h_cm=14, ribs_cm=[31.5, 62.5, 93.5], rib_h_cm=12, rib_depth_cm=1.5)
+    assert abs(litres(real, 601) - litres(real, 1149) - 500) < 2
+    # no outlet: same as the old fill-height capacity
+    p = dict(MEASURED, outlet_cm=0, tank_l=1323)
+    p.pop('capacity_l', None)
+    assert below(p) == 0 and abs(litres(p, 650) - litres(MEASURED_NO_OUTLET(), 650)) < 1e-6
+
+
+def MEASURED_NO_OUTLET():
+    return dict(MEASURED, outlet_cm=0, capacity_l=1323)
+
+
 if __name__ == '__main__':
-    test_matches_magnus_app(); test_bounds_and_codes(); test_other_shapes(); test_measured_model()
+    test_matches_magnus_app(); test_bounds_and_codes(); test_other_shapes(); test_measured_model(); test_whole_tank_capacity()
     print('all ok')

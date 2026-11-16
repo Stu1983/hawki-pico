@@ -34,7 +34,7 @@
 # "HAWKi-Setup-XXXX" (password: oiltanks); browse to http://192.168.4.1/
 import bluetooth, binascii, json, time, network, machine, asyncio, gc, os, struct
 from hawki_decode import decode, mfr_from_adv
-from tankcalc import reading, litres, SHAPES
+from tankcalc import reading, litres, SHAPES, below, above, tank_equiv
 import histstore
 from version import VERSION
 from listen import Listener
@@ -46,7 +46,7 @@ HAWKI_UUID = bytes(reversed(binascii.unhexlify('000019231322ffdd3533886fdadce133
 AP_PASSWORD = 'oiltanks'
 MEASURED_KEYS = ('outlet_cm', 'win_bottom_cm', 'win_top_cm', 'win_outer_w_cm', 'win_inner_w_cm',
                  'win_inner_h_cm', 'rib_h_cm', 'rib_depth_cm')
-CFG_KEYS = ('shape', 'height_cm', 'length_cm', 'width_cm', 'capacity_l', 'windows', 'window_model',
+CFG_KEYS = ('shape', 'height_cm', 'length_cm', 'width_cm', 'capacity_l', 'tank_l', 'windows', 'window_model',
             'ribs_cm', 'reserve_l', 'unusable_l') + MEASURED_KEYS
 
 
@@ -507,11 +507,35 @@ def tank_view(mac, t, now):
             'litres_standard': std, 'unusable': unusable(t), 'listen': listener.info(mac),
             'battery': d.get('battery'), 'rssi': d.get('rssi'),
             'age': (now - d['rx']) if d.get('rx') else None,
-            'cfg': {k: t.get(k) for k in CFG_KEYS}}
+            'cfg': cfg_view(t)}
+
+
+_equiv = {}
+
+
+def cfg_view(t):
+    c = {k: t.get(k) for k in CFG_KEYS}
+    if c.get('tank_l') is None:  # older settings: suggest the equivalent whole-tank capacity to the form
+        try:
+            key = repr(sorted(t.items()))  # (worked out once per setting, not on every /api/state)
+            if key not in _equiv:
+                if len(_equiv) > 8:
+                    _equiv.clear()
+                v = tank_equiv(t)
+                _equiv[key] = None if v is None else round(v, 1)
+            c['tank_l_equiv'] = _equiv[key]
+        except Exception:  # never let a suggestion break /api/state
+            pass  # a separate key, so a backup never converts settings by itself
+    return c
 
 
 def unusable(t):
     """Oil below the top of the outlet, which the boiler can't draw: [litres, 'set'|'estimate'] or None."""
+    try:  # the whole-tank model knows it (and takes precedence over an old hand-entered figure)
+        if t.get('tank_l') is not None:
+            return [round(below(t)), 'estimate']
+    except Exception:
+        pass
     if t.get('unusable_l') is not None:
         return [t['unusable_l'], 'set']
     try:  # a cuboid with a measured outlet height: footprint x outlet height
@@ -717,7 +741,7 @@ def set_tank(b, restore=False):
     if shape not in SHAPES:
         raise ValueError('bad shape')
     t = {'name': (str(b.get('name') or '').strip() or mac)[:24], 'shape': shape,
-         'height_cm': num(b['height_cm'], 10, 500), 'capacity_l': num(b['capacity_l'], 1, 100000),
+         'height_cm': num(b['height_cm'], 10, 500),
          'windows': int(num(b.get('windows', 0), 0, 2))}
     for k in ('reserve_l', 'unusable_l'):
         if b.get(k) not in (None, ''):
@@ -738,6 +762,14 @@ def set_tank(b, restore=False):
             t['ribs_cm'] = [num(x, 0, 1000) for x in ribs][:6]
             if t['windows'] and not ('win_bottom_cm' in t and 'win_top_cm' in t and 'win_outer_w_cm' in t):
                 raise ValueError('measured windows need bottom, top and outer width')
+    if b.get('tank_l') not in (None, ''):
+        # the whole tank (spec sheet): the usable part above the outlet is worked out from the shape
+        t['tank_l'] = num(b['tank_l'], 1, 200000)
+        t['capacity_l'] = round(above(t), 1)
+        if t['capacity_l'] < 1:
+            raise ValueError('the capacity is too small for that outlet height')
+    else:
+        t['capacity_l'] = num(b['capacity_l'], 1, 100000)
     cfg['tanks'][mac] = t
     if not restore:
         save_cfg(cfg)
