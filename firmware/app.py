@@ -1221,7 +1221,13 @@ async def handle(r, w):
             if mac not in cfg['tanks']:
                 return await send(w, 404, '"unknown tank"')
             if path == '/api/curve':
-                return await send(w, 200, json.dumps(curve(cfg['tanks'][mac])))
+                t = cfg['tanks'][mac]
+                if q.get('tank_l'):  # a trial whole-tank capacity (the history page fits it to receipts)
+                    try:
+                        t = dict(t, tank_l=num(q['tank_l'], 1, 200000))
+                    except ValueError:
+                        return await send(w, 400, '"bad tank_l"')
+                return await send(w, 200, json.dumps(curve(t)))
             try:
                 return await send_file(w, hist_name(mac), 'application/octet-stream')
             except OSError:

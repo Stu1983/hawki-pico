@@ -35,6 +35,7 @@ svg text{font:11px system-ui,sans-serif;fill:var(--mut)}
 #tip b{display:block;font-size:15px}
 table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}th,td{text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}
 details summary{cursor:pointer;color:var(--acc);font-size:14px;margin-top:8px}
+.fd{padding:8px 0;border-bottom:1px solid var(--line)}.fd:last-child{border:0}.fd .mut{margin-top:2px;overflow-wrap:anywhere}.fd .sum{white-space:nowrap}@media (max-width:340px){.fd .sum{white-space:normal}}.fd .row>div{overflow-wrap:anywhere;min-width:0}.fd .row{display:flex;justify-content:space-between;align-items:center;gap:10px}.fd button{flex:none}
 .fl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.fl:last-child{border:0}.fl .mut{margin-top:2px}.fl .r{text-align:right;white-space:nowrap}.fl .r button{margin-top:4px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.full{grid-column:1/-1}label{display:block;font-size:13px;color:var(--mut)}
 input{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);margin-top:3px}
@@ -74,7 +75,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 </div>
 
 <h2>Deliveries</h2>
-<div class="card"><div id="fills"><div class="empty">Loading…</div></div><div class="acts" style="justify-content:flex-start;margin-top:8px"><button onclick="editDel(null)">Add a delivery</button></div></div>
+<div class="card"><div id="fills"><div class="empty">Loading…</div></div><div class="mut" id="fit" style="margin-top:8px;min-height:18px"></div><div class="acts" style="justify-content:flex-start;margin-top:8px"><button onclick="editDel(null)">Add a delivery</button></div></div>
 
 <h2>Costs</h2>
 <div class="tiles">
@@ -277,18 +278,45 @@ const gbp=v=>'£'+v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFra
 const gbp0=v=>'£'+Math.round(v).toLocaleString();
 function priceAt(t){const p=deliveries().filter(x=>pplOf(x)!=null);if(!p.length)return null;const b=p.find(x=>x.t<=t);return pplOf(b||p[p.length-1])}
 function renderDeliveries(){const f=$('fills');f.textContent='';const list=deliveries();
- if(!list.length){const d=document.createElement('div');d.className='empty';d.textContent='None seen yet. Deliveries show here automatically (any rise of more than '+REFILL_L+' L), or add one yourself.';f.appendChild(d);return}
- for(const x of list){const r=x.r,row=document.createElement('div');row.className='fl';
-  const left=document.createElement('div'),a=document.createElement('div'),sub=document.createElement('div');sub.className='mut';
-  a.textContent=fmtDY(x.t)+(r&&r.supplier?' · '+r.supplier:'');const bits=[];
-  if(x.f)bits.push('sensor saw '+L0(x.f.from)+' → '+L0(x.f.to));
-  if(r&&r.litres!=null&&x.f)bits.push(L0(r.litres)+' on the receipt');
+ if(!list.length){fitCap();const d=document.createElement('div');d.className='empty';d.textContent='None seen yet. Deliveries show here automatically (any rise of more than '+REFILL_L+' L), or add one yourself.';f.appendChild(d);return}
+ for(const x of list){const r=x.r,row=document.createElement('div');row.className='fd';
+  // line 1: date · supplier ... +litres; line 2: what the sensor saw, as a sum (never wrapped);
+  // line 3: receipt, price ... Edit
+  const mk=(cls,txt)=>{const d=document.createElement('div');if(cls)d.className=cls;if(txt!=null)d.textContent=txt;return d};
+  const top=mk('row'),b=document.createElement('b'),l=litresOf(x);b.textContent=l==null?'–':'+'+L0(l);
+  top.append(mk('',fmtDY(x.t)+(r&&r.supplier?' · '+r.supplier:'')),b);row.append(top);
+  if(x.f){const fr=Math.round(x.f.from),to=Math.round(x.f.to);const s1=mk('mut sum','sensor saw '+fr+' L → '+to+' L = ('+to+' − '+fr+') = '+(to-fr)+' L');row.append(s1)}
+  const bits=[];if(r&&r.litres!=null&&x.f)bits.push(L0(r.litres)+' on the receipt');
   const p=pplOf(x),tot=totalOf(x);if(tot!=null)bits.push(gbp(tot));if(p!=null)bits.push(p.toFixed(1)+'p/L');
   if(r&&r.note)bits.push(r.note);if(tot==null)bits.push('add the price with Edit');
-  sub.textContent=bits.join(' · ');left.append(a,sub);
-  const rt=document.createElement('div');rt.className='r';const b=document.createElement('b');const l=litresOf(x);b.textContent=l==null?'–':'+'+L0(l);
-  const e=document.createElement('button');e.textContent='Edit';e.onclick=()=>editDel(x);rt.append(b,document.createElement('br'),e);
-  row.append(left,rt);f.appendChild(row)}}
+  const bot=mk('row'),e=document.createElement('button');e.textContent='Edit';e.onclick=()=>editDel(x);bot.append(mk('mut',bits.join(' · ')),e);row.append(bot);
+  f.appendChild(row)}
+ fitCap()}
+// Best-fit tank capacity: with the heights right, the capacity only scales the litres, so each delivery's
+// "sensor saw" is a straight line in it. Least squares over every delivery with a receipt figure.
+let FIT=null;
+let FITGEN=0;
+async function fitCap(){const gen=++FITGEN,box=$('fit');FIT=null;box.textContent='Working out the tank capacity that fits your deliveries…';const mac=T&&T.mac;
+ const c=T&&T.cfg,base=c&&(c.tank_l??c.tank_l_equiv);if(!base||!CV){box.textContent='';return}
+ const xs=deliveries().filter(x=>x.f&&x.r&&x.r.litres>0);if(!xs.length){box.textContent='';if(deliveries().some(x=>x.f))box.textContent='Add the litres from the receipt to a delivery (Edit) and this will suggest a tank capacity that fits.';return}
+ const inv=L=>{const l=CV.l;for(let i=1;i<l.length;i++)if(l[i]<=L){const a=l[i-1],b=l[i];return (i-1+(a===b?0:(a-L)/(a-b)))*CV.step}return CV.h};  // litres -> distance on the current curve
+ const ms=xs.map(x=>[inv(x.f.from),inv(x.f.to),x.r.litres]);
+ const memo={},cv=async v=>{v=Math.round(v);if(!memo[v]){const r=await fetch('/api/curve?mac='+encodeURIComponent(mac)+'&tank_l='+v);if(!r.ok)throw 0;memo[v]=await r.json()}return memo[v]};  // one at a time: the Pico works each out (~2 s)
+ const err=k=>ms.reduce((a,[m0,m1,L])=>a+Math.pow(toL(m1,k)-toL(m0,k)-L,2),0);
+ // sensor-saw is a straight line in the capacity for most shapes, but piecewise for some: fit, then re-fit
+ // around the answer a few times and keep the best one actually checked against the real curve
+ let x=base,best=null;
+ try{for(let it=0;it<4;it++){const x2=Math.round(x*1.05),k1=await cv(x),k2=await cv(x2);if(gen!==FITGEN)return;/* a newer render took over */
+   const e1=err(k1);if(!best||e1<best[1])best=[Math.round(x),e1];if(e1<0.25*ms.length)break;  // fits to within half a litre
+   let sa=0,sb=0;for(const[m0,m1,L]of ms){const d1=toL(m1,k1)-toL(m0,k1),d2=toL(m1,k2)-toL(m0,k2),al=(d2-d1)/(x2-x),be=d1-al*x;sa+=al*(L-be);sb+=al*al}
+   if(!(sb>0)){x=Math.round(x*1.5);continue}/* flat here (some shapes): look further out */const nx=Math.round(sa/sb);if(!isFinite(nx)||nx<1||nx>200000)break;if(Math.abs(nx-x)<1){x=nx;break}x=nx}
+  if(best[0]!==Math.round(x)&&x>=1&&x<=200000){const kx=await cv(x);if(gen!==FITGEN)return;const ex=err(kx);if(ex<best[1])best=[Math.round(x),ex]}}catch(e){if(!best)return}
+ if(!best||gen!==FITGEN)return;const fit=best[0],n=xs.length;box.textContent='';
+ box.textContent='Tank capacity that fits '+(n===1?'this delivery':'these '+n+' deliveries')+' best: '+fit.toLocaleString()+' L (set now: '+Math.round(base).toLocaleString()+' L).'+(n===1?' One delivery is a rough guide; it firms up with more.':'');
+ if(Math.abs(fit-base)>=1){FIT={mac,v:fit};const b=document.createElement('button');b.textContent='Use '+fit.toLocaleString()+' L';b.style.marginLeft='8px';b.onclick=useFit;box.append(' ',b)}}
+async function useFit(){if(!FIT||!T||FIT.mac!==T.mac||!confirm('Set the tank capacity to '+FIT.v+' L? Every reading and the history will be re-worked with it.'))return;
+ const b=Object.assign({},T.cfg,{mac:T.mac,name:T.name,tank_l:FIT.v});delete b.tank_l_equiv;
+ const r=await authFetch('/api/tank',{method:'POST',body:JSON.stringify(b)});if(!r.ok){alert(await r.json().catch(()=>'Could not save'));return}location.reload()}
 function costs(){const ids=['c_last','c_avg','c_spent','c_run'];ids.forEach(i=>{$(i).textContent='–';$(i+'2').textContent=''});
  const pr=deliveries().filter(x=>pplOf(x)!=null&&litresOf(x)!=null);
  $('c_hint').textContent=pr.length?'Prices include VAT. Running costs use the last price paid.':'Add the price to a delivery (Edit) to track costs.';

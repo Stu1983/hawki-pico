@@ -35,6 +35,7 @@ def main():
         if t.startswith('test_') and t.endswith('.py'):
             subprocess.run([sys.executable, os.path.join(ROOT, 'tests', t)], check=True)
     subprocess.run(['node', os.path.join(ROOT, 'tests', 'tests_forecast.js')], check=True)  # no npm packages needed
+    subprocess.run(['node', os.path.join(ROOT, 'tests', 'test_pages_parse.js')], check=True)  # every page script parses
     with open(os.path.join(FW, 'version.py'), 'w') as f:
         f.write("VERSION = '%s'\n" % ver)
     files = {}
