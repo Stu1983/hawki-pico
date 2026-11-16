@@ -1,7 +1,7 @@
 {
- "version": "1.2.11",
- "ref": "v1.2.11",
- "notes": "Fixes 'Update failed: ENOMEM' while installing an update. Includes everything since 1.2.6.",
+ "version": "1.2.12",
+ "ref": "v1.2.12",
+ "notes": "Using tile shows the 3-day average first, then the 7-day and 14-day.",
  "files": {
   "app.py": [
    "fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6",
@@ -44,20 +44,20 @@
    8204
   ],
   "ui.html": [
-   "ad8b47140185d8aa8e647f26ead46ae503e55e4195206a549f0fe1172cf8449b",
-   54585
+   "fb2b64a514bf5c8f289beb24dedfc9a4738347147acf75a35e7e0584f1f6086f",
+   54813
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "3faacb69dd7eb7a0dda137cf3057a2fb110c6afcbd0771d837787d0e93a5ec85",
+   "ebe66cdb2c8a7213cba1bc82b4f6cef610b9e32b72260db29527e090860945d0",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"ad8b47140185d8aa8e647f26ead46ae503e55e4195206a549f0fe1172cf8449b\", 54585], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"3faacb69dd7eb7a0dda137cf3057a2fb110c6afcbd0771d837787d0e93a5ec85\", 19]}, \"notes\": \"Fixes 'Update failed: ENOMEM' while installing an update. Includes everything since 1.2.6.\", \"ref\": \"v1.2.11\", \"version\": \"1.2.11\"}",
-  "sig": "259b95f36fb6c3c303055cfef2bc00fe80dce981404bbbf8c0d0e5d8338720ca36d3703cd12be37d6876dcc39437151b07f7759c66751e30b40a1d85569128443b9ea69c505d1cada56ede2598224bb2ca8df29596672f51fe8ad2ac004575e6838480828c6f5ce2f614352515dd29c59bba7fb43a23a074c82fb6cfdfb188de8c0550c119714679695240064887d9ea63c3cebc0687bab3ab35e42c9ddcb56d84a22f3ddf65e427d5c0939321164d473b886027fcda25d10a5db19f7b87496c19aa5c7801158323f0e673b7b92b5805c87e4cb584e8ef886d3c9bdb9eac6ff517e65b8e310c84995e58706703b2d8b66cd26dd2d7b296ba70091f5eb0f14883"
+  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"fb2b64a514bf5c8f289beb24dedfc9a4738347147acf75a35e7e0584f1f6086f\", 54813], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"ebe66cdb2c8a7213cba1bc82b4f6cef610b9e32b72260db29527e090860945d0\", 19]}, \"notes\": \"Using tile shows the 3-day average first, then the 7-day and 14-day.\", \"ref\": \"v1.2.12\", \"version\": \"1.2.12\"}",
+  "sig": "8260f3c5ac4a055d95516c9239053c879d9702fdb993d4f79630624c8fdb8509995df2c9d7c490397bbc1df1faafc0b6e7611893a71d0354098a6fcad8fadd0f2809f6c4d0fa92a87051a64becbfeeb461265c2c6cc630259af2783aaf8e10f8c2f5180249122a33eace3cef8284eedeb23b2d189b98882cc10179d04a9554bc59bae628733bb6b243301659c9e80bfb45b6a0131834f28286fd55b723e1a5ee1b18aadf8cc60f3de787bbdce9eb1f5c345d0d26f61a79c45958de70134e0c1b4e08500303e386996394bf94a69620c95d1886ed57dca0ad921c110bd02542592a67036150b1790d256633896af64a07f1415c7cceb9b03443ae4a5ab5547f32"
  }
 }
