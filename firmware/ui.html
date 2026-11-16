@@ -18,7 +18,7 @@ button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.del{c
 input,select{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);margin-top:3px}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);width:min(520px,calc(100vw - 32px));padding:16px}
 dialog::backdrop{background:#0008}
-#viz,#d_tank{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}#d_tank{display:block;max-width:560px;margin:8px auto 0}#d_tank text{font-size:11px}#d_tank .rl{stroke:var(--fg);stroke-width:.6;opacity:.25}#d_tank .tk{fill:none}svg#d_tank .inn{stroke:var(--fg)}#d_tank .rsv{stroke:var(--warn);stroke-width:1.2;stroke-dasharray:2 3}svg#d_tank .rsvt{fill:var(--warn)}
+#viz,#d_tank{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}#d_tank{display:block;max-width:560px;margin:8px auto 0;touch-action:pan-y}.dots[hidden]{display:none}.dots{display:flex;justify-content:center;gap:4px;margin-top:6px}.dots button{border:0;background:none;padding:6px;line-height:0}.dots i{display:block;width:8px;height:8px;border-radius:50%;background:var(--line)}.dots button[aria-current=true] i{background:var(--fg)}#d_tank text{font-size:11px}#d_tank .rl{stroke:var(--fg);stroke-width:.6;opacity:.25}#d_tank .tk{fill:none}svg#d_tank .inn{stroke:var(--fg)}#d_tank .rsv{stroke:var(--warn);stroke-width:1.2;stroke-dasharray:2 3}svg#d_tank .rsvt{fill:var(--warn)}
 #viz .tk,#d_tank .tk{fill:none;stroke:var(--fg);stroke-width:1.2}#viz .rib,#d_tank .rib{fill:#2f9ee533;stroke:#2f9ee5}#viz .win,#d_tank .win{fill:var(--card);stroke:#e0473f}
 #viz .inn,#d_tank .inn{fill:var(--bg);stroke:#f08a24;stroke-width:1.2}#viz .wino,#d_tank .wino{fill:none;stroke:#e0473f;stroke-dasharray:4 3}#viz .oil,#d_tank .oil{fill:var(--oil);opacity:.35}#viz .oilx,#d_tank .oilx{opacity:.15;stroke:var(--oil);stroke-dasharray:4 3}#viz .gnd,#d_tank .gnd{stroke:var(--mut)}
 #viz .dim,#d_tank .dim{stroke:var(--mut);stroke-width:.8;fill:none}#viz text,#d_tank text{font:9px system-ui,sans-serif;fill:var(--mut)}#viz .g,#d_tank .g{stroke-dasharray:4 3;opacity:.6}
@@ -49,7 +49,7 @@ dialog::backdrop{background:#0008}
  <div class="card tile"><div class="tl">Using</div><div class="big" id="d_r">–</div><div class="mut" id="d_r2">&nbsp;</div><div class="mut" id="d_r3">&nbsp;</div></div>
  <div class="card tile" id="d_wt"><div class="tl">Weeks left</div><div class="big" id="d_w">–</div><div class="mut" id="d_w2">&nbsp;</div></div>
 </div>
-<div class="card"><div class="row"><b>In the tank now</b><span class="mut" id="d_tank2" style="white-space:nowrap">&nbsp;</span></div><svg id="d_tank" viewBox="0 0 400 230" role="img" aria-label="Front view of the tank with the oil level the sensor reads"></svg></div>
+<div class="card"><div class="row"><b>In the tank now</b><span class="mut" id="d_tank2" style="white-space:nowrap">&nbsp;</span></div><svg id="d_tank" viewBox="0 0 400 230" role="img" aria-label="Front view of the tank with the oil level the sensor reads"></svg><div id="d_dots" class="dots" hidden></div></div>
 <div class="card"><div class="row"><b>Litres a day</b><span class="mut">last 30 days</span></div><svg id="c_rate" class="ch" viewBox="0 0 640 190" role="img" aria-label="Litres used each day over the last 30 days"></svg>
 <div class="lg"><span><i class="sw" style="background:var(--acc2)"></i>each day</span><span><i class="sw ln" style="background:var(--acc)"></i>7-day average</span></div></div>
 <div class="card"><div class="row"><b>Oil in the tank</b><span class="mut">30 days back, 30 ahead</span></div><svg id="c_lvl" class="ch" viewBox="0 0 640 190" role="img" aria-label="Litres in the tank over the last 30 days, with the forecast"></svg>
@@ -472,10 +472,23 @@ function tankView(t,cv,withReorder){const c=t&&t.cfg;if(!c||c.shape!=='cuboid')r
  if(withReorder&&cv&&Array.isArray(cv.l)&&cv.step>0&&top!=null){const l=cv.l;for(let i=1;i<l.length;i++)if(l[i]<=rsv){const a=l[i-1],b=l[i],mm=(i-1+(a===b?0:(a-rsv)/(a-b)))*cv.step;rh=top-mm/10;break}}
  return{cap,svg:tankSvg({reorder:rh!=null&&rsv>0?{h:rh,text:'reorder '+L0(rsv)}:null,L:n(c.length_cm),W:n(c.width_cm),nW:m?n(c.windows):0,og:out,outGuess:0,top,wb0:n(c.win_bottom_cm),wt0:n(c.win_top_cm),wo0:n(c.win_outer_w_cm),
   wi:n(c.win_inner_w_cm),hi:n(c.win_inner_h_cm),rh:n(c.rib_h_cm),rd:n(c.rib_depth_cm),rv:m&&Array.isArray(c.ribs_cm)?c.ribs_cm.map(n):[],plain:true,level:top==null?null:lvl,oilText:n(t.litres)!=null?L0(t.litres):'oil'})}}
-function drawTank(t){const sv=$('d_tank');if(!t){sv.innerHTML='';$('d_tank2').textContent=' ';sv.setAttribute('viewBox','0 0 400 230');return}
+function drawTank(t){const sv=$('d_tank');$('d_dots').hidden=true;if(!t){sv.innerHTML='';$('d_tank2').textContent=' ';sv.setAttribute('viewBox','0 0 400 230');return}
  const v=tankView(t,AN&&AN.mac===t.mac&&AN.cv,true);sv.setAttribute('viewBox','0 0 400 230');sv.innerHTML=v.svg;$('d_tank2').textContent=v.cap}
-function drawTanks(ts){const sv=$('d_tank');sv.setAttribute('viewBox','0 0 400 '+230*ts.length);$('d_tank2').textContent=ts.length+' tanks';
- sv.innerHTML=ts.map((t,i)=>{const v=tankView(t,null,false);return `<g transform="translate(0 ${230*i})">${v.svg}<text class="lbl" x="6" y="14">${esc(t.name)}</text><text x="394" y="14" text-anchor="end">${esc(v.cap)}</text></g>`}).join('')}
+// Both tanks: one drawing at a time; swipe (or the dots) for the other. Remembers the one you last looked
+// at; the first time, it shows the tank that has been going down.
+let TI=0;
+function tankPick(ts){let k=-1;try{const m=localStorage.hawkiTankView;k=ts.findIndex(t=>t.mac===m)}catch(e){}
+ if(k<0&&AN&&AN.bases){let best=-1;AN.bases.forEach((b,i)=>{const n=b.length;if(!n)return;const last=b[n-1],old=b.find(p=>p[0]>=last[0]-DAY)||b[0],d=old[1]-last[1];if(d>best){best=d;k=i}})}
+ return k<0?0:k}
+let TMAC=null;
+function drawTanks(ts){const sv=$('d_tank'),dots=$('d_dots');TI=TMAC?ts.findIndex(t=>t.mac===TMAC):-1;if(TI<0){TI=tankPick(ts);TMAC=ts[TI].mac}  /* follow the tank, not its position */
+ const t=ts[TI],v=tankView(t,null,false);sv.setAttribute('viewBox','0 0 400 230');
+ sv.innerHTML=v.svg+`<text class="lbl" x="6" y="14">${esc(t.name)}</text>`;$('d_tank2').textContent=v.cap;
+ dots.hidden=false;dots.innerHTML=ts.map((x,i)=>`<button type="button" aria-label="${esc(x.name)}" aria-current="${i===TI}" onclick="showTank(${i})"><i></i></button>`).join('');
+ if(!sv.dataset.swipe){sv.dataset.swipe=1;let x0=null,y0=null;
+  sv.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+  sv.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;if(Math.abs(dx)>40&&Math.abs(dx)>2*Math.abs(dy)&&S.primary==='all')showTank(TI+(dx<0?1:-1))})}}  /* sideways swipes only: scrolling stays scrolling */
+function showTank(i){const ts=S.tanks;if(ts.length<2||S.primary!=='all')return;TI=(i+ts.length)%ts.length;TMAC=ts[TI].mac;try{localStorage.hawkiTankView=TMAC}catch(e){}drawTanks(ts)}
 // Both tanks as one: oil left = the two added; the level series is their sum, so daily use is the
 // combined drop (a tank you didn't draw from adds nothing, rather than dragging the average down)
 function combine(series){const ts=[...new Set(series.flatMap(s=>s.map(p=>p[0])))].sort((a,b)=>a-b),idx=series.map(()=>0);
