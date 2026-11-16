@@ -1,11 +1,11 @@
 {
- "version": "1.2.12",
- "ref": "v1.2.12",
- "notes": "Using tile shows the 3-day average first, then the 7-day and 14-day.",
+ "version": "1.2.13",
+ "ref": "v1.2.13",
+ "notes": "Low-battery alert for the HAWKi monitors (20% or less, three hourly readings in a row), switchable under Notifications.",
  "files": {
   "app.py": [
-   "fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6",
-   47902
+   "b071b26aa92eeee07d84f3321b6c02b07db68806070da903847bf149a412279c",
+   49585
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -44,20 +44,20 @@
    8204
   ],
   "ui.html": [
-   "fb2b64a514bf5c8f289beb24dedfc9a4738347147acf75a35e7e0584f1f6086f",
-   54813
+   "eb4f4ce15ca913f09f2a7a918455cf325161ee9a5d5d5be7af59417e02f666dc",
+   55092
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "ebe66cdb2c8a7213cba1bc82b4f6cef610b9e32b72260db29527e090860945d0",
+   "69d726d81f40ca9a22f266407cf20ef91f69a77eeb5ce2de6bdf1f837cb490ab",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"fb2b64a514bf5c8f289beb24dedfc9a4738347147acf75a35e7e0584f1f6086f\", 54813], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"ebe66cdb2c8a7213cba1bc82b4f6cef610b9e32b72260db29527e090860945d0\", 19]}, \"notes\": \"Using tile shows the 3-day average first, then the 7-day and 14-day.\", \"ref\": \"v1.2.12\", \"version\": \"1.2.12\"}",
-  "sig": "8260f3c5ac4a055d95516c9239053c879d9702fdb993d4f79630624c8fdb8509995df2c9d7c490397bbc1df1faafc0b6e7611893a71d0354098a6fcad8fadd0f2809f6c4d0fa92a87051a64becbfeeb461265c2c6cc630259af2783aaf8e10f8c2f5180249122a33eace3cef8284eedeb23b2d189b98882cc10179d04a9554bc59bae628733bb6b243301659c9e80bfb45b6a0131834f28286fd55b723e1a5ee1b18aadf8cc60f3de787bbdce9eb1f5c345d0d26f61a79c45958de70134e0c1b4e08500303e386996394bf94a69620c95d1886ed57dca0ad921c110bd02542592a67036150b1790d256633896af64a07f1415c7cceb9b03443ae4a5ab5547f32"
+  "body": "{\"files\": {\"app.py\": [\"b071b26aa92eeee07d84f3321b6c02b07db68806070da903847bf149a412279c\", 49585], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"eb4f4ce15ca913f09f2a7a918455cf325161ee9a5d5d5be7af59417e02f666dc\", 55092], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"69d726d81f40ca9a22f266407cf20ef91f69a77eeb5ce2de6bdf1f837cb490ab\", 19]}, \"notes\": \"Low-battery alert for the HAWKi monitors (20% or less, three hourly readings in a row), switchable under Notifications.\", \"ref\": \"v1.2.13\", \"version\": \"1.2.13\"}",
+  "sig": "317e119589b194de43d894d9ae90bd5ada79bfe20a1405eb998c7a077b01a0cfa685cbd9fbe3b4a64cc5af46ade80835ad1de9f6942446bc6f10a28a9c57b731475f8c045e75e935f137bfd82b812d305c575a298507fa4a72afcad9497b624d2ae0ce5d85bffa6cf820ba0a5937317cbb35d5fb4e4206ec9ab48d4b967488e91f856e6379083672248cb7e139f43296b7272fa2458cc4b816e8f26dff895fc49b7842af6c5629339cabe6e91b625d1c6c27eeda2b5ad1ab431813acc5fc6ee6b32c89e550ad7cabd8fb03224eb954dc2e79ba5ea63c862a4508d2ef44438ffd6b3ac9220e050081a0406359e14b10903f57c88fb3cdcb6ee28e0f24a4d59abb"
  }
 }
