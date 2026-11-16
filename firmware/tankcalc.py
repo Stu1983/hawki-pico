@@ -28,6 +28,7 @@ The body cross-section is then scaled so the full height holds exactly capacity_
 measurements only move litres between heights; they can't change the total.
 """
 import math
+from array import array
 
 WIN_Z1 = 225.82 / 1300
 WIN_Z2 = 1069.38 / 1300
@@ -76,6 +77,8 @@ def _rib_rate(t, z):
 
 
 def _measured_table(t, H, cap):
+    # Litres at every STEP mm, kept as 4-byte floats: a list of boxed floats cost ~13 KB a table, and a
+    # few of those chopped the heap up so much that HTTPS (one ~40 KB block) failed with ENOMEM.
     key = (H, cap) + tuple((k, str(t.get(k))) for k in sorted(t) if k not in ('name',))
     tbl = _tables.get(key)
     if tbl:
@@ -84,22 +87,27 @@ def _measured_table(t, H, cap):
     zs = [min(H, i * STEP) for i in range(n)]
     if zs[-1] < H:
         zs.append(H)
-    rates = [_rib_rate(t, z) - _win_rate(t, z) for z in zs]
-    cum = [0.0]
-    for i in range(1, len(zs)):
-        cum.append(cum[-1] + (rates[i] + rates[i - 1]) / 2 * (zs[i] - zs[i - 1]))
-    a0 = (cap - cum[-1]) / H  # body L/mm, scaled so the full height = capacity
-    tbl = (zs, [a0 * z + c for z, c in zip(zs, cum)])
-    if len(_tables) > 8:
+    vs = array('f', bytes(4 * len(zs)))
+    prev_r, c = _rib_rate(t, 0) - _win_rate(t, 0), 0.0
+    for i in range(1, len(zs)):  # cumulative ribs - windows, then add the body
+        r = _rib_rate(t, zs[i]) - _win_rate(t, zs[i])
+        c += (r + prev_r) / 2 * (zs[i] - zs[i - 1])
+        vs[i] = c
+        prev_r = r
+    a0 = (cap - c) / H  # body L/mm, scaled so the full height = capacity
+    for i in range(len(zs)):
+        vs[i] += a0 * zs[i]
+    tbl = (H, vs)
+    if len(_tables) >= 3:
         _tables.clear()
     _tables[key] = tbl
     return tbl
 
 
 def _interp(tbl, d):
-    zs, vs = tbl
-    i = min(len(zs) - 2, int(d / STEP))
-    z0, z1 = zs[i], zs[i + 1]
+    H, vs = tbl
+    i = min(len(vs) - 2, int(d / STEP))
+    z0, z1 = i * STEP, min(H, (i + 1) * STEP)
     return vs[i] + (vs[i + 1] - vs[i]) * (d - z0) / (z1 - z0)
 
 
