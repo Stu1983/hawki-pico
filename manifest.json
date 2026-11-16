@@ -1,7 +1,7 @@
 {
- "version": "1.2.6",
- "ref": "v1.2.6",
- "notes": "Tank settings take one capacity: the whole tank, as on the spec sheet. The oil below the outlet is worked out from your heights. After a delivery, adjust the capacity until the history page's 'sensor saw' matches the delivery note. Includes 1.2.1-1.2.5 (incl. the ENOMEM fix).",
+ "version": "1.2.7",
+ "ref": "v1.2.7",
+ "notes": "Dashboard shows a front view of the tank with the oil level the sensor reads - a quick sanity check against what you see. The outlet is drawn hanging below its measured top.",
  "files": {
   "app.py": [
    "fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6",
@@ -44,20 +44,20 @@
    8204
   ],
   "ui.html": [
-   "c793f3f4d24fff25cf2143b0a4ab380648f07e925df211fa5325ec84d36642cd",
-   51003
+   "8004d8449a714ff6d86544d795b40bd43cdf843d1a9c245cfcdbf2825bd11ec5",
+   53295
   ],
   "updater.py": [
    "b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b",
    9064
   ],
   "version.py": [
-   "1f12fc84377ed2a0b0d2038b1dcaf27ebbf1108598caa9ee6a2bd5ad443658f7",
+   "94cd42ba8b61323786b65a22ea1b18664c026fdde07fb3ccabfc50473d800e8f",
    18
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"c793f3f4d24fff25cf2143b0a4ab380648f07e925df211fa5325ec84d36642cd\", 51003], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"1f12fc84377ed2a0b0d2038b1dcaf27ebbf1108598caa9ee6a2bd5ad443658f7\", 18]}, \"notes\": \"Tank settings take one capacity: the whole tank, as on the spec sheet. The oil below the outlet is worked out from your heights. After a delivery, adjust the capacity until the history page's 'sensor saw' matches the delivery note. Includes 1.2.1-1.2.5 (incl. the ENOMEM fix).\", \"ref\": \"v1.2.6\", \"version\": \"1.2.6\"}",
-  "sig": "6a9ba333838ba7a84e77aae8df7f8ac6c35903cd19d46e29a08a33c974ef948e41ed5b3669258eb1c243ec62174d888eae1bbbb14044f6b6dcbab026a1f0cce78d124dfaa9586726b5d87dbcbf3e318c83ddf991fc5b5203a71790a7f6afa37907004e27aba85bc9cf21d655e5ca5a92b083153d34db5aafa4857f1f1cc40c2c66dc16dc1cd5c6e9ec7ba942bbf47cd9a081b4ceea0d9a7ff1472e9915ad723cd5dcf777996eafc4e621864f35f42d8c1546d1097b100370d79964984c8c23e2ebf5428922132f771162f00d51bd0a7de50e03569dbc6a0b0aedc8da203e56b506156ede6ee523ac42252df79bcdd73c41b96a1ee3221ee9a879ee7ec6520c5c"
+  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"8004d8449a714ff6d86544d795b40bd43cdf843d1a9c245cfcdbf2825bd11ec5\", 53295], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"94cd42ba8b61323786b65a22ea1b18664c026fdde07fb3ccabfc50473d800e8f\", 18]}, \"notes\": \"Dashboard shows a front view of the tank with the oil level the sensor reads - a quick sanity check against what you see. The outlet is drawn hanging below its measured top.\", \"ref\": \"v1.2.7\", \"version\": \"1.2.7\"}",
+  "sig": "8f4148d698d2690be6a04dcb85c0f3aa12a51e6ff4e780dcfbd16e2324c78a110a2c4450855558ed5a45babad242a4f1186fec4cf91317b1b2d65a1269b7c25cdb461b16a304160e0770442367671b3469b2fc4db4b663d31a257f936d038932d9eb2fa42f08aa6bdc0ff29f74b408efe0dfba40ce265c37160a96f600bb0530d315c6ab75433373f2dcbbb2328712746e0a185be4fc322d2884615124f2986b3e5ecc8f94961b9dfe3a0e597220343ddec88db483a36449021253db1b087d6ca86c2076d904eb87cc68601b1350c7051c21799276106abf495aaedbfc75ee23181ebfd3443edf3e0d248026f3bca38465459916efca994ae192d894e275e319"
  }
 }
