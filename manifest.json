@@ -1,7 +1,7 @@
 {
- "version": "1.2.7",
- "ref": "v1.2.7",
- "notes": "Dashboard shows a front view of the tank with the oil level the sensor reads - a quick sanity check against what you see. The outlet is drawn hanging below its measured top.",
+ "version": "1.2.8",
+ "ref": "v1.2.8",
+ "notes": "Dashboard tank drawing: no measurements on it, and the ribs are part of the tank's outline.",
  "files": {
   "app.py": [
    "fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6",
@@ -44,20 +44,20 @@
    8204
   ],
   "ui.html": [
-   "8004d8449a714ff6d86544d795b40bd43cdf843d1a9c245cfcdbf2825bd11ec5",
-   53295
+   "12330e4c659af0d6a76e6c4f89f17f38ae9103fb71d118e0975f7382a0eb46f4",
+   54280
   ],
   "updater.py": [
    "b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b",
    9064
   ],
   "version.py": [
-   "94cd42ba8b61323786b65a22ea1b18664c026fdde07fb3ccabfc50473d800e8f",
+   "6cf5b3615f4653cb133633a25c8721284bd45114649a136238a2de3eef0ff45f",
    18
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"8004d8449a714ff6d86544d795b40bd43cdf843d1a9c245cfcdbf2825bd11ec5\", 53295], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"94cd42ba8b61323786b65a22ea1b18664c026fdde07fb3ccabfc50473d800e8f\", 18]}, \"notes\": \"Dashboard shows a front view of the tank with the oil level the sensor reads - a quick sanity check against what you see. The outlet is drawn hanging below its measured top.\", \"ref\": \"v1.2.7\", \"version\": \"1.2.7\"}",
-  "sig": "8f4148d698d2690be6a04dcb85c0f3aa12a51e6ff4e780dcfbd16e2324c78a110a2c4450855558ed5a45babad242a4f1186fec4cf91317b1b2d65a1269b7c25cdb461b16a304160e0770442367671b3469b2fc4db4b663d31a257f936d038932d9eb2fa42f08aa6bdc0ff29f74b408efe0dfba40ce265c37160a96f600bb0530d315c6ab75433373f2dcbbb2328712746e0a185be4fc322d2884615124f2986b3e5ecc8f94961b9dfe3a0e597220343ddec88db483a36449021253db1b087d6ca86c2076d904eb87cc68601b1350c7051c21799276106abf495aaedbfc75ee23181ebfd3443edf3e0d248026f3bca38465459916efca994ae192d894e275e319"
+  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"12330e4c659af0d6a76e6c4f89f17f38ae9103fb71d118e0975f7382a0eb46f4\", 54280], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"6cf5b3615f4653cb133633a25c8721284bd45114649a136238a2de3eef0ff45f\", 18]}, \"notes\": \"Dashboard tank drawing: no measurements on it, and the ribs are part of the tank's outline.\", \"ref\": \"v1.2.8\", \"version\": \"1.2.8\"}",
+  "sig": "4a013558c22a433ea369e30b7e7aed542721eec3eef4d3eb3bba0b55e6fedbca331f8ef1a4f6eecaa04aef2d1c556a2f075cace26c3b33410285c3fc1dffb48b37983f0d4788b337718839af73a75a8f14d67237e56df33ed9eb2a0ac6cd80833dba63b22e6f02156fabaa4f91784a2502ad6018cc88cc5f78245c22f396ab99094acc75a3b4ad127a776f143874712650fe0d7d0ee93210cfc60da60f87706096ec7ff258e624cba77aef47f68359c676664e7368fff03be9060f2243857b86cb03d43f4240ad6cec3af6f4c856290412a10455478e8fa748514b8fa746ca37fc859096327b01e5ace6453c2080e7febaeced7d9038663cf46b01661437f8ca"
  }
 }
