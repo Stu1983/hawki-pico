@@ -1,7 +1,7 @@
 {
- "version": "1.2.23",
- "ref": "v1.2.23",
- "notes": "Both tanks together: a dashboard option that adds the tanks' oil and works out use and the forecast from the combined drop. 'Order by' is now 'Order around'.",
+ "version": "1.2.24",
+ "ref": "v1.2.24",
+ "notes": "Both-tanks dashboard shows one tank drawing at a time: swipe (or tap the dots) for the other; it remembers the one you last looked at.",
  "files": {
   "app.py": [
    "a0b5f2de42722e2c588ab210bfb447b2d1ecd24857b8bbabd8e4cb3f00482979",
@@ -44,20 +44,20 @@
    8588
   ],
   "ui.html": [
-   "442ae82eef22d30a3680bf82d5df35bf068256feffd589ac73cee0c656846818",
-   61372
+   "404b9d83a6f9aa65fdf84a4dc7b0316e374927327a201fc4ccc32425fe4f0fbe",
+   63079
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "25e75a02541ba410dc2b71a321e36adba4c12040f582d831ab3b7e9e72cce6b3",
+   "d4324f3f3262d65294bf7ea98ea1b164d1200628b0bccd3f587d6d1f5507aece",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"a0b5f2de42722e2c588ab210bfb447b2d1ecd24857b8bbabd8e4cb3f00482979\", 52416], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"55df1935462611e18fe76cac107ca9a8a75b8f22669ae00325f05bb85ac5a37f\", 11046], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"3732518c445c037112c492cd85b3262c43fb9e1704cf4235caed1345f0402546\", 37102], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"442ae82eef22d30a3680bf82d5df35bf068256feffd589ac73cee0c656846818\", 61372], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"25e75a02541ba410dc2b71a321e36adba4c12040f582d831ab3b7e9e72cce6b3\", 19]}, \"notes\": \"Both tanks together: a dashboard option that adds the tanks' oil and works out use and the forecast from the combined drop. 'Order by' is now 'Order around'.\", \"ref\": \"v1.2.23\", \"version\": \"1.2.23\"}",
-  "sig": "159ad540720c24e5fa784071baa2c7239bf2f7b5afb360d2754f1ce42de4859e776ddb1d896de6aed8dfabb0a80df7970190acd46155f5ff3bff5f7c9268502bd579d1c9dd4c04dda11b79883b27787c900b0a86f76eaa131614f64d8b20340cdfa2d8668d6c35ed70119deae73b2166d544e7f7409868abd04ad143cfb1299e49b1267373903fa44f0eb4ebc7c1672d73b5666377c94c2d6e4b21b829e266c7cbb75454348181a3a9f87f5a9b3adea55aa028ae198b76f3146a9d282c3f386d3ce7cc6c4a43919faeb766375fd1857ae0a38863812fd3351356c98ee5e2b33a858868391e732382150d451c496df736f922d39426160c73f9d3dcdac2fcb754"
+  "body": "{\"files\": {\"app.py\": [\"a0b5f2de42722e2c588ab210bfb447b2d1ecd24857b8bbabd8e4cb3f00482979\", 52416], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"55df1935462611e18fe76cac107ca9a8a75b8f22669ae00325f05bb85ac5a37f\", 11046], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"3732518c445c037112c492cd85b3262c43fb9e1704cf4235caed1345f0402546\", 37102], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"404b9d83a6f9aa65fdf84a4dc7b0316e374927327a201fc4ccc32425fe4f0fbe\", 63079], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"d4324f3f3262d65294bf7ea98ea1b164d1200628b0bccd3f587d6d1f5507aece\", 19]}, \"notes\": \"Both-tanks dashboard shows one tank drawing at a time: swipe (or tap the dots) for the other; it remembers the one you last looked at.\", \"ref\": \"v1.2.24\", \"version\": \"1.2.24\"}",
+  "sig": "71e37ad9a04101167ae6aae86157502f8fb07eda08de7a81bc4b94a600410ec6be0de786e7aeb3eebbff310810da8ecb719f2f81d6778e6111db5223849f32aab7f44e946be5e3ff651348c4fd6cb37af7d4b831a49ef67b17d9595b410027686039c10bbfe616ca2f68d8eea48a5ff7ccb37ddc1d0e9e7d2719ff1732794bfeaae85b55f13677be142b6a2096c7df2e3bda39bbfff6cc14b744d99d59c5606c5b2f05355429f9df436d573b678866c52cb05e9b39a3142a8ec9a673fe2f06f5f20439a2fb99bf631e038dfb9c8dace909a79d4c6b76f4da366e20a32188532580996107789b6613ff989624550d26abc1529ac5701ea0d50f199bc6b343dd3e"
  }
 }
