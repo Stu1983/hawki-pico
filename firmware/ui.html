@@ -18,7 +18,7 @@ button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.del{c
 input,select{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);margin-top:3px}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);width:min(520px,calc(100vw - 32px));padding:16px}
 dialog::backdrop{background:#0008}
-#viz,#d_tank{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}#d_tank{display:block;max-width:560px;margin:8px auto 0}#d_tank text{font-size:11px}#d_tank .rl{stroke:var(--fg);stroke-width:.6;opacity:.25}#d_tank .tk{fill:none}svg#d_tank .inn{stroke:var(--fg)}
+#viz,#d_tank{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}#d_tank{display:block;max-width:560px;margin:8px auto 0}#d_tank text{font-size:11px}#d_tank .rl{stroke:var(--fg);stroke-width:.6;opacity:.25}#d_tank .tk{fill:none}svg#d_tank .inn{stroke:var(--fg)}#d_tank .rsv{stroke:var(--warn);stroke-width:1.2;stroke-dasharray:2 3}svg#d_tank .rsvt{fill:var(--warn)}
 #viz .tk,#d_tank .tk{fill:none;stroke:var(--fg);stroke-width:1.2}#viz .rib,#d_tank .rib{fill:#2f9ee533;stroke:#2f9ee5}#viz .win,#d_tank .win{fill:var(--card);stroke:#e0473f}
 #viz .inn,#d_tank .inn{fill:var(--bg);stroke:#f08a24;stroke-width:1.2}#viz .wino,#d_tank .wino{fill:none;stroke:#e0473f;stroke-dasharray:4 3}#viz .oil,#d_tank .oil{fill:var(--oil);opacity:.35}#viz .oilx,#d_tank .oilx{opacity:.15;stroke:var(--oil);stroke-dasharray:4 3}#viz .gnd,#d_tank .gnd{stroke:var(--mut)}
 #viz .dim,#d_tank .dim{stroke:var(--mut);stroke-width:.8;fill:none}#viz text,#d_tank text{font:9px system-ui,sans-serif;fill:var(--mut)}#viz .g,#d_tank .g{stroke-dasharray:4 3;opacity:.6}
@@ -253,6 +253,7 @@ function tankSvg(p){
   const cx=L/(nW+1);o+=`<text class="lbl" x="${X(cx)}" y="${Y(wt)-3}" text-anchor="middle">${wo0??'?'} wide</text>`}}
  if(out>0||og!=null){const r=Math.max(2.5,Math.min(2.5,out/2)*sc);  // the fitting (~5 cm): its TOP is the measured height
   o+=`<circle class="${cls('tk','outlet',og==null)}" cx="${X(0)+3+r}" cy="${Y(out)+r}" r="${r}"/>`+(p.plain?'':`<text class="lbl" x="${X(0)+6+2*r}" y="${Y(out)-3}">outlet ${og??'?'}</text>`)}
+ if(p.reorder&&p.reorder.h>0&&p.reorder.h<top){const yr=Y(p.reorder.h);o+=`<line class="rsv" x1="${X(0)}" y1="${yr}" x2="${X(L)}" y2="${yr}"/><text class="rsvt" x="${X(L)-3}" y="${yr-3}" text-anchor="end">${p.reorder.text}</text>`}
  if(!p.plain){o+=`<line class="dim" x1="${X(L)+10}" y1="${Y(0)}" x2="${X(L)+10}" y2="${Y(top)}"/><text x="${X(L)+20}" y="${Y(top/2)}" text-anchor="middle" transform="rotate(-90 ${X(L)+20} ${Y(top/2)})">monitor ${+top.toFixed(1)} up</text>`;
  o+=`<text x="${X(L/2)}" y="${gy+11}" text-anchor="middle">front ${L} cm</text>`+(end?`<text x="${ex(W/2)}" y="${gy+11}" text-anchor="middle">end ${W} cm</text>`:'')}
  return o}
@@ -440,7 +441,9 @@ function drawTank(t){const c=t&&t.cfg;if(!c){$('d_tank').innerHTML='';$('d_tank2
  const top=hf==null?null:hf+(out||0),lvl=n(t.level),lv=lvl!=null&&lvl<16000&&top!=null?top-lvl/10:null;
  // with the outlet height known the oil is placed from the ground; without it, from the outlet
  $('d_tank2').textContent=lv==null?'no reading yet':lv<=(out||0)?'down to the outlet':out!=null?'oil at '+(+lv.toFixed(1))+' cm':(+lv.toFixed(1))+' cm over outlet';
- $('d_tank').innerHTML=tankSvg({L:n(c.length_cm),W:n(c.width_cm),nW:m?n(c.windows):0,og:out,outGuess:0,top,wb0:n(c.win_bottom_cm),wt0:n(c.win_top_cm),wo0:n(c.win_outer_w_cm),
+ const rsv=n(c.reserve_l)??200,cv=AN&&AN.mac===t.mac&&AN.cv;let rh=null;
+ if(cv&&Array.isArray(cv.l)&&cv.step>0&&top!=null){const l=cv.l;for(let i=1;i<l.length;i++)if(l[i]<=rsv){const a=l[i-1],b=l[i],mm=(i-1+(a===b?0:(a-rsv)/(a-b)))*cv.step;rh=top-mm/10;break}}
+ $('d_tank').innerHTML=tankSvg({reorder:rh!=null&&rsv>0?{h:rh,text:'reorder '+L0(rsv)}:null,L:n(c.length_cm),W:n(c.width_cm),nW:m?n(c.windows):0,og:out,outGuess:0,top,wb0:n(c.win_bottom_cm),wt0:n(c.win_top_cm),wo0:n(c.win_outer_w_cm),
   wi:n(c.win_inner_w_cm),hi:n(c.win_inner_h_cm),rh:n(c.rib_h_cm),rd:n(c.rib_depth_cm),rv:m&&Array.isArray(c.ribs_cm)?c.ribs_cm.map(n):[],plain:true,level:top==null?null:lvl,oilText:n(t.litres)!=null?L0(t.litres):'oil'})}
 function drawRate(A,now){const svg=$('c_rate');if(!A){noData(svg,'Daily use shows after 2 days of readings');return}
  const t1=midnight(now),t0=addDays(t1,-30),ds=[];for(let t=t0;t<t1;t=addDays(t,1))if(A.days[t]!=null)ds.push([t,Math.max(0,A.days[t])]);
