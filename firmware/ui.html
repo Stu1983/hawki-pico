@@ -253,7 +253,8 @@ function tankSvg(p){
   const cx=L/(nW+1);o+=`<text class="lbl" x="${X(cx)}" y="${Y(wt)-3}" text-anchor="middle">${wo0??'?'} wide</text>`}}
  if(out>0||og!=null){const r=Math.max(2.5,Math.min(2.5,out/2)*sc);  // the fitting (~5 cm): its TOP is the measured height
   o+=`<circle class="${cls('tk','outlet',og==null)}" cx="${X(0)+3+r}" cy="${Y(out)+r}" r="${r}"/>`+(p.plain?'':`<text class="lbl" x="${X(0)+6+2*r}" y="${Y(out)-3}">outlet ${og??'?'}</text>`)}
- if(p.reorder&&p.reorder.h>0&&p.reorder.h<top){const yr=Y(p.reorder.h);o+=`<line class="rsv" x1="${X(0)}" y1="${yr}" x2="${X(L)}" y2="${yr}"/><text class="rsvt" x="${X(L)-3}" y="${yr-3}" text-anchor="end">${p.reorder.text}</text>`}
+ if(p.reorder&&p.reorder.h>0&&p.reorder.h<top){const yr=Y(p.reorder.h),hr=p.reorder.h,inRib=p.plain&&ribs.some(c=>hr>=c-rh/2&&hr<=c+rh/2),ext=inRib?Math.max(2,rd*sc*3):0;  /* inside a rib: run out to its outer wall */
+  o+=`<line class="rsv" x1="${X(0)-ext}" y1="${yr}" x2="${X(L)+ext}" y2="${yr}"/><text class="rsvt" x="${X(L)-3}" y="${yr-3}" text-anchor="end">${p.reorder.text}</text>`}
  if(!p.plain){o+=`<line class="dim" x1="${X(L)+10}" y1="${Y(0)}" x2="${X(L)+10}" y2="${Y(top)}"/><text x="${X(L)+20}" y="${Y(top/2)}" text-anchor="middle" transform="rotate(-90 ${X(L)+20} ${Y(top/2)})">monitor ${+top.toFixed(1)} up</text>`;
  o+=`<text x="${X(L/2)}" y="${gy+11}" text-anchor="middle">front ${L} cm</text>`+(end?`<text x="${ex(W/2)}" y="${gy+11}" text-anchor="middle">end ${W} cm</text>`:'')}
  return o}
