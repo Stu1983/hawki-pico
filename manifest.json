@@ -1,7 +1,7 @@
 {
- "version": "1.2.9",
- "ref": "v1.2.9",
- "notes": "Tank drawing: the window's outer opening is dashed and only its narrowest part is drawn as a hole, so the oil in the sloping skin shows.",
+ "version": "1.2.10",
+ "ref": "v1.2.10",
+ "notes": "Dashboard tank drawing: the windows' holes are outlined like the tank wall.",
  "files": {
   "app.py": [
    "fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6",
@@ -44,20 +44,20 @@
    8204
   ],
   "ui.html": [
-   "c55146fd46df2fd4d7789cdf223c40d5d7e96869ae7c1049b71792d03653f350",
-   54552
+   "ad8b47140185d8aa8e647f26ead46ae503e55e4195206a549f0fe1172cf8449b",
+   54585
   ],
   "updater.py": [
    "b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b",
    9064
   ],
   "version.py": [
-   "1fa3ce6a6e40614df3dee7c546cdd85926191797a33789a6a69c99113422c559",
-   18
+   "e3caee1fcdbb044b0b9e19827588ca6282a654341ba0a16303fef169cf7e640f",
+   19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"c55146fd46df2fd4d7789cdf223c40d5d7e96869ae7c1049b71792d03653f350\", 54552], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"1fa3ce6a6e40614df3dee7c546cdd85926191797a33789a6a69c99113422c559\", 18]}, \"notes\": \"Tank drawing: the window's outer opening is dashed and only its narrowest part is drawn as a hole, so the oil in the sloping skin shows.\", \"ref\": \"v1.2.9\", \"version\": \"1.2.9\"}",
-  "sig": "8a87b1389e682d18e7f61f00e05095dde70509d2fa123419de20a425d8e770242c0d29d7b08054a76f2dcb3ac37bc1b6b0a638dbf1a9ffcacdf52513730e6f89e50a1167a62b20697bbcf2e8e1a927370babc6d91433201640de33adddc3e4348a66988646a21f0611f8b927e7165287851669ed33312e9f45571d47dc0c6e0ab1028520c97029d4ebac6eae362731ec8729fb2ed864793acc2e4872a3a0c695c01bbb47a29d7e81f9648840508178f6e19e5b7c047657ee5be790ab823cafa8f6d8d8b91685381601829f934ca7ddf01534f010e96bcbdb30c534e082c076376cd671df674a3c253e42a78576e5dcc35a24b8066fa31b707713d160a79d4437"
+  "body": "{\"files\": {\"app.py\": [\"fe90a7d501f469bec96893dc87ff69818c053bf2296f3aa0552fd6afcc1112a6\", 47902], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"8cf771a6d6a76ef220276562371397557102e3b715061f22dd3a5f06bdaafbb0\", 32598], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"defd5cfa1d049f8082066918796acc6aa7b4abd1f5a7e74841c8a25d44ffca12\", 8204], \"ui.html\": [\"ad8b47140185d8aa8e647f26ead46ae503e55e4195206a549f0fe1172cf8449b\", 54585], \"updater.py\": [\"b664e7189e5a6ac4ce2de6dffc5bdfe28587b84ff55a54e6e2302e7461f4b02b\", 9064], \"version.py\": [\"e3caee1fcdbb044b0b9e19827588ca6282a654341ba0a16303fef169cf7e640f\", 19]}, \"notes\": \"Dashboard tank drawing: the windows' holes are outlined like the tank wall.\", \"ref\": \"v1.2.10\", \"version\": \"1.2.10\"}",
+  "sig": "2a7ca7da3f693d5248f50b91f300910edda87a5e913ce988bcb74cb0bbbaf2487b5eb19da22978c90ddc45a1baf938fc9d9f3e7b017725c7707a7aa2f688c7090dde0839cebff5cf16cb3ebb747d6105ab50e40ce77dabc24f7b710dabb62c5c5ca060bc96ac109cc1bdbdf2b03ca9576d046bdf02bacff2ef31098def3a19ad4a6c123f53cbf1b0da1cb5bbd813ed5a0eb13afcdb8f8fc7fd03957b5d8212e548bd2bcc3dc7b713bf361eb8a694ee7a382df125db88e600597c68adf2ba096c919b5383a56cdea0fe85f48ff56781d79e61094841afa3cddb75d2c9a42baf3a3375424875739044e0ac90f8c30a00004c48497dfbe32fc3a543281ea6748b85"
  }
 }
