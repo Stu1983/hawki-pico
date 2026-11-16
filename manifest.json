@@ -1,7 +1,7 @@
 {
- "version": "1.2.20",
- "ref": "v1.2.20",
- "notes": "Dashboard tank drawing shows the reorder level as a line with its litres.",
+ "version": "1.2.21",
+ "ref": "v1.2.21",
+ "notes": "Dashboard tank drawing: the reorder line runs into the ribs.",
  "files": {
   "app.py": [
    "095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b",
@@ -44,20 +44,20 @@
    8588
   ],
   "ui.html": [
-   "012409a709f76c0b5be64bdd11804ba985ef57be2e14affba2f5f27eebe6ebca",
-   56713
+   "f590ceb442f85acd362c5cb2824babde4bf226d5dbb18ec07c7493198051374e",
+   56870
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "ea277f927bf9e89faefa180c45914b4179941e46437ca700c9fc7585cd534943",
+   "55e75f3023d5d5fe0ada9dc5f075c1fdec1410f4693cd20ab0edf68d5d3c786a",
    19
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b\", 52263], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"38c9e22ddc174ee645565dbd4efa386e3c4b9fbb73f6b294daf562ace5002774\", 37201], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"012409a709f76c0b5be64bdd11804ba985ef57be2e14affba2f5f27eebe6ebca\", 56713], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"ea277f927bf9e89faefa180c45914b4179941e46437ca700c9fc7585cd534943\", 19]}, \"notes\": \"Dashboard tank drawing shows the reorder level as a line with its litres.\", \"ref\": \"v1.2.20\", \"version\": \"1.2.20\"}",
-  "sig": "0f633ba3f36d124cb733e93659d70eb9f1fb2e64e2ebc5361a0e1a12d9191f74cfd6ae097e0353b4aa47e402cc9a8aba932720882897a6daede55a067ec93141283134048a9bdf71ffb209b63a891a961cd5b0150a54d50a08cd2730f945398b0cced4823dc609f028545879f986169fafd588bfda7b0097749d46c00a645c4aa35efb8effd79f355f4fa483462cd5e26ae835039dcc737c1beeef080a16aaa67d026805a97530f8cb957d2bbacc7839a512cb2d946b4519842d4c7f2aee96e58c709f7dbf882a7ef5824955e2994ebc374d1510ef92531c2498e142eb6ee4d44a79a20db346c459c501116da6d165df255c5c9f86f7ae723dab980c025cd429"
+  "body": "{\"files\": {\"app.py\": [\"095e54a4460d66a1d1b92d58cea95b128fc0bd0280c649932181c26b6f480b5b\", 52263], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"14983b4e28bb727014dbad577a2575a1056b6c61b5a7faf66f804b3b5df55824\", 10488], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"38c9e22ddc174ee645565dbd4efa386e3c4b9fbb73f6b294daf562ace5002774\", 37201], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"f590ceb442f85acd362c5cb2824babde4bf226d5dbb18ec07c7493198051374e\", 56870], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"55e75f3023d5d5fe0ada9dc5f075c1fdec1410f4693cd20ab0edf68d5d3c786a\", 19]}, \"notes\": \"Dashboard tank drawing: the reorder line runs into the ribs.\", \"ref\": \"v1.2.21\", \"version\": \"1.2.21\"}",
+  "sig": "7f43dee00b3ef13f1b99b611c6d801f38d89cc2418c5d1e5d397d491a77715d4097ba235e86d2ecd565fa10d08dcffd3733eed7f341b32d67494260e0a03d9db5bfb2c20cc5b0cf4619fee84aa516de8918e4a0c7dcd917d92b84f3f5e6df4416ac4881a57d1cfb1308a9d004615bfb24b4eb47bd52688688d1e1a5ad45fd382882314a841b6da03bb29c3e6ca4af0ab202bcdc78b4f74c0396e25524546c7656daf29ce50aefe398bd5f7c9fc3f07569a4462f07a920a29dc5bd41be7f4585afccce573c2066aca4f5b4923d7ae550befff6b2cd23cea7f1a6253212c6a161443805a61bebc54f9c31c813b058efb18ce59684e368c72b435224db2bb1b3b37"
  }
 }
