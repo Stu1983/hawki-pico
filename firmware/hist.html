@@ -459,8 +459,9 @@ const toLocalInput=t=>{const d=new Date(t*1000);return d.getFullYear()+'-'+pad(d
 function editDel(x){EDIT=x;const r=x&&x.r;
  $('ddT').textContent=x?(x.f&&!r?'Delivery seen by the sensor':'Edit delivery'):'Add a delivery';$('ddM').textContent=T.all?'':T.name;const tk=$('d_tk');tk.textContent='';S.tanks.forEach(t=>{const o=document.createElement('option');o.value=t.mac;o.textContent=t.name;tk.appendChild(o)});
  $('d_tkL').hidden=!T.all;tk.value=x&&x.mac?x.mac:S.primary&&S.primary!=='all'?S.primary:S.tanks[0].mac;tk.disabled=!!x;  /* a delivery the sensor saw belongs to that tank */  /* a saved record stays with its tank */
- $('d_t').value=toLocalInput(x?x.t:Math.floor(now));$('d_l').value=r&&r.litres!=null?r.litres:(x&&x.f?Math.round(x.f.add):'');
- $('d_lh').textContent=x&&x.f?'The sensor saw about +'+L0(x.f.add)+'. Use the receipt figure if you have it.':'';
+ $('d_t').value=toLocalInput(x?x.t:Math.floor(now));$('d_l').value=r&&r.litres!=null?r.litres:'';$('d_l').placeholder=x&&x.f?'about '+Math.round(x.f.add):'';  /* the sensor's estimate is only a hint: saved as the receipt's litres it would count as a receipt (and feed the capacity fit) */
+ const lh=$('d_lh');lh.textContent='';if(x&&x.f){const est=Math.round(x.f.add);lh.append('The sensor saw about +'+L0(est)+'. Use the receipt figure if you have it. ');
+  const u=document.createElement('button');u.type='button';u.textContent='Use '+L0(est);u.onclick=()=>{$('d_l').value=est;price('l')};lh.append(u)}  /* taking the estimate is the user's choice */
  $('d_s').value=r?r.supplier||'':'';$('d_n').value=r?r.note||'':'';
  $('d_p').value=r&&r.ppl!=null?r.ppl:'';$('d_c').value=r&&r.total!=null?r.total:'';
  const dl=$('d_sl');dl.textContent='';[...new Set(Object.values(D).flat().map(r=>r.supplier).filter(Boolean))].forEach(s=>{const o=document.createElement('option');o.value=s;dl.appendChild(o)});
