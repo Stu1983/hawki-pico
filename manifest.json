@@ -1,11 +1,11 @@
 {
- "version": "1.2.37",
- "ref": "v1.2.37",
- "notes": "Using: the 3, 7 and 14-day figures are the plain average of the last full days, the same as the bars on the charts. Tanks: an 'Isolated (valve closed)' setting (shown with 2+ tanks): its oil counts, its deliveries show, its readings never count as use.",
+ "version": "1.2.38",
+ "ref": "v1.2.38",
+ "notes": "Tanks page shows all the oil in each tank (usable + below the outlet, worked out from the reading), as the Magnus app counts it, with the Magnus-style figure counted the same way.",
  "files": {
   "app.py": [
-   "3f1b84bc175ec9660101a78cea291389df8cd5a45934cc6cf3901938de239beb",
-   62278
+   "5c6ab5bda934612c89c405b56285eb25130843fd5fbd0d41c3c55224c196710b",
+   62638
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -44,19 +44,19 @@
    1851
   ],
   "tankcalc.py": [
-   "0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6",
-   8588
+   "5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233",
+   9040
   ],
   "ui.html": [
-   "5f95a565e19aabb98ca920b187faafd0e3833587d8eaf11b70b8a85180e7e865",
-   68715
+   "51bf34b81497904ff1e53d5eeea341873c81ef73e520f50666252e51d15a41b9",
+   69202
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "da7534951040f1b2d608235fa7716a724a07ad0ff72637471e011a094e51bc87",
+   "678b3ff933eef7691e27481ba4923e537ebbc848f05b8a5de5481f75109f8d21",
    19
   ],
   "weather.py": [
@@ -65,7 +65,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"3f1b84bc175ec9660101a78cea291389df8cd5a45934cc6cf3901938de239beb\", 62278], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"993861e8df63c0ce712439a76496f7178833f2e58ac93d1d2b9f1e586d05d8ab\", 56183], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"5f95a565e19aabb98ca920b187faafd0e3833587d8eaf11b70b8a85180e7e865\", 68715], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"da7534951040f1b2d608235fa7716a724a07ad0ff72637471e011a094e51bc87\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Using: the 3, 7 and 14-day figures are the plain average of the last full days, the same as the bars on the charts. Tanks: an 'Isolated (valve closed)' setting (shown with 2+ tanks): its oil counts, its deliveries show, its readings never count as use.\", \"ref\": \"v1.2.37\", \"version\": \"1.2.37\"}",
-  "sig": "7f6e97a571863a00bad92f43df3ec23d9a9c2442bcd9a71f10086951087260072d916546010f0679040e8791d2a01b34ef268e2dba346798e7b2326d5ed14dbf466f85f18a05e16f01a12bdafae76c34d0712d186b0ba85c36005abb2f1357fcc9f4ebf897dbd76c461db7933c8b5cc490496336dbb9781fb43811d01c33eac567d12ba01c68c58a8253b7788c492cfd1dcf5a94e8b96736e02a620a85bd192bfdff2c5df6f76949c49a75154772d50cae29796c74f83ce63aa770400a2beae1012f24078b924e58a5f2fec9a8a6034910eee4f06596d1686cc511a9429a864dd19e9d2da455c76575c9f9e8275e7beb274990274115187c2f1c4be9abae8148"
+  "body": "{\"files\": {\"app.py\": [\"5c6ab5bda934612c89c405b56285eb25130843fd5fbd0d41c3c55224c196710b\", 62638], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"993861e8df63c0ce712439a76496f7178833f2e58ac93d1d2b9f1e586d05d8ab\", 56183], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"51bf34b81497904ff1e53d5eeea341873c81ef73e520f50666252e51d15a41b9\", 69202], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"678b3ff933eef7691e27481ba4923e537ebbc848f05b8a5de5481f75109f8d21\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Tanks page shows all the oil in each tank (usable + below the outlet, worked out from the reading), as the Magnus app counts it, with the Magnus-style figure counted the same way.\", \"ref\": \"v1.2.38\", \"version\": \"1.2.38\"}",
+  "sig": "4ba438f36a8519dad6663a2b0143ec0fc9517055adc220f784ad435818396b4cc81dcc59db94d634734054d5c48b054c7cc7c44ba6f6c25b0c3818db75e6d197180459ea8df0811211219f38d81c685c78ca030efa201a212b481422aafd3751edad0e503ab693fea8cafe9f5050d4e98b842af6fe9925a4c67fc7f740aaa5a19b344d4ac33ba60ee854b4b84e2e5e74fe44566edbdf7f9bbdbbebc4c448c144bc6aafb252724bd003763f8cb177de49cd4e98d53d586cc7c7628291f299caa0cf7e8c96605dd09dbb1b12ef7d66447aa0d1925890fc174e394d7eb66aef06079ea5b496174d38cf37a46bb0690f802890bbb1334b701dcdec6cf17e05a26e69"
  }
 }

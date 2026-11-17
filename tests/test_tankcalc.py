@@ -87,6 +87,15 @@ def MEASURED_NO_OUTLET():
     return dict(MEASURED, outlet_cm=0, capacity_l=1323)
 
 
+def test_total():
+    """all the oil (floor up): usable + below the outlet, and below the outlet only what's there"""
+    from tankcalc import total
+    t = {'shape': 'cuboid', 'height_cm': 90, 'outlet_cm': 10, 'length_cm': 100, 'width_cm': 100, 'tank_l': 1000, 'windows': 0}
+    assert abs(total(t, 0) - 1000) < 0.5 and abs(total(t, 500) - 500) < 0.5, (total(t, 0), total(t, 500))
+    assert abs(total(t, 950) - 50) < 0.5 and total(t, 1000) == 0 and litres(t, 950) == 0, total(t, 950)
+    assert total({'shape': 'cuboid', 'height_cm': 90, 'capacity_l': 900, 'length_cm': 100, 'width_cm': 100}, 500) is None
+
+
 if __name__ == '__main__':
-    test_matches_magnus_app(); test_bounds_and_codes(); test_other_shapes(); test_measured_model(); test_whole_tank_capacity()
+    test_matches_magnus_app(); test_bounds_and_codes(); test_other_shapes(); test_measured_model(); test_whole_tank_capacity(); test_total()
     print('all ok')

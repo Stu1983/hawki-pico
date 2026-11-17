@@ -34,7 +34,7 @@
 # "HAWKi-Setup-XXXX" (password: oiltanks); browse to http://192.168.4.1/
 import bluetooth, binascii, json, time, network, machine, asyncio, gc, os, struct
 from hawki_decode import decode, mfr_from_adv
-from tankcalc import reading, litres, SHAPES, below, above, tank_equiv
+from tankcalc import reading, litres, SHAPES, below, above, tank_equiv, total
 import histstore
 from version import VERSION
 from listen import Listener
@@ -502,11 +502,18 @@ def tank_view(mac, t, now):
     d = hawki.get(mac) or {}
     lvl = d.get('level')
     lit, pct = reading(t, lvl) if lvl is not None else (None, None)
-    std = None  # what the Magnus-style standard model says, for comparison
-    if t.get('window_model') == 'measured' and lvl is not None:
-        std = reading(dict(t, window_model='standard'), lvl)[0]
+    std = tot = tot_std = None  # Magnus-style standard model, for comparison; and all the oil (floor up)
+    try:
+        if lvl is not None:
+            tot = total(t, lvl)
+            if t.get('window_model') == 'measured':
+                std = reading(dict(t, window_model='standard'), lvl)[0]
+                tot_std = total(dict(t, window_model='standard'), lvl)
+    except Exception:  # odd stored values must never break /api/state
+        pass
+    r1 = lambda v: None if v is None else round(v, 1)
     return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct,
-            'litres_standard': std, 'unusable': unusable(t), 'listen': listener.info(mac),
+            'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': unusable(t), 'listen': listener.info(mac),
             'battery': d.get('battery'), 'rssi': d.get('rssi'),
             'age': (now - d['rx']) if d.get('rx') else None,
             'cfg': cfg_view(t)}

@@ -166,6 +166,17 @@ def litres(tank, level_mm):
     return None if v is None else max(0.0, v - below(tank))
 
 
+def total(tank, level_mm):
+    """All the oil in the tank, floor to surface (usable + what's below the outlet), or None if unknown.
+    Needs tank_l (the whole-tank model); older settings only know the usable part."""
+    if tank.get('tank_l') in (None, '') or level_mm is None or level_mm == 16383:
+        return None
+    if level_mm == 16382:
+        return 0.0
+    v = _litres(whole(tank), level_mm)
+    return None if v is None else max(0.0, v)
+
+
 def _litres(tank, level_mm):
     """Return litres of liquid for a sensor-to-surface distance, or None if unknown."""
     if level_mm is None or level_mm == 16383:
