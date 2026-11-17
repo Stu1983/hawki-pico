@@ -35,6 +35,7 @@ WIN_Z2 = 1069.38 / 1300
 SHAPES = ('cuboid', 'horizontal', 'vertical', 'other')
 STEP = 5.0  # mm, resolution of the measured-model table
 _tables = {}
+PER_MONITOR = ('name', 'reserve_l', 'unusable_l', 'isolated', 'group')  # not shared by linked tanks
 
 
 def _f(t, k, d=0.0):
@@ -79,7 +80,7 @@ def _rib_rate(t, z):
 def _measured_table(t, H, cap):
     # Litres at every STEP mm, kept as 4-byte floats: a list of boxed floats cost ~13 KB a table, and a
     # few of those chopped the heap up so much that HTTPS (one ~40 KB block) failed with ENOMEM.
-    key = (H, cap) + tuple((k, str(t.get(k))) for k in sorted(t) if k not in ('name',))
+    key = (H, cap) + tuple((k, str(t.get(k))) for k in sorted(t) if k not in PER_MONITOR)  # (linked tanks: one table)
     tbl = _tables.get(key)
     if tbl:
         return tbl
@@ -284,6 +285,64 @@ def _many(tank, levels):
         else:
             v = f(x)
             out.append(None if v is None else max(0.0, v - b))
+    return out
+
+
+def link(tanks, mac, t, b, restore=False):
+    """Store tank settings t for mac in tanks, handling 'Same tank as'. Linked monitors share one tank's
+    settings, so a change to one (the form, or a capacity fit) is a change to all of them; only the
+    PER_MONITOR settings are their own. b is the request: 'same_as' = the other tank's mac ('' = not linked);
+    without it (a capacity fit, a restore) the link stays as it was."""
+    g = None
+    if 'same_as' in b:
+        o = str(b.get('same_as') or '').lower()
+        if o and o != mac and o in tanks:
+            g = tanks[o].get('group')
+            if not g:  # a new group, with a name of its own (not a tank's: that tank could leave it)
+                used = set(x.get('group') for x in tanks.values())
+                i = 1
+                while 'g%d' % i in used:
+                    i += 1
+                g = tanks[o]['group'] = 'g%d' % i
+    else:
+        g = b.get('group') if restore else tanks.get(mac, {}).get('group')
+    if g:
+        t['group'] = str(g)[:17]
+    tanks[mac] = t
+    if g and not restore:  # (a restore brings every tank's own copy)
+        for m in list(tanks):
+            o = tanks[m]
+            if m != mac and o.get('group') == t['group']:
+                n = {k: v for k, v in t.items() if k not in PER_MONITOR}
+                for k in PER_MONITOR:
+                    if k in o:
+                        n[k] = o[k]
+                tanks[m] = n
+    if not restore:  # a group down to one tank (the other unlinked or was removed) is no group
+        n = {}
+        for x in tanks.values():
+            if x.get('group'):
+                n[x['group']] = n.get(x['group'], 0) + 1
+        for x in tanks.values():
+            if x.get('group') and n[x['group']] < 2:
+                del x['group']
+
+
+def restore_groups(tanks, incoming):
+    """A backup's tanks with their groups renamed so none is the name of a group the tanks NOT in the backup
+    already have (an old backup's g1 must not join a newer, unrelated g1). Returns a new dict."""
+    used = set(t.get('group') for m, t in tanks.items() if m.lower() not in [x.lower() for x in incoming])
+    ren, out, i = {}, {}, 1
+    for m, t in incoming.items():
+        g = t.get('group') if isinstance(t, dict) else None
+        if g:
+            if g not in ren:
+                while 'g%d' % i in used:
+                    i += 1
+                ren[g] = 'g%d' % i
+                used.add(ren[g])
+            t = dict(t, group=ren[g])
+        out[m] = t
     return out
 
 

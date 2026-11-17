@@ -393,7 +393,8 @@ async function fitOne(gen,box,T,CV,dl,label){box.textContent=(label?label+': ':'
  const what=n===1?'this delivery':'these '+n+' deliveries',same=Math.abs(fit-base)<1,rough=n===1?' One delivery is a rough guide; it firms up with more.':'';
  box.textContent=(label?label+': ':'')+(same?'Your tank capacity ('+Math.round(base).toLocaleString()+' L) fits '+what+'.'+rough:'A tank capacity of '+fit.toLocaleString()+' L would fit '+what+' better than your '+Math.round(base).toLocaleString()+' L.'+rough);
  if(Math.abs(fit-base)>=1){FIT[mac]=fit;const b=document.createElement('button');b.textContent='Use '+fit.toLocaleString()+' L';b.style.marginLeft='8px';b.onclick=()=>useFit(mac);box.append(' ',b)}}
-async function useFit(mac){const t=S.tanks.find(x=>x.mac===mac),v=FIT&&FIT[mac];if(!t||!v||!confirm('Set '+t.name+'\'s capacity to '+v+' L? Every reading and the history will be re-worked with it.'))return;
+async function useFit(mac){const t=S.tanks.find(x=>x.mac===mac),v=FIT&&FIT[mac],g=t&&t.cfg.group,also=g?S.tanks.filter(x=>x.mac!==mac&&x.cfg.group===g).map(x=>x.name):[];
+ if(!t||!v||!confirm('Set '+[t.name].concat(also).join(' and ')+(also.length?' (the same tank)':'')+'\'s capacity to '+v+' L? Every reading and the history will be re-worked with it.'))return;
  const b=Object.assign({},t.cfg,{mac,name:t.name,tank_l:v});delete b.tank_l_equiv;
  const r=await authFetch('/api/tank',{method:'POST',body:JSON.stringify(b)});if(!r.ok){alert(await r.json().catch(()=>'Could not save'));return}location.reload()}
 function costs(){const ids=['c_last','c_avg','c_spent','c_run'];ids.forEach(i=>{$(i).textContent='–';$(i+'2').textContent=''});$('c_run3').textContent=$('c_run4').textContent='';spendByYear();

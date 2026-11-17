@@ -128,6 +128,64 @@ def test_litres_many_same_as_litres():
             assert got == want, (t, lv, got, want)
 
 
+def test_link():
+    from tankcalc import link, PER_MONITOR
+    T = lambda **k: dict(R1225, **k)
+    tanks = {'a': T(name='A', reserve_l=200), 'b': T(name='B', rib_h_cm=12, isolated=True)}
+    # link b to a: both in a new group; b's form values (filled from a) are saved, and copied to a
+    link(tanks, 'b', T(name='B', isolated=True, tank_l=1306), {'same_as': 'a'})
+    assert tanks['a']['group'] == tanks['b']['group'] == 'g1'
+    assert tanks['a']['tank_l'] == 1306 and tanks['a']['name'] == 'A' and tanks['a']['reserve_l'] == 200
+    assert 'isolated' not in tanks['a'] and tanks['b']['isolated'] is True
+    # a capacity fit on a (no same_as): stays linked, b follows; removed keys go from b too
+    link(tanks, 'a', T(name='A', reserve_l=200, tank_l=1310, windows=0), {})
+    assert tanks['b']['tank_l'] == 1310 and tanks['b']['windows'] == 0 and tanks['b']['group'] == 'g1'
+    link(tanks, 'a', {'name': 'A', 'shape': 'vertical', 'height_cm': 100, 'capacity_l': 900}, {})
+    assert tanks['b'] == {'name': 'B', 'shape': 'vertical', 'height_cm': 100, 'capacity_l': 900,
+                          'isolated': True, 'group': 'g1'}, tanks['b']
+    # unlink b: both on their own (a group of one is no group); a's later changes leave b alone
+    link(tanks, 'b', T(name='B'), {'same_as': ''})
+    assert 'group' not in tanks['b'] and 'group' not in tanks['a']
+    link(tanks, 'a', T(name='A', tank_l=999), {})
+    assert 'tank_l' not in tanks['b'] and tanks['a']['tank_l'] == 999
+    # the group's first tank unlinking doesn't leave the others tied to it (Codex: stale 'group=a')
+    link(tanks, 'b', T(name='B'), {'same_as': 'a'}); link(tanks, 'c', T(name='C'), {'same_as': 'a'})
+    link(tanks, 'a', T(name='A', tank_l=5), {'same_as': ''})
+    assert 'group' not in tanks['a'] and tanks['b']['group'] == tanks['c']['group']
+    link(tanks, 'd', T(name='D', tank_l=7), {'same_as': 'a'})  # a starts a fresh group with d
+    assert tanks['a']['group'] == tanks['d']['group'] != tanks['b']['group'] and 'tank_l' not in tanks['b']
+    # three in one group
+    link(tanks, 'c', T(name='C', tank_l=1400), {'same_as': 'a'})
+    assert tanks['a']['group'] == tanks['c']['group'] == tanks['d']['group'] and 'group' not in tanks['b']
+    assert all(tanks[m]['tank_l'] == 1400 for m in 'acd')
+    # same_as itself or an unknown tank = not linked; a restore keeps the stored group, copies nothing
+    link(tanks, 'b', T(name='B'), {'same_as': 'b'}); assert 'group' not in tanks['b']
+    link(tanks, 'b', T(name='B'), {'same_as': 'zz'}); assert 'group' not in tanks['b']
+    link(tanks, 'e', T(name='E', tank_l=1), {'group': 'g9'}, restore=True)
+    assert tanks['e']['group'] == 'g9' and tanks['a']['tank_l'] == 1400
+    assert 'group' in PER_MONITOR
+
+
+def test_restore_groups():
+    # Codex: back up A+B (g1), delete them, link C+D (reuses g1), restore A+B: must not join C+D
+    from tankcalc import link, restore_groups
+    T = lambda **k: dict(R1225, **k)
+    tanks = {}
+    link(tanks, 'c', T(name='C', tank_l=2000), {}); link(tanks, 'd', T(name='D', tank_l=2000), {'same_as': 'c'})
+    back = {'a': T(name='A', tank_l=1000, group='g1'), 'b': T(name='B', tank_l=1000, group='g1')}
+    for m, t in restore_groups(tanks, back).items():
+        link(tanks, m, t, t, restore=True)
+    assert tanks['a']['group'] == tanks['b']['group'] != tanks['c']['group'] == tanks['d']['group']
+    link(tanks, 'a', T(name='A', tank_l=1100, group=tanks['a']['group']), {})
+    assert tanks['b']['tank_l'] == 1100 and tanks['c']['tank_l'] == tanks['d']['tank_l'] == 2000
+    # restoring over the same tanks (the usual case) keeps them linked to each other
+    again = restore_groups(tanks, {'c': dict(tanks['c']), 'd': dict(tanks['d'])})
+    assert again['c']['group'] == again['d']['group']
+    # two groups in one backup stay two groups
+    two = restore_groups({}, {'p': {'group': 'g1'}, 'q': {'group': 'g2'}, 'r': {'group': 'g1'}, 's': {}})
+    assert two['p']['group'] == two['r']['group'] != two['q']['group'] and 'group' not in two['s']
+
+
 if __name__ == '__main__':
-    test_matches_magnus_app(); test_bounds_and_codes(); test_other_shapes(); test_measured_model(); test_whole_tank_capacity(); test_total(); test_litres_many_same_as_litres()
+    test_matches_magnus_app(); test_bounds_and_codes(); test_other_shapes(); test_measured_model(); test_whole_tank_capacity(); test_total(); test_litres_many_same_as_litres(); test_link(); test_restore_groups()
     print('all ok')

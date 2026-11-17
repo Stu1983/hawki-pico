@@ -35,7 +35,7 @@
 # "HAWKi-Setup-XXXX" (password: oiltanks); browse to http://192.168.4.1/
 import bluetooth, binascii, json, time, network, machine, asyncio, gc, os, struct
 from hawki_decode import decode, mfr_from_adv
-from tankcalc import reading, litres, litres_many, SHAPES, below, above, tank_equiv, total
+from tankcalc import reading, litres, litres_many, link, restore_groups, SHAPES, below, above, tank_equiv, total
 import histstore
 from version import VERSION
 from listen import Listener
@@ -51,7 +51,7 @@ AP_PASSWORD = 'oiltanks'
 MEASURED_KEYS = ('outlet_cm', 'win_bottom_cm', 'win_top_cm', 'win_outer_w_cm', 'win_inner_w_cm',
                  'win_inner_h_cm', 'rib_h_cm', 'rib_depth_cm')
 CFG_KEYS = ('shape', 'height_cm', 'length_cm', 'width_cm', 'capacity_l', 'tank_l', 'windows', 'window_model',
-            'ribs_cm', 'reserve_l', 'unusable_l') + MEASURED_KEYS
+            'ribs_cm', 'reserve_l', 'unusable_l', 'group') + MEASURED_KEYS
 
 
 def load_cfg():
@@ -1024,7 +1024,7 @@ def set_tank(b, restore=False):
             raise ValueError('the capacity is too small for that outlet height')
     else:
         t['capacity_l'] = num(b['capacity_l'], 1, 100000)
-    cfg['tanks'][mac] = t
+    link(cfg['tanks'], mac, t, b, restore)
     if not restore:
         save_cfg(cfg)
 
@@ -1075,9 +1075,14 @@ def set_delivery(b):
 
 
 def restore(b):
-    tanks = b.get('tanks') or {}
-    for mac, t in tanks.items():
-        set_tank(dict(t, mac=mac), restore=True)
+    tanks = restore_groups(cfg['tanks'], b.get('tanks') or {})
+    was = json.dumps(cfg['tanks'])
+    try:
+        for mac, t in tanks.items():
+            set_tank(dict(t, mac=mac), restore=True)
+    except Exception:  # all or nothing: a bad tank in the backup leaves the settings as they were
+        cfg['tanks'] = json.loads(was)
+        raise
     save_cfg(cfg)
     d = load_deliv()
     for mac, lst in (b.get('deliveries') or {}).items():
