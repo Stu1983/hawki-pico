@@ -55,11 +55,37 @@ CFG_KEYS = ('shape', 'height_cm', 'length_cm', 'width_cm', 'capacity_l', 'tank_l
             'ribs_cm', 'reserve_l', 'unusable_l', 'group', 'isolated') + MEASURED_KEYS
 
 
+def load_json(name, bad):
+    # A settings file as a dict. Only a MISSING file means none yet ({}). A read error is tried again and, if it
+    # won't go away, raised (the file is left alone: saving over it would lose everything in it). Damaged
+    # contents are kept as `bad`, then it starts afresh.
+    for attempt in range(3):
+        try:
+            with open(name) as f:
+                c = json.load(f)  # (streamed: no file-sized string in memory)
+        except ValueError:
+            c = None
+        except (OSError, MemoryError) as ex:
+            if isinstance(ex, OSError) and ex.args and ex.args[0] == 2:  # ENOENT
+                return {}
+            gc.collect()
+            if attempt == 2:
+                raise
+            continue
+        if isinstance(c, dict):
+            return c
+        print(name, 'is damaged: kept as', bad)
+        try:
+            os.remove(bad)
+        except OSError:
+            pass
+        os.rename(name, bad)
+        return {}
+
+
 def load_cfg():
-    try:
-        c = json.load(open('config.json'))
-    except Exception:
-        c = {}
+    # (a lasting read error stops the app here; main.py then starts the rescue server, config.json untouched)
+    c = load_json('config.json', 'config.bad')
     c.setdefault('tanks', {})
     if not c.get('token'):
         c['token'] = binascii.hexlify(os.urandom(8)).decode()
@@ -1088,10 +1114,7 @@ def set_tank(b, restore=False):
 # ---------- deliveries (supplier + price per fill) ----------
 
 def load_deliv():
-    try:
-        return json.load(open('deliv.json'))
-    except Exception:
-        return {}
+    return load_json('deliv.json', 'deliv.bad')  # (a read error raises: the caller's save must not go ahead)
 
 
 def save_deliv(d):
