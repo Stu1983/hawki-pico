@@ -99,6 +99,7 @@ SENSORS = (
     ('battery', 'Sensor battery', '%', 'battery', 'measurement', 'diagnostic', None),
     ('rssi', 'Sensor signal', 'dBm', 'signal_strength', 'measurement', 'diagnostic', None),
     ('read_at', 'Last reading', None, 'timestamp', None, 'diagnostic', None),
+    ('order_by', 'Order by', None, 'timestamp', None, None, 'mdi:calendar-clock'),  # (the dashboard's order date)
 )
 
 
@@ -150,6 +151,7 @@ def state(v, now):
     r = lambda x, n=0: None if x is None else (round(x) if n == 0 else round(x, n))
     return {'litres': r(v.get('litres')), 'total': r(v.get('total')), 'percent': r(v.get('percent'), 1),
             'distance': v.get('level'), 'battery': v.get('battery'), 'rssi': v.get('rssi'), 'read_at': read_at,
+            'order_by': v.get('order_by'),
             'misread': v.get('misread') is not None}
 
 

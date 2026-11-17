@@ -533,6 +533,8 @@ let AN=null;  // {mac,t,A,P,cv}: analysis of the primary tank, refreshed every 1
 const fmtD=t=>new Date(t*1000).toLocaleDateString(undefined,{day:'numeric',month:'short'});
 const L0=v=>Math.round(v).toLocaleString()+' L';
 let DKEY='';
+/* send the forecast to the Pico (Home Assistant's order date): once per history refresh, never for an off tank */
+let FCS='';function fcSend(key,A,ok,reserve){if(!ok||!A.fc||!AN)return;const k=key+'|'+AN.t+'|'+reserve;if(k===FCS)return;FCS=k;fetch('/api/forecast',{method:'POST',body:JSON.stringify(fcBody(A,key,reserve))}).catch(()=>{})}
 /* the history download: one at a time (a slow one isn't started again by every 10 s refresh); one that failed is tried again after a minute, and the readings already shown stay meanwhile. ANK: the view (tank + settings) the newest render is for: an older render stops at its next await. ANW: the download asked for last, by number (an older answer arriving later is dropped, even for the same tank) */
 let ANP=null,ANF=null,ANK='',ANW=0,ANN=0;
 async function anLoad(mac,ck,get){const k=mac+'|'+ck;if(AN&&(AN.mac!==mac||AN.ck!==ck))AN=null;
@@ -563,7 +565,7 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
  $('d_l').textContent=t.litres==null?'–':L0(t.litres);
  const u=t.unusable;$('d_l2').textContent=(t.percent!=null?t.percent+'% · ':'')+(u?'(+ '+(u[1]==='estimate'?'about ':'')+L0(u[0])+' unusable below the outlet)':'(unusable amount not set: Tanks → Edit)');
  $('d_bar').style.width=Math.max(0,Math.min(100,t.percent??0))+'%';
- const ok=A.recent!=null&&A.span>=2;
+ const ok=A.recent!=null&&A.span>=2;if(modeOf(t.cfg)!=='off')fcSend(t.mac,A,ok,reserve);
  // shortest first: the 3-day average big (once there are 3 days), then 7-day and 14-day; the forecast uses the 14-day
  const av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;
  $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
@@ -607,7 +609,7 @@ async function dashAll(ts){$('d_name').textContent=ts.length>2?'All tanks':'Both
  const sum=f=>ts.reduce((a,t)=>a+(f(t)||0),0),lit=sum(t=>t.litres),cap=sum(t=>+t.cfg.capacity_l),un=sum(t=>t.unusable&&t.unusable[0]),known=ts.every(t=>t.litres!=null);
  $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))+(modeOf(t.cfg)==='standby'?' (standby)':'')).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
  $('d_bar').style.width=(known&&cap?Math.max(0,Math.min(100,lit/cap*100)):0)+'%';
- const ok=A.recent!=null&&A.span>=2,av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;
+ const ok=A.recent!=null&&A.span>=2,av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;fcSend('all',A,ok,reserve);
  $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
  $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average, both tanks':(P.length?'needs 2 days of readings':HF?'could not load the readings':'no readings yet');
  $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';

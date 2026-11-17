@@ -834,6 +834,131 @@ def switch_hint(now):
     return _hint[1]
 
 
+# ---------- the order date, for Home Assistant ----------
+# The forecast (seasons, weather, your own years) runs in the browser: too heavy for the Pico. Whenever the
+# dashboard works it out it sends it here: from t0 (its last reading) the litres it expects to have been used by
+# the end of each day after, for 400 days (running totals, so rounding never adds up). The Pico then steps from its
+# own latest reading the same way the dashboard does (a day at a time until the reorder level), so with the same
+# reading it gives the same date, and it keeps up as new readings come in between visits.
+FC_FILE = 'fc.json'
+forecasts = {}  # 'all' or a tank's mac -> {'t0', 'cur' (the dashboard's start level), 'cum': [...], 'at'}
+fc_saved = [0]  # mono_s() of the last save (at most hourly: the dashboard sends every 10 minutes while open)
+
+
+def load_forecasts():
+    try:
+        f = load_json(FC_FILE, FC_FILE + '.bad')
+        forecasts.update({k: v for k, v in f.items() if isinstance(v, dict) and isinstance(v.get('cum'), list)})
+    except Exception as ex:
+        print('forecast load err', ex)
+
+
+def set_forecast(b):
+    key = str(b.get('mac', '')).lower()
+    if key != 'all' and key not in cfg['tanks']:
+        raise ValueError('unknown tank')
+    now = time.time()
+    t0 = int(b['t0'])  # (an int: single-precision floats would round it to 128 s)
+    if now < 1700000000 or not now - 3 * 86400 <= t0 <= now + 3600:
+        raise ValueError('bad time')
+    cum = b.get('cum')
+    if not isinstance(cum, list) or not 1 <= len(cum) <= 400:
+        raise ValueError('bad forecast')
+    cum = [num(x, 0, 1000000) for x in cum]
+    if any(cum[i] < cum[i - 1] for i in range(1, len(cum))):
+        raise ValueError('bad forecast')
+    new = key not in forecasts
+    # (the reorder level is never taken from the request: the Pico's own settings, so a made-up forecast from
+    # someone on the Wi-Fi can't set it)
+    forecasts[key] = {'t0': t0, 'cur': num(b['cur'], 0, 1000000), 'cum': cum, 'at': int(now)}
+    if key == 'all':  # (which tanks it covers: switch one off or delete it, and it no longer applies)
+        forecasts[key]['tanks'] = active_tanks()
+    if new or mono_s() - fc_saved[0] > 3600:
+        with open(FC_FILE + '.tmp', 'w') as f:
+            json.dump(forecasts, f)
+        os.rename(FC_FILE + '.tmp', FC_FILE)
+        fc_saved[0] = mono_s()
+
+
+def order_by(f, litres, at, reserve):
+    # epoch of the day the oil reaches `reserve`, stepping like the dashboard from `litres` read at `at`; None
+    # without a reading, or not within the 400 days the forecast covers
+    if litres is None or at is None:
+        return None
+    cum, t0 = f['cum'], f['t0']
+    if litres <= reserve:
+        return int(at)
+    j0 = max(0, int((at - t0) // 86400))  # (whole days since the dashboard's reading)
+    if j0 >= len(cum):
+        return None
+    base = cum[j0 - 1] if j0 else 0.0
+    for j in range(j0, len(cum)):
+        if litres - (cum[j] - base) <= reserve:
+            return int(at) + (j - j0 + 1) * 86400
+    return None
+
+
+REFILL_L = 30.0  # (as common.js: a rise bigger than this is a delivery)
+
+
+_lvl = {}  # mac -> (what it was worked out from, result): read again only after a new reading or a settings save
+
+
+def level_now(mac, t):
+    # the start level the dashboard would use: median of the last 3 saved readings, none from before a delivery
+    # (with fewer than 3 since one, the newest); and the newest reading's time
+    key = (saved_last(mac), cfg_gen[0])
+    c = _lvl.get(mac)
+    if c is None or c[0] != key:
+        c = _lvl[mac] = (key, _level_now(mac, t))
+    return c[1]
+
+
+def _level_now(mac, t):
+    ls = [(ts, reading(t, mm)[0]) for ts, mm in hist_tail(mac, 4)]
+    ls = [x for x in ls if x[1] is not None]
+    if not ls:
+        return None, None
+    for i in range(len(ls) - 1, 0, -1):
+        if ls[i][1] - ls[i - 1][1] > REFILL_L:
+            ls = ls[i:]
+            break
+    v = [x[1] for x in ls]
+    return (v[-1] if len(v) < 3 else sorted(v[-3:])[1]), ls[-1][0]
+
+
+def active_tanks():
+    return sorted(m for m, t2 in cfg['tanks'].items() if mode_of(t2) != 'off')
+
+
+def order_by_iso(mac, t, v=None):
+    # the order date for a tank's Home Assistant sensor: the newest of its own forecast and (a tank in use) the
+    # all-tanks one; none for an off tank
+    if mode_of(t) == 'off':
+        return None
+    own, al = forecasts.get(mac), forecasts.get('all') if mode_of(t) == 'use' else None
+    if al and al.get('tanks') != active_tanks():
+        al = None  # (made for another set of tanks: the dashboard sends a new one next time it's open)
+    f, key = (al, 'all') if al and (not own or al['at'] > own['at']) else (own, mac)
+    if not f:
+        return None
+    macs = [mac] if key == mac else [m for m, t2 in cfg['tanks'].items() if mode_of(t2) != 'off']
+    lit, last = 0.0, 0
+    for m in macs:
+        c, ts = level_now(m, cfg['tanks'][m])
+        if c is None:
+            return None
+        lit, last = lit + c, max(last, ts)
+    if last <= f['t0']:  # nothing newer than the reading the dashboard used: its own start level, exactly
+        lit, last = f['cur'], f['t0']
+    reserve = reserve_of(t) if key == mac else max(reserve_of(cfg['tanks'][m]) for m in macs)
+    e = order_by(f, lit, last, reserve)
+    if e is None:
+        return None
+    y, mo, d, h, mi, s = time.gmtime(e)[:6]
+    return '%04d-%02d-%02dT%02d:%02d:%02d+00:00' % (y, mo, d, h, mi, s)
+
+
 def tank_view(mac, t, now):
     d = hawki.get(mac) or {}
     lvl = d.get('level')
@@ -853,7 +978,11 @@ def tank_view(mac, t, now):
     except Exception:  # odd stored values must never break /api/state
         pass
     r1 = lambda v: None if v is None else round(v, 1)
-    return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct,
+    try:
+        ob = order_by_iso(mac, t)
+    except Exception:  # (never let it break /api/state)
+        ob = None
+    return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct, 'order_by': ob,
             # misread: the rejected reading (-1: no level at all), or None
             'misread': (-1 if d['bad_level'] is None else d['bad_level']) if 'bad_level' in d else None, 'good_at': d.get('good_at'), 'saved': bool(d.get('saved')), 'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': unusable(t), 'listen': listener.info(mac),
             'battery': d.get('battery'), 'rssi': d.get('rssi'),
@@ -1600,7 +1729,7 @@ async def handle(r, w):
                 hist_busy[0] = False
                 rm('hist.up')
                 rm(hist_name(mac) + '.new')
-        if clen > (16000 if path in ('/api/restore', '/api/delivery') else 4000):
+        if clen > (16000 if path in ('/api/restore', '/api/delivery') else 8000 if path == '/api/forecast' else 4000):
             return await send(w, 413, '"too large"')
         body = b''
         if clen and method == 'POST':
@@ -1794,6 +1923,12 @@ async def handle(r, w):
                 return await send_file(w, 'deliv.json', 'application/json')
             except OSError:
                 return await send(w, 200, '{}')
+        if path == '/api/forecast' and method == 'POST':  # (no PIN: the dashboard sends it for whoever is viewing;
+            try:                                            # checked, and it only ever changes the date shown in HA)
+                set_forecast(json.loads(body))
+            except Exception as ex:
+                return await send(w, 400, json.dumps('bad forecast: %s' % ex))
+            return await send(w, 200, '"ok"')
         if path in ('/api/delivery', '/api/restore') and method == 'POST':
             try:
                 b = json.loads(body)
@@ -2277,6 +2412,7 @@ def wd_check(_t=None):
 
 
 async def main():
+    load_forecasts()
     for fn, name in ((wifi_keeper, 'wifi'), (recorder, 'recorder'), (scan_scheduler, 'scan'), (alerts, 'alerts'),
                      (weather_task, 'weather'), (price_task, 'price'), (mqtt_task, 'mqtt'),
                      (net_trial_guard, 'net trial'), (update_guard, 'update guard'), (bootsel_reset, 'bootsel')):

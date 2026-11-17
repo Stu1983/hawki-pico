@@ -59,8 +59,13 @@ const st=(t2cfg,primary)=>({tanks:[tank(A1,'Tank 1',250,{}),tank(A2,'Tank 2',t2c
   const w=open('ui.html','http://pico/#dash',s,posts);await wait(500);const d=w.document,el=d.getElementById('d_sw');
   ok(/Switched to Tank 2\?/.test(el.textContent)&&/went down 12 L/.test(el.textContent),'hint shown: '+el.textContent.slice(0,90));
   const b=el.querySelector('button');ok(b&&b.textContent==='Edit Tank 2','its button says what it does: '+(b&&b.textContent));
-  b.click();await wait(50);ok(w.eval('cur')===A2&&d.getElementById('f_mode').value==='standby'&&!posts.length,'it opens Tank 2\'s settings unchanged (still standby), nothing saved');
+  b.click();await wait(50);ok(w.eval('cur')===A2&&d.getElementById('f_mode').value==='standby'&&!posts.some(p=>p[0]!=='/api/forecast'),'it opens Tank 2\'s settings unchanged (still standby), nothing saved');
   s.switch=null;w.load();await wait(300);ok(el.textContent===''&&el.style.height==='2.4em','no hint: its room stays while a tank is on standby (nothing below moves)')}
  {const w=open('ui.html','http://pico/#dash',st({litres:7,cfg:{mode:'off',isolated:1790000000}},A1));await wait(400);
   ok(w.document.getElementById('d_sw').style.height==='0px'||w.document.getElementById('d_sw').style.height==='0','no standby tank: no room kept')}
+ /* the forecast goes to the Pico for Home Assistant's order date: once per history refresh, never for an off tank */
+ {const posts=[],w=open('ui.html','http://pico/#dash',st({litres:700,cfg:{mode:'standby',isolated:1790000000}},A1),posts);await wait(500);w.load();await wait(400);
+  const f=posts.filter(p=>p[0]==='/api/forecast');ok(f.length===1&&f[0][1].mac===A1&&f[0][1].cum.length===400&&f[0][1].reserve===200,'dashboard sends its forecast once ('+f.length+'), 400 days of running totals')}
+ {const posts=[],s=st({litres:7,cfg:{mode:'off',isolated:1790000000}},A2);const w=open('ui.html','http://pico/#dash',s,posts);await wait(500);
+  ok(!posts.some(p=>p[0]==='/api/forecast'),'an off tank on the dashboard: nothing sent')}
  process.exit(fails?1:0)})();

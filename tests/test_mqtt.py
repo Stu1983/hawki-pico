@@ -60,7 +60,11 @@ def test_state():
     s = mqtt.state(dict(v, good_at=1794935000), 1794935060)
     assert mqtt.state(v, 1794935060)['read_at'] is None  # no measurement time (heard before the clock was set)
     assert s == {'litres': 502, 'total': 602, 'percent': 41.6, 'distance': 716, 'battery': 62, 'rssi': -86,
-                 'read_at': '2026-11-17T17:03:20+00:00', 'misread': False}, s
+                 'read_at': '2026-11-17T17:03:20+00:00', 'order_by': None, 'misread': False}, s
+    ob = mqtt.state(dict(v, order_by='2026-12-16T02:13:20+00:00'), 1794935060)['order_by']
+    assert ob == '2026-12-16T02:13:20+00:00', ob  # the dashboard's order date, as a timestamp HA shows in local time
+    disc = [json.loads(p) for t, p in mqtt.discovery('pico1', 'c0:04:56:c4:0c:71', 'Tank 1', '1.2.54') if 'order_by' in t]
+    assert disc and disc[0]['device_class'] == 'timestamp' and disc[0]['default_entity_id'] == 'sensor.hawki_0c71_order_by', disc
     heard_later = mqtt.state(dict(v, good_at=1794931400), 1794935060)  # measured 16:03, re-heard since
     assert heard_later['read_at'] == '2026-11-17T16:03:20+00:00', heard_later
     none = mqtt.state({'age': None, 'misread': -1}, 1794935060)
