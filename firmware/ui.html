@@ -422,13 +422,17 @@ async function exportCsv(){try{bst('Preparing CSV…');const s=await api('/api/s
 async function importBackup(f){$('impf').value='';if(!f)return;let o;
  try{o=JSON.parse(await f.text())}catch(e){alert('That file isn\'t a backup (not valid JSON).');return}
  if(!o||o.format!=='hawki-backup'||typeof o.tanks!=='object'){alert('That file isn\'t an Oil Tanks backup.');return}
- const macs=Object.keys(o.tanks).filter(m=>okMac(m)),hist=o.history||{},dl=o.deliveries||{};
+ const lc=x=>{const r={};for(const k in x||{})r[k.toLowerCase()]=x[k];return r};o.tanks=lc(o.tanks);  /* (older backups may have upper-case MACs) */
+ const macs=Object.keys(o.tanks).filter(m=>okMac(m)),hist=lc(o.history),dl=lc(o.deliveries);
  const recs={};let nR=0,nD=0;for(const m of macs){nD+=(dl[m]||[]).length;if(hist[m]){const u=unb64(hist[m]),v=new DataView(u.buffer),a=[];
   for(let i=0;i+6<=u.length;i+=6)a.push([v.getUint32(i,true),v.getUint16(i+4,true)]);a.sort((x,y)=>x[0]-y[0]);recs[m]=a;nR+=a.length}}
  const names=macs.map(m=>o.tanks[m].name||m).join(', ');
  if(!confirm('Import from the backup of '+(o.exported||'?').slice(0,10)+'?\n\n'+macs.length+' tank(s): '+names+'\n'+nD+' deliveries, '+nR+' readings\n\nThose tanks\' settings and deliveries will be replaced; readings are merged with the ones already here.'))return;
- try{bst('Importing settings…');const t={},d={};for(const m of macs){t[m]=o.tanks[m];d[m]=dl[m]||[]}
-  let r=await authFetch('/api/restore',{method:'POST',body:JSON.stringify({tanks:t,deliveries:d})});if(!r.ok)throw new Error(await r.json().catch(()=>r.status));
+ try{const t={};for(const m of macs)t[m]=o.tanks[m];let r,first=true;const imp=Math.random().toString(36).slice(2),send=async b=>{b.import=imp;r=await authFetch('/api/restore',{method:'POST',body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.json().catch(()=>r.status))};
+  /* deliveries first, in batches under 12 KB (UTF-8 bytes: a request may be 16 KB): the Pico only holds them aside; then the settings, and only then does anything change, all of it together */
+  const enc=new TextEncoder();for(const m of macs){const l=dl[m]==null?[]:dl[m];if(!Array.isArray(l))throw new Error('the deliveries for '+(o.tanks[m].name||m)+' in that backup are damaged');bst('Checking deliveries for '+(o.tanks[m].name||m)+'…');let batch=[],size=0;
+   for(let i=0;i<=l.length;i++){const n=i<l.length?enc.encode(JSON.stringify(l[i])).length+1:0;if(i===l.length||batch.length&&size+n>12000){await send({deliveries:{[m]:batch},part:first?'first':'more'});first=false;batch=[];size=0}if(i<l.length){batch.push(l[i]);size+=n}}}
+  bst('Importing settings…');await send({tanks:t,staged:true});
   for(const m of macs)if(recs[m]&&recs[m].length){bst('Importing readings for '+(o.tanks[m].name||m)+'…');const b=new DataView(new ArrayBuffer(recs[m].length*6));
    recs[m].forEach(([ts,mm],i)=>{b.setUint32(i*6,ts,true);b.setUint16(i*6+4,mm,true)});
    r=await authFetch('/api/hist?mac='+m,{method:'POST',body:b.buffer});if(!r.ok)throw new Error(await r.json().catch(()=>r.status))}

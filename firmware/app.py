@@ -1282,22 +1282,63 @@ def set_delivery(b):
     save_deliv(d)
 
 
+def restore_deliveries(dl, known):
+    # {mac: [records]} from a backup, every record checked before anything is saved
+    out = {}
+    for mac, lst in (dl or {}).items():
+        mac = str(mac).lower()
+        if mac not in known:
+            raise ValueError('deliveries for a tank that is not set up: %s' % mac)
+        if not isinstance(lst, list):
+            raise ValueError('bad deliveries for %s' % mac)
+        out[mac] = [clean_delivery(x) for x in lst]
+    return out
+
+
+STAGE = 'deliv.stage'  # a backup's deliveries, sent in batches, held here until the import's final request
+
+
 def restore(b):
-    tanks = restore_groups(cfg['tanks'], b.get('tanks') or {})
+    # Settings + deliveries from a backup, all or nothing. A tank's 200 receipts don't fit one request, so the
+    # page first sends deliveries in batches ('part': 'first' starts, 'more' adds) which only go into STAGE (each
+    # checked as it comes); then the settings with 'staged': true, and only then is anything replaced: settings
+    # and every staged tank's deliveries together, after all of it has been checked. A failed batch changes nothing.
+    d = load_deliv()  # (a read error stops here, before anything changed)
+    imp = str(b.get('import') or '')[:40]  # which import the batches belong to (two at once must not mix)
+    if b.get('part') in ('first', 'more'):
+        st = {'id': imp, 'd': {}} if b['part'] == 'first' else load_json(STAGE, STAGE + '.bad')
+        if st.get('id') != imp:
+            raise ValueError('another import is running: try again in a minute')
+        n = 0
+        for mac, lst in (b.get('deliveries') or {}).items():
+            if not isinstance(lst, list):
+                raise ValueError('bad deliveries for %s' % mac)
+            st['d'].setdefault(str(mac).lower(), []).extend(clean_delivery(x) for x in lst)
+            n += len(lst)
+        with open(STAGE + '.tmp', 'w') as f:
+            json.dump(st, f)
+        os.rename(STAGE + '.tmp', STAGE)
+        return n
+    tanks = restore_groups(cfg['tanks'], {str(k).lower(): v for k, v in (b.get('tanks') or {}).items()})
+    dl = {str(k).lower(): v for k, v in (b.get('deliveries') or {}).items()}
+    if b.get('staged'):
+        st = load_json(STAGE, STAGE + '.bad')
+        if st.get('id') != imp:
+            raise ValueError('another import is running: try again in a minute')
+        dl.update(st.get('d') or {})
+    new = restore_deliveries(dl, set(cfg['tanks']) | set(tanks))
     was = json.dumps(cfg['tanks'])
     try:
         for mac, t in tanks.items():
             set_tank(dict(t, mac=mac), restore=True)
-    except Exception:  # all or nothing: a bad tank in the backup leaves the settings as they were
+    except Exception:  # a bad tank in the backup leaves the settings as they were
         cfg['tanks'] = json.loads(was)
         raise
     save_cfg(cfg)
-    d = load_deliv()
-    for mac, lst in (b.get('deliveries') or {}).items():
-        mac = mac.lower()
-        if mac in cfg['tanks']:
-            d[mac] = sorted([clean_delivery(x) for x in lst], key=lambda x: x['t'])[-200:]
+    for mac, lst in new.items():
+        d[mac] = sorted({x['t']: x for x in lst}.values(), key=lambda x: x['t'])[-200:]  # (one per time: the last)
     save_deliv(d)
+    rm(STAGE)
     return len(tanks)
 
 
@@ -1312,19 +1353,31 @@ def merge_hist(name, tmp):
         a = open(name, 'rb')
     except OSError:
         a = None
-    n, last = 0, -1
-    with open(tmp, 'rb') as b, open(name + '.new', 'wb') as o:
-        ra, rb = nxt(a), nxt(b)
-        while ra or rb:
-            if rb is None or (ra is not None and ra[0] <= rb[0]):
-                r, ra = ra, nxt(a)
-            else:
-                r, rb = rb, nxt(b)
-            if r[0] != last and r[1] not in (16383, 0xffff):  # skip 'unknown level' readings
-                o.write(struct.pack('<IH', r[0], r[1]))
-                last, n = r[0], n + 1
-    if a:
-        a.close()
+    n, last, prev_b = 0, -1, 0
+    hi = time.time() + 2 * 86400 if time.time() > 1700000000 else 4000000000
+    try:
+        with open(tmp, 'rb') as b, open(name + '.new', 'wb') as o:
+            ra, rb = nxt(a), nxt(b)
+            while ra or rb:
+                if rb is None or (ra is not None and ra[0] <= rb[0]):
+                    r, ra = ra, nxt(a)
+                else:
+                    r, rb = rb, nxt(b)
+                    if not (1500000000 <= r[0] <= hi and r[0] >= prev_b):  # (the upload: sorted, sane times)
+                        raise ValueError('the uploaded history is out of order or has a bad time')
+                    prev_b = r[0]
+                if r[0] != last and r[1] not in (16383, 0xffff):  # skip 'unknown level' readings
+                    o.write(struct.pack('<IH', r[0], r[1]))
+                    last, n = r[0], n + 1
+    except Exception:
+        try:
+            os.remove(name + '.new')
+        except OSError:
+            pass
+        raise
+    finally:
+        if a:
+            a.close()
     os.rename(name + '.new', name)
     os.remove(tmp)
     return n
