@@ -628,12 +628,7 @@ def set_pin(pin):
 FIRST_PIN_SECS = 1800
 
 
-first_pin_window = [True]
-
-
-async def close_first_pin_window():
-    await asyncio.sleep(FIRST_PIN_SECS)
-    first_pin_window[0] = False
+first_pin_until = [FIRST_PIN_SECS]  # mono_s(): a first PIN may be set until then (30 min after start or a BOOTSEL reset)
 
 
 def on_ap(peer):
@@ -644,7 +639,7 @@ def on_ap(peer):
 def may_set_first_pin(peer):
     # Without a PIN, whoever sets one first owns the Pico. So a FIRST PIN can only be set from the
     # setup network (while it's actually up), or within 30 minutes of the Pico starting.
-    return on_ap(peer) or first_pin_window[0]
+    return on_ap(peer) or mono_s() < first_pin_until[0]
 
 
 def try_login(pin):
@@ -660,6 +655,16 @@ def try_login(pin):
         lock['wait'] = min(3600, lock['wait'] * 2)
         lock['fails'] = 0
     raise ValueError('wrong PIN')
+
+
+def pin_reset():
+    # forget the PIN and every session, and let a new PIN be set for the next 30 minutes (on automatic
+    # addressing there's no restart, so the window from start-up would long have closed)
+    for k in ('pin', 'pin_salt', 'sessions'):
+        cfg.pop(k, None)
+    first_pin_until[0] = mono_s() + FIRST_PIN_SECS
+    lock.update(fails=0, wait=30, until=0)  # (wrong tries with the old PIN mustn't lock out the new one)
+    save_cfg(cfg)
 
 
 async def bootsel_reset():
@@ -678,9 +683,8 @@ async def bootsel_reset():
             net_trial[0] = None  # (before anything waits: nothing on trial can be kept from here on)
             net_gen[0] += 1
             rm(netcfg.TRY)
-            for k in ('pin', 'pin_salt', 'sessions', 'net'):
-                cfg.pop(k, None)
-            save_cfg(cfg)
+            cfg.pop('net', None)
+            pin_reset()
             print('PIN cleared by BOOTSEL')
             for _ in range(10):
                 led.toggle()
@@ -2039,8 +2043,7 @@ def wd_check(_t=None):
 async def main():
     for fn, name in ((wifi_keeper, 'wifi'), (recorder, 'recorder'), (scan_scheduler, 'scan'), (alerts, 'alerts'),
                      (weather_task, 'weather'), (price_task, 'price'), (mqtt_task, 'mqtt'),
-                     (net_trial_guard, 'net trial'), (update_guard, 'update guard'), (bootsel_reset, 'bootsel'),
-                     (close_first_pin_window, 'pin window')):
+                     (net_trial_guard, 'net trial'), (update_guard, 'update guard'), (bootsel_reset, 'bootsel')):
         asyncio.create_task(keep(fn, name))
     await asyncio.start_server(handle, '0.0.0.0', 80)
     wd_timer = machine.Timer(mode=machine.Timer.PERIODIC, period=60000, callback=wd_check)  # noqa: F841 (kept)
