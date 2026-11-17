@@ -35,7 +35,7 @@ WIN_Z2 = 1069.38 / 1300
 SHAPES = ('cuboid', 'horizontal', 'vertical', 'other')
 STEP = 5.0  # mm, resolution of the measured-model table
 _tables = {}
-PER_MONITOR = ('name', 'reserve_l', 'unusable_l', 'isolated', 'group')  # not shared by linked tanks
+PER_MONITOR = ('name', 'reserve_l', 'unusable_l', 'isolated', 'mode', 'group')  # not shared by linked tanks
 
 
 def _f(t, k, d=0.0):

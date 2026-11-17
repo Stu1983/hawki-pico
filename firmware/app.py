@@ -52,7 +52,7 @@ AP_PASSWORD = 'oiltanks'
 MEASURED_KEYS = ('outlet_cm', 'win_bottom_cm', 'win_top_cm', 'win_outer_w_cm', 'win_inner_w_cm',
                  'win_inner_h_cm', 'rib_h_cm', 'rib_depth_cm')
 CFG_KEYS = ('shape', 'height_cm', 'length_cm', 'width_cm', 'capacity_l', 'tank_l', 'windows', 'window_model',
-            'ribs_cm', 'reserve_l', 'unusable_l', 'group', 'isolated') + MEASURED_KEYS
+            'ribs_cm', 'reserve_l', 'unusable_l', 'group', 'isolated', 'mode') + MEASURED_KEYS
 
 
 def load_json(name, bad):
@@ -869,7 +869,7 @@ def seed_recent(mac):
 async def drop_check(mac, t, lvl):
     # a new reading: oil going faster than the burner could burn it -> urgent alert (at most every 12 h)
     tank = cfg['tanks'].get(mac)
-    if tank is None:
+    if tank is None or mode_of(tank) == 'off':  # (off: not watched)
         return
     if mac not in recent:
         seed_recent(mac)
@@ -956,6 +956,34 @@ async def silent_check(n, mac, t, e, now, start, a):
             save_cfg(cfg)
 
 
+def mode_of(t):
+    m = t.get('mode')
+    return m if m in MODES else 'standby' if t.get('isolated') else 'use'
+
+
+def reserve_of(t):
+    return float(t['reserve_l']) if t.get('reserve_l') is not None else 200.0
+
+
+def reorder_alert(mac, t, lit):
+    # (title, message) for an in-use tank at its reorder level: switch to a standby tank that still has oil above
+    # its own reorder level (the fullest), or order oil when there is none
+    name, reserve, spare = t.get('name', mac), reserve_of(t), None
+    for m2, t2 in cfg['tanks'].items():
+        if m2 == mac or mode_of(t2) != 'standby':
+            continue
+        d2 = hawki.get(m2) or {}
+        if d2.get('level') in (None, 16383) or 'bad_level' in d2 or time.time() - d2.get('rx', 0) > 3 * 3600:
+            continue  # (no fresh, good reading: can't say it has oil)
+        l2 = reading(t2, d2['level'])[0]
+        if l2 is not None and l2 > reserve_of(t2) and (spare is None or l2 > spare[1]):
+            spare = (t2.get('name', m2), l2)
+    if spare:
+        return ('%s is low - switch to %s' % (name, spare[0]),
+                '%d L left in %s. %s has %d L ready.' % (lit, name, spare[0], spare[1]))
+    return ('%s: time to order oil' % name, '%d L left, at or below your reorder level of %d L.' % (lit, reserve))
+
+
 async def alerts():
     # Every few minutes: tell the phone(s) once when a tank reaches its reorder level, a monitor's battery is low,
     # or a monitor has gone quiet.
@@ -967,6 +995,8 @@ async def alerts():
                 al = cfg.setdefault('alerted', {})
                 start = quiet_since_start(time.time())
                 for mac, t in list(cfg['tanks'].items()):
+                    if mode_of(t) == 'off':
+                        continue  # off: no warnings at all, not even about its monitor
                     d = hawki.get(mac) or {}
                     a = al.setdefault(mac, {})
                     fresh = time.time() - d.get('rx', 0) <= 3 * 3600  # (judged before any slow send below)
@@ -986,13 +1016,12 @@ async def alerts():
                     lit = reading(t, lvl)[0]
                     if lit is None:
                         continue
-                    reserve = float(t['reserve_l']) if t.get('reserve_l') is not None else 200.0
+                    reserve = reserve_of(t)
                     if a.get('reorder') and lit >= reserve + REARM_L:
-                        a.pop('reorder')  # topped up: arm it again
+                        a.pop('reorder')  # topped up (in any mode): arm it again
                         save_cfg(cfg)
-                    elif n.get('reorder', True) and not a.get('reorder') and lit <= reserve:
-                        res = await send_alert('%s: time to order oil' % t.get('name', mac),
-                                               '%d L left, at or below your reorder level of %d L.' % (lit, reserve))
+                    elif mode_of(t) == 'use' and n.get('reorder', True) and not a.get('reorder') and lit <= reserve:  # (standby: no warning of its own)
+                        res = await send_alert(*reorder_alert(mac, t, lit))
                         if 'ok' in res.values():
                             a['reorder'] = int(time.time())
                             save_cfg(cfg)
@@ -1081,6 +1110,9 @@ def num(v, lo, hi):
     return v
 
 
+MODES = ('use', 'standby', 'off')
+
+
 def isolated_since(new, old):
     # When the valve was closed (epoch), so only readings after it are held: marking a tank isolated today must
     # not rewrite the use it had before. The form sends true; a backup sends the time. True = since ever (older
@@ -1106,8 +1138,17 @@ def set_tank(b, restore=False):
     for k in ('reserve_l', 'unusable_l'):
         if b.get(k) not in (None, ''):
             t[k] = num(b[k], 0, 100000)
-    if b.get('isolated'):  # valve closed: its oil counts in the total, its readings from then on never count as use
-        t['isolated'] = isolated_since(b.get('isolated'), (cfg['tanks'].get(mac) or {}).get('isolated'))
+    # In use (no 'mode'): counted, warns. Standby (valve shut, oil waiting): its oil counts in the total, its readings
+    # from 'isolated' (when it stopped being in use) never count as use, no reorder warning of its own. Off (empty, or
+    # just not wanted): left out of totals, forecasts and warnings; its readings are still saved. (Older settings:
+    # 'isolated' without a mode = standby.)
+    old = cfg['tanks'].get(mac) or {}
+    mode = b.get('mode') or (('off' if old.get('mode') == 'off' else 'standby') if b.get('isolated') else 'use')
+    if mode not in MODES:  # (a form without modes ticks Isolated for an off tank too: it stays off)
+        raise ValueError('bad mode')
+    if mode != 'use':
+        t['mode'] = mode
+        t['isolated'] = isolated_since(b.get('isolated'), old.get('isolated'))
     if b.get('outlet_cm') not in (None, ''):  # ground to the top of the outlet (any shape)
         t['outlet_cm'] = num(b['outlet_cm'], 0, 1000)
     if shape == 'cuboid':
