@@ -342,7 +342,7 @@ function match(recs,fills,mac){const out=[];recs=recs.slice();
  for(const r of recs)out.push({t:r.t,f:null,mac,r});return out}
 /* all tanks: each tank's records matched to that tank's own deliveries (two tanks filled together are two deliveries) */
 function deliveries(){const tag=m=>(D[m]||[]).map(r=>Object.assign({mac:m},r));
- const out=T&&T.all?S.tanks.flatMap(t=>match(tag(t.mac),TF[t.mac],t.mac)):T?match(tag(T.mac),A&&A.fills,T.mac):[];
+ const out=T&&T.all?T.tanks.flatMap(t=>match(tag(t.mac),TF[t.mac],t.mac)):T?match(tag(T.mac),A&&A.fills,T.mac):[];
  return out.sort((a,b)=>b.t-a.t)}
 const litresOf=x=>x.r&&x.r.litres!=null?x.r.litres:x.f?x.f.add:null;
 const pplOf=x=>{const r=x.r;if(!r)return null;if(r.ppl!=null)return r.ppl;const l=litresOf(x);return r.total!=null&&l>0?r.total/l*100:null};
@@ -371,7 +371,7 @@ let FIT={},CVS={};  /* FIT: suggested capacity per tank; CVS: each tank's curve 
 let FITGEN=0;
 /* the capacity check is per tank: in the all-tanks view, one line for each tank, from its own deliveries */
 async function fitCap(){const gen=++FITGEN,box=$('fit');FIT={};box.textContent='';
- const list=T&&T.all?S.tanks.map(t=>({t,cv:CVS[t.mac],name:t.name})):T?[{t:T,cv:CV,name:null}]:[];
+ const list=T&&T.all?T.tanks.map(t=>({t,cv:CVS[t.mac],name:t.name})):T?[{t:T,cv:CV,name:null}]:[];
  for(const{t,cv,name}of list){const d=document.createElement('div');box.appendChild(d);
   await fitOne(gen,d,t,cv,deliveries().filter(x=>x.mac===t.mac),name);if(gen!==FITGEN)return}}
 async function fitOne(gen,box,T,CV,dl,label){box.textContent=(label?label+': ':'')+'working out the tank capacity that fits your deliveries…';const mac=T.mac;
@@ -483,16 +483,16 @@ async function delDel(){if(!EDIT||!EDIT.r||!confirm('Delete the saved details fo
 let LG=0;  /* load generation. Everything is fetched first and the page's data then changes all at once, so no handler (resize, range, sub-page) can draw one tank's readings with another's forecast; a load overtaken by a newer one (another tank's tab tapped) is dropped */
 async function load(){const g=++LG;FITGEN++;
  const s0=await (await fetch('/api/state')).json();if(g!==LG)return;
- const q=new URLSearchParams(location.search),multi=s0.tanks.length>1;let mac=q.get('mac');
- if(!(mac==='all'&&multi)&&!s0.tanks.find(t=>t.mac===mac))mac=multi?'all':s0.tanks[0]&&s0.tanks[0].mac;  /* with 2+ tanks: all of them together first */
- const tb=$('tabs');tb.textContent='';if(multi)[{mac:'all',name:'All tanks'}].concat(s0.tanks).forEach(t=>{const b=document.createElement('button');b.textContent=t.name;b.setAttribute('aria-pressed',t.mac===mac);b.onclick=()=>{history.replaceState(null,'','?mac='+t.mac);run()};tb.appendChild(b)});
+ const q=new URLSearchParams(location.search),multi=s0.tanks.length>1,act=s0.tanks.filter(t=>modeOf(t.cfg)!=='off'),allOk=act.length>1;let mac=q.get('mac');  /* off tanks: their own tab only, never in 'all tanks' */
+ if(!(mac==='all'&&allOk)&&!s0.tanks.find(t=>t.mac===mac)){const f=act[0]||s0.tanks[0];mac=allOk?'all':f&&f.mac}  /* with 2+ tanks: all of them together first */
+ const tb=$('tabs');tb.textContent='';if(multi)(allOk?[{mac:'all',name:'All tanks'}]:[]).concat(s0.tanks).forEach(t=>{const b=document.createElement('button');b.textContent=t.name;b.setAttribute('aria-pressed',t.mac===mac);b.onclick=()=>{history.replaceState(null,'','?mac='+t.mac);run()};tb.appendChild(b)});
  if(!mac){S=s0;$('ttl').textContent='';$('sub').textContent='No tanks set up yet.';return}
  const nw=Date.now()/1000,live=(t,cv)=>t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383?[nw-t.age,toL(t.level,cv),t.level]:null;
  const dlP=fetch('/api/deliveries').then(r=>r.json()).catch(()=>({}));let late=[],t1,cv1=null,p1,cvs=null,tf=null;
- if(mac==='all'){const ts=s0.tanks,got=await Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+t.mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+t.mac).then(r=>r.json())])));if(g!==LG)return;
+ if(mac==='all'){const ts=act,got=await Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+t.mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+t.mac).then(r=>r.json())])));if(g!==LG)return;
   cvs={};got.forEach(([buf,cv],k)=>{cvs[ts[k].mac]=cv});const series=got.map(([buf,cv],k)=>{const s=parse(buf).map(([t,mm])=>[t,toL(mm,cv)]),l=live(ts[k],cv);if(l)s.push(l.slice(0,2));return s});
   const sum=f=>ts.reduce((a,t)=>a+(+f(t)||0),0),known=ts.every(t=>t.litres!=null),cap=sum(t=>t.cfg.capacity_l);
-  t1={mac:'all',all:true,name:ts.length>2?'All tanks':'Both tanks',cfg:{capacity_l:cap,reserve_l:Math.max(...ts.map(t=>t.cfg.reserve_l??200))},litres:known?sum(t=>t.litres):null,percent:known&&cap?Math.round(sum(t=>t.litres)/cap*1000)/10:null};
+  t1={mac:'all',all:true,tanks:ts,name:ts.length>2?'All tanks':'Both tanks',cfg:{capacity_l:cap,reserve_l:Math.max(...ts.map(t=>t.cfg.reserve_l??200))},litres:known?sum(t=>t.litres):null,percent:known&&cap?Math.round(sum(t=>t.litres)/cap*1000)/10:null};
   p1=combine(series,ts.map(t=>t.cfg.isolated)).map(p=>[p[0],p[1],null]);tf={};ts.forEach((t,k)=>{tf[t.mac]=analyse(series[k],{now:nw}).fills});
   const t0=p1.length?p1[0][0]:0;late=series.map((s,k)=>s.length&&s[0][0]>t0+DAY?ts[k].name+' from '+fmtDY(s[0][0]):null).filter(Boolean)}  /* tanks whose readings start later: held level before then */
  else{t1=s0.tanks.find(t=>t.mac===mac);const[buf,cv]=await Promise.all([fetch('/api/hist?mac='+mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+mac).then(r=>r.json())]);if(g!==LG)return;

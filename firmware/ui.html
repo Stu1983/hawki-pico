@@ -140,7 +140,7 @@ dialog::backdrop{background:#0008}
 <div style="margin:4px 0 12px"><button type="button" onclick="preset()">Fill in Titan R1225</button><div class="hint">A Titan R1225 as measured on one. Check the heights on yours (Measurements): they depend on how the outlet and monitor were fitted.</div></div>
 <div class="grid">
 <label style="grid-column:1/-1">Reorder below, litres<input id="f_r" type="number" step="10" min="0" max="100000" placeholder="200"><div class="hint">Forecast warns before this.</div></label>
-<label id="f_isoL" style="grid-column:1/-1;display:flex;gap:8px;align-items:flex-start"><input id="f_iso" type="checkbox" style="width:auto;margin-top:3px"><span>Isolated (valve closed)<div class="hint">Its oil still counts in what you have, and deliveries to it still show, but its readings never count as use. For a tank you're not drawing from.</div></span></label>
+<label id="f_isoL" style="grid-column:1/-1">Mode<select id="f_mode"><option value="use">In use: the tank you're drawing from</option><option value="standby">Standby: valve shut, oil waiting</option><option value="off">Off: empty, or not wanted</option></select><div class="hint">In use: counted, and warns when it's time to order (or to switch to a standby tank that has oil). Standby: its oil counts in what you have and deliveries to it show, but its readings never count as use. Off: left out of the totals, forecasts and warnings; its readings are still saved.</div></label>
 <label style="grid-column:1/-1">Shape<select id="f_shape" onchange="wmShow()"><option value="cuboid">Rectangular (cuboid)</option><option value="horizontal">Horizontal cylinder</option><option value="vertical">Vertical cylinder</option><option value="other">Other (linear)</option></select></label>
 <label class="cub">Windows<select id="f_windows" onchange="wmShow()"><option value="0">None</option><option value="1">1</option><option value="2">2</option></select></label>
 <label class="cub">Ribs<select id="m_nr" onchange="ribInputs()"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
@@ -260,7 +260,7 @@ function render(){
  secRender();netRender();notifyRender();wxRender();prRender();mqRender();if(!$('p_dash').hidden)dash();
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
  $('tanks').innerHTML=(S.tanks.length>1?`<div class="card"><div class="row" style="min-height:34px"><div><b>Both tanks together</b><div class="mut">Oil, use and forecast for the tanks combined</div></div>${S.primary==='all'?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('all')">Show on dashboard</button>`}</div></div>`:'')+(S.tanks.length?S.tanks.map(t=>{/* the Tanks page shows ALL the oil in the tank (the dashboard shows the usable oil): usable + what's below the outlet */
-  const tot=t.total,whole=+t.cfg.tank_l,pc=tot!=null&&whole?Math.round(tot/whole*1000)/10:t.percent,big=tot??t.litres,p=pc??0;  /* total: worked out on the Pico from the reading, floor to surface */return `<div class="card"><div class="row"><b>${esc(t.name)}</b><button onclick="edit('${okMac(t.mac)}')">Edit</button></div>
+  const tot=t.total,whole=+t.cfg.tank_l,pc=tot!=null&&whole?Math.round(tot/whole*1000)/10:t.percent,big=tot??t.litres,p=pc??0;  /* total: worked out on the Pico from the reading, floor to surface */const md=modeOf(t.cfg);return `<div class="card"><div class="row"><b>${esc(t.name)}${md==='use'||S.tanks.length<2?'':' <span class="mut">('+(md==='off'?'off':'standby')+')</span>'}</b><button onclick="edit('${okMac(t.mac)}')">Edit</button></div>
   <div class="row" style="margin-top:8px;min-height:34px"><a class="lnk" href="/history?mac=${okMac(t.mac)}">History &amp; forecast</a>${S.tanks.length>1?(t.mac===S.primary?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('${okMac(t.mac)}')">Show on dashboard</button>`):'<span></span>'}</div>
   <div class="row" style="margin-top:6px"><span class="big">${big==null?'–':Math.round(big)+' L'}</span><span class="big">${pc==null?'':pc+'%'}</span></div>
   <div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div>
@@ -346,20 +346,20 @@ function wmShow(){uEst();const cub=$('f_shape').value=='cuboid',nw=cub?+$('f_win
  $('wm_h').textContent=nr?'This tank has ribs, which only work with your own measurements, so enter the window sizes below too (Standard is switched off). Heights up from the base of the tank, in cm.':ms?'Heights up from the base of the tank, in cm. Rough is fine: the total is always scaled to the capacity. Dashed parts of the drawing are guesses until you fill them in.':'Standard: the window size is worked out from the capacity, as the Magnus app does. Choose “From my measurements” if the readings look off in the middle of the tank.';
  $('vizN').textContent=cub?(ms?'Dashed parts are guesses until you fill them in. Tap a box to see where it is.':'The drawing shows the heights and size you enter.'):' ';
  ftab(FT);draw()}
-function fill(c){$('f_name').value=c.name||'';$('f_iso').checked=!!c.isolated;$('f_isoL').style.display=S.tanks.length+(S.tanks.some(x=>x.mac===cur)?0:1)>1?'flex':'none';  /* only means something with 2+ tanks */$('f_shape').value=c.shape||'cuboid';$('f_windows').value=c.windows??0;$('f_top').value=c.height_cm!=null?Math.round((c.height_cm+(c.outlet_cm||0))*100)/100:'';$('f_out').value=c.outlet_cm??'';$('f_l').value=c.length_cm??'';$('f_w').value=c.width_cm??'';$('f_c').value=c.tank_l??c.tank_l_equiv??c.capacity_l??'';$('f_r').value=c.reserve_l??'';
+function fill(c){$('f_name').value=c.name||'';$('f_mode').value=modeOf(c);$('f_isoL').style.display=S.tanks.length+(S.tanks.some(x=>x.mac===cur)?0:1)>1||modeOf(c)!=='use'?'block':'none';  /* (a lone tank that isn't in use must still be able to go back) */  /* only means something with 2+ tanks */$('f_shape').value=c.shape||'cuboid';$('f_windows').value=c.windows??0;$('f_top').value=c.height_cm!=null?Math.round((c.height_cm+(c.outlet_cm||0))*100)/100:'';$('f_out').value=c.outlet_cm??'';$('f_l').value=c.length_cm??'';$('f_w').value=c.width_cm??'';$('f_c').value=c.tank_l??c.tank_l_equiv??c.capacity_l??'';$('f_r').value=c.reserve_l??'';
  $('f_wm').value=c.window_model||'standard';for(const k in MF)$(k).value=c[MF[k]]??'';const r=c.ribs_cm||[];$('m_nr').value=r.length;ribInputs(r);wmShow()}
 function add(mac){FT='det';cur=mac;curLevel=(S.found.find(f=>f.mac==mac)||{}).level??null;$('dlgT').textContent='Add tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='hidden';fill({});fromList();dlg.showModal()}
 function edit(mac){FT='det';const t=S.tanks.find(x=>x.mac==mac);cur=mac;curLevel=t.level;$('dlgT').textContent='Edit tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='visible';fill(Object.assign({name:t.name},t.cfg));fromList();dlg.showModal()}
 // a Titan R1225 as measured on one (heights from the base of the tank; capacity checked against a metered delivery)
 const R1225={shape:'cuboid',windows:2,height_cm:123,outlet_cm:9.5,length_cm:173,width_cm:69,tank_l:1306,window_model:'measured',
  win_bottom_cm:45,win_top_cm:79,win_outer_w_cm:39,win_inner_w_cm:17,win_inner_h_cm:14,ribs_cm:[31.5,62.5,93.5],rib_h_cm:12.5,rib_depth_cm:1.5};
-function preset(){fill(Object.assign({},R1225,{name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,isolated:$('f_iso').checked}))}
+function preset(){fill(Object.assign({},R1225,{name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,mode:$('f_mode').value}))}
 /* 'Same tank as': linked monitors share the tank's size, heights and capacity (the Pico keeps them in step) */
 function linkOf(mac){const me=S.tanks.find(t=>t.mac===mac),g=me&&me.cfg.group;if(!g)return'';const o=S.tanks.find(t=>t.mac!==mac&&t.cfg.group===g);return o?o.mac:''}
-function mHint(){const t=S.tanks.find(x=>x.mac===$('m_from').value);$('m_hint').textContent=t?'Its size, heights and capacity are shared with '+t.name+': a change here changes '+t.name+' too. Name, reorder level and isolated stay this tank\'s own.':'Got two of the same tank? Pick the other one: you then set them up once, and a change to one changes both.'}
+function mHint(){const t=S.tanks.find(x=>x.mac===$('m_from').value);$('m_hint').textContent=t?'Its size, heights and capacity are shared with '+t.name+': a change here changes '+t.name+' too. Name, reorder level and mode stay this tank\'s own.':'Got two of the same tank? Pick the other one: you then set them up once, and a change to one changes both.'}
 function fromList(){const o=S.tanks.filter(t=>t.mac!==cur);$('m_from').innerHTML='<option value="">No, its own settings</option>'+o.map(t=>`<option value="${okMac(t.mac)}">${esc(t.name)}</option>`).join('');$('m_from').value=linkOf(cur);$('m_row').style.display=o.length?'':'none';mHint()}
-function copyFrom(){mHint();const t=S.tanks.find(x=>x.mac===$('m_from').value);if(!t)return;const keep={name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,isolated:$('f_iso').checked};fill(Object.assign({},t.cfg,keep))}
-async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:Math.round((hfOf()??0)*100)/100,outlet_cm:$('f_out').value===''?null:+$('f_out').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,tank_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,window_model:wmMode(),isolated:$('f_iso').checked,same_as:$('m_from').value};
+function copyFrom(){mHint();const t=S.tanks.find(x=>x.mac===$('m_from').value);if(!t)return;const keep={name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,mode:$('f_mode').value};fill(Object.assign({},t.cfg,keep))}
+async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:Math.round((hfOf()??0)*100)/100,outlet_cm:$('f_out').value===''?null:+$('f_out').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,tank_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,window_model:wmMode(),mode:$('f_mode').value,same_as:$('m_from').value};
  for(const el of $('dlg').querySelectorAll('input,select')){const pg=el.closest('.fpg'),tb=pg&&document.querySelector('.ftabs button[data-t="'+pg.dataset.t+'"]');if(el.closest('.cub')&&b.shape!=='cuboid'||tb&&tb.disabled)continue;  /* (a switched-off tab isn't saved) */if(!el.checkValidity()){ftab(el.closest('.fpg').dataset.t);el.reportValidity();return false}}  /* (on whichever tab it is) */
  if(!(b.height_cm>=10&&b.height_cm<=500)){ftab('mea');alert(b.height_cm>500?'The monitor can be at most 500 cm above the top of the outlet.':'The monitor must be at least 10 cm above the top of the outlet.');return false}
  if(b.window_model=='measured'){for(const k in MF){if(/^rib/.test(MF[k])?!+$('m_nr').value:!b.windows)continue;b[MF[k]]=$(k).value===''?null:+$(k).value}  /* (only the parts it has) */const r=ribVals();if(r.some(v=>v==null)){ftab('rib');alert('Fill in every rib height, or reduce the number of ribs.');return false}b.ribs_cm=r;
@@ -537,10 +537,11 @@ async function anLoad(mac,ck,get){const k=mac+'|'+ck;if(AN&&(AN.mac!==mac||AN.ck
  return ANP.p}
 function anReset(){AN=ANF=ANP=null;ANW=0}  /* the history changed (backup imported, another tank): forget it all, including a download still on its way */
 const anFailed=(mac,ck)=>!AN&&!!ANF&&ANF.k===mac+'|'+ck;
-async function dash(){if(!S.update)return;await dlvLoad();if(S.primary==='all'&&S.tanks.length>1)return dashAll();const t=S.tanks.find(x=>x.mac===S.primary);
- $('d_name').textContent=t?t.name:'No tanks yet';
+async function dash(){if(!S.update)return;await dlvLoad();const act=S.tanks.filter(x=>modeOf(x.cfg)!=='off');  /* off tanks are left out of 'all tanks together' */
+ if(S.primary==='all'&&act.length>1)return dashAll(act);const t=S.primary==='all'?act[0]:S.tanks.find(x=>x.mac===S.primary);
+ $('d_name').textContent=t?t.name:S.tanks.length?'All tanks are off':'No tanks yet';
  $('d_hist').style.visibility=t?'visible':'hidden';if(t)$('d_hist').href='/history?mac='+okMac(t.mac);
- if(!t){['d_l','d_r','d_w','d_c'].forEach(i=>$(i).textContent='–');$('d_c2').textContent=$('d_c3').textContent=' ';$('d_l2').textContent='Add a tank under Config → Sensors nearby.';$('d_r2').textContent=$('d_r3').textContent=$('d_w2').textContent=' ';DKEY='';drawTank(null);drawRate(null);drawLvl(null);return}
+ if(!t){['d_l','d_r','d_w','d_c'].forEach(i=>$(i).textContent='–');$('d_c2').textContent=$('d_c3').textContent=' ';$('d_l2').textContent=S.tanks.length?'Set a tank to In use: Tanks → Edit.':'Add a tank under Config → Sensors nearby.';$('d_r2').textContent=$('d_r3').textContent=$('d_w2').textContent=' ';DKEY='';drawTank(null);drawRate(null);drawLvl(null);return}
  const ck=JSON.stringify(t.cfg),fresh=AN&&AN.mac===t.mac&&AN.ck===ck&&Date.now()/1000-AN.t<600,vk=t.mac+'|'+ck;ANK=vk;if(fresh)ANW=0;
  if(!fresh)await anLoad(t.mac,ck,()=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])
    .then(([buf,cv])=>({mac:t.mac,ck,t:Date.now()/1000,cv,base:parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)])})));
@@ -560,15 +561,16 @@ async function dash(){if(!S.update)return;await dlvLoad();if(S.primary==='all'&&
  $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average':(P.length?'needs 2 days of readings':HF?'could not load the readings':'no readings yet');
  $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';
  todayCost(A,ok,t?t.mac:null);
- const wt=$('d_wt');wt.className='card tile';
- if(ok){const c=A.fc,wk=x=>(x-now)/(7*DAY);
+ const wt=$('d_wt');wt.className='card tile';const off=modeOf(t.cfg)==='off';  /* off: no forecast, no order date */
+ if(ok&&!off){const c=A.fc,wk=x=>(x-now)/(7*DAY);
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
-  $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?'Order now (at '+reserve+' L)':'Order around '+fmtD(c.ord)+' (at '+reserve+' L)';
+  const sp=modeOf(t.cfg)==='use'?S.tanks.filter(x=>x.mac!==t.mac&&modeOf(x.cfg)==='standby'&&x.litres!=null&&x.litres>(x.cfg.reserve_l??200)).sort((a,b)=>b.litres-a.litres)[0]:null;  /* a standby tank with oil: switch to it rather than order */
+  $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?(sp?'Switch to '+sp.name+' now':'Order now')+' (at '+reserve+' L)':(sp?'Switch to '+sp.name+' around ':'Order around ')+fmtD(c.ord)+' (at '+reserve+' L)';
   if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
- else{$('d_w').textContent='–';$('d_w2').textContent=' '}
+ else{$('d_w').textContent='–';$('d_w2').textContent=off?'Off: no forecast or warnings':' '}
  drawTank(t);
  const key=t.mac+'|'+ck+'|'+(AN&&AN.t)+'|'+(WV&&WV.heat?WXC.key+WXC.at:'-')+'|'+t.level+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;  // redraw only when something changed (keeps a hover open)
- if(!ok)A.fc=null;  /* no forecast line until the tiles have one too */
+ if(!ok||off)A.fc=null;  /* no forecast line until the tiles have one too (and never for an off tank) */
  drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap:+t.cfg.capacity_l}:null,HF&&LOADFAIL)}
 
 /* deliveries, for the price (refreshed with the readings, every 10 minutes) */
@@ -577,7 +579,7 @@ let DLV=null;async function dlvLoad(){if(DLV&&Date.now()-DLV.at<6e5)return DLV.d
 function oilPrice(mac){const D=DLV?DLV.d:{},pp=r=>r.litres===0?null:r.ppl!=null?r.ppl:r.total!=null&&r.litres>0?r.total/r.litres*100:null;
  const newest=l=>l.filter(r=>pp(r)!=null).sort((a,b)=>b.t-a.t)[0];
  /* this tank's own receipts; for all tanks together, those of the tanks in use (not isolated); then any current tank's */
- const use=S.tanks.filter(t=>mac?t.mac===mac:!t.cfg.isolated).flatMap(t=>D[t.mac]||[]),cur=S.tanks.flatMap(t=>D[t.mac]||[]);const r=newest(use)||newest(cur);
+ const use=S.tanks.filter(t=>mac?t.mac===mac:modeOf(t.cfg)==='use').flatMap(t=>D[t.mac]||[]),cur=S.tanks.flatMap(t=>D[t.mac]||[]);const r=newest(use)||newest(cur);
  if(r)return{p:pp(r),src:'at '+Math.round(pp(r))+'p/L paid'};
  const q=S.price&&S.price.now;return q&&q[2]!=null?{p:q[2],src:'at '+Math.round(q[2])+'p/L quoted'}:null}
 function todayCost(A,ok,mac){
@@ -586,7 +588,7 @@ function todayCost(A,ok,mac){
  const a3=av(3)!=null?av(3):A.recent;$('d_c').textContent=c(a3)+'/day';
  $('d_c2').textContent=(av(3)!=null?'3-day':(+A.recentDays.toFixed(1))+'-day')+' · '+pr.src;
  $('d_c3').textContent='7d '+(av(7)!=null?c(av(7)):'–')+' · '+(+A.recentDays.toFixed(1))+'d '+c(A.recent)}
-async function dashAll(){const ts=S.tanks;$('d_name').textContent=ts.length>2?'All tanks':'Both tanks';$('d_hist').style.visibility='visible';$('d_hist').href='/history?mac=all';
+async function dashAll(ts){$('d_name').textContent=ts.length>2?'All tanks':'Both tanks';$('d_hist').style.visibility='visible';$('d_hist').href='/history?mac=all';
  const ck=JSON.stringify(ts.map(t=>[t.mac,t.cfg])),fresh=AN&&AN.mac==='all'&&AN.ck===ck&&Date.now()/1000-AN.t<600,vk='all|'+ck;ANK=vk;if(fresh)ANW=0;
  if(!fresh)await anLoad('all',ck,()=>Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])))
    .then(got=>({mac:'all',ck,t:Date.now()/1000,cvs:got.map(g=>g[1]),bases:got.map(([buf,cv])=>parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)]))})));
@@ -594,7 +596,7 @@ async function dashAll(){const ts=S.tanks;$('d_name').textContent=ts.length>2?'A
  const now=Date.now()/1000,series=AN?AN.bases.map((b,k)=>{const s=b.slice(),t=ts[k];if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383)s.push([now-t.age,toL(t.level,AN.cvs[k])]);return s}):[];
  const P=AN?combine(series,ts.map(t=>t.cfg.isolated)):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S);if(ANK!==vk)return;const A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
  const sum=f=>ts.reduce((a,t)=>a+(f(t)||0),0),lit=sum(t=>t.litres),cap=sum(t=>+t.cfg.capacity_l),un=sum(t=>t.unusable&&t.unusable[0]),known=ts.every(t=>t.litres!=null);
- $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))+(t.cfg.isolated?' (isolated)':'')).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
+ $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))+(modeOf(t.cfg)==='standby'?' (standby)':'')).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
  $('d_bar').style.width=(known&&cap?Math.max(0,Math.min(100,lit/cap*100)):0)+'%';
  const ok=A.recent!=null&&A.span>=2,av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;
  $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
@@ -661,7 +663,7 @@ function drawTanks(ts){const sv=$('d_tank'),dots=$('d_dots');TI=TMAC?ts.findInde
  if(!sv.dataset.swipe){sv.dataset.swipe=1;let x0=null,y0=null;
   sv.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
   sv.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;if(Math.abs(dx)>40&&Math.abs(dx)>2*Math.abs(dy)&&S.primary==='all')showTank(TI+(dx<0?1:-1))})}}  /* sideways swipes only: scrolling stays scrolling */
-function showTank(i){const ts=S.tanks;if(ts.length<2||S.primary!=='all')return;TI=(i+ts.length)%ts.length;TMAC=ts[TI].mac;try{localStorage.hawkiTankView=TMAC}catch(e){}drawTanks(ts)}
+function showTank(i){const ts=S.tanks.filter(x=>modeOf(x.cfg)!=='off');if(ts.length<2||S.primary!=='all')return;TI=(i+ts.length)%ts.length;TMAC=ts[TI].mac;try{localStorage.hawkiTankView=TMAC}catch(e){}drawTanks(ts)}
 // Both tanks as one: oil left = the two added; the level series is their sum, so daily use is the
 // combined drop (a tank you didn't draw from adds nothing, rather than dragging the average down)
 function drawRate(A,now){const svg=$('c_rate');if(!A){noData(svg,'Daily use shows after 2 days of readings');return}

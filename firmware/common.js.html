@@ -177,6 +177,8 @@ function flatten(s){const out=s.slice();let i=0;
 function firstLevel(s){const d=s.filter(p=>p[0]-s[0][0]<=DAY).map(p=>p[1]);return Math.max(...d)-Math.min(...d)<=STEADY_L?d.reduce((a,b)=>a+b,0)/d.length:s[0][1]}
 // An isolated tank (valve closed) holds its level and only moves on a change bigger than a delivery's REFILL_L
 // (a delivery, or the valve opened after all): radar jitter and warm oil never count as use.
+/* a tank's mode: In use (counted, warns), Standby (valve shut: its oil counts, its readings never count as use, no warning of its own), Off (left out of totals, forecasts and warnings). Older settings: isolated = standby */
+function modeOf(c){return c&&(c.mode==='use'||c.mode==='standby'||c.mode==='off')?c.mode:c&&c.isolated?'standby':'use'}  /* (an explicit mode first: the form's settings copied from another tank carry its isolated time) */
 function holdIsolated(s,since){const t0=typeof since==='number'?since:0;let h=null,sum=0,n=0;return s.map(p=>{if(p[0]<t0)return p;if(h==null||Math.abs(p[1]-h)>REFILL_L){sum=0;n=0}sum+=p[1];n++;h=sum/n;return[p[0],h].concat(p.slice(2))})}  /* held at the running average of its readings since the last big change, so one jittery first reading can't set its level; since = when it was isolated (epoch; true = always): readings before then are left as they were */
 function combine(series,iso){series=series.map((s,k)=>iso&&iso[k]?holdIsolated(s,iso[k]):series.length>1?flatten(s):s);const f0=series.map(s=>s.length?firstLevel(s):0),all=[...new Set(series.flatMap(s=>s.map(p=>p[0])))].sort((a,b)=>a-b),idx=series.map(()=>0);
  /* tanks read a minute or two apart count as one reading time (the later), so the sum has one point an hour like a single tank */
