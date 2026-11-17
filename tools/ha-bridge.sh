@@ -32,7 +32,7 @@ echo "$J" | jq -c '.sensors as $s | (.tanks // {}) | to_entries[]
   | {sfx: (.key | gsub(":"; "") | .[8:]), t: .value, v: $s[.key]}' |
 while read -r row; do
   sfx=$(jq -r .sfx <<<"$row")
-  post "sensor.hawki_${sfx}_distance" "$(jq -c '{state: (.t.level|tostring), attributes: {
+  post "sensor.hawki_${sfx}_distance" "$(jq -c '{state: (if .t.level == 16382 or .t.level == 16383 then "unknown" else (.t.level|tostring) end), attributes: {
       unit_of_measurement: "mm", friendly_name: (.t.name + " distance to oil"),
       icon: "mdi:hydraulic-oil-level", mac: .t.mac, name: .v.name, battery: .v.battery,
       temperature_raw: .v.temperature, error_status: .v.errorStatus, firmware: .v.firmwareVersion,

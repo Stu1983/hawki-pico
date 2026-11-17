@@ -259,7 +259,7 @@ function drawLevel(){
   let lines,px,py;
   if(tx>last&&A&&A.fc){const fp=A.fc.path;let b=fp[0];for(const p of fp)if(Math.abs(p[0]-tx)<Math.abs(b[0]-tx))b=p;px=x(b[0]);py=y(b[1]);lines=['≈ '+L0(b[1]),'forecast · '+fmtD(b[0])]}
   else{let lo=0,hi=vis.length-1;while(lo<hi){const m=(lo+hi)>>1;if(vis[m][0]<tx)lo=m+1;else hi=m}
-   const b=lo>0&&Math.abs(vis[lo-1][0]-tx)<Math.abs(vis[lo][0]-tx)?vis[lo-1]:vis[lo];if(!b)return;px=x(b[0]);py=y(b[1]);lines=[L0(b[1]),fmtDT(b[0])+(b[2]!=null?' · '+b[2]+' mm':'')]}
+   const b=lo>0&&Math.abs(vis[lo-1][0]-tx)<Math.abs(vis[lo][0]-tx)?vis[lo-1]:vis[lo];if(!b)return;px=x(b[0]);py=y(b[1]);lines=[L0(b[1]),fmtDT(b[0])+(b[2]!=null?' · '+(b[2]===16382?'nearly empty':b[2]+' mm'):'')]}
   xh.setAttribute('x1',px);xh.setAttribute('x2',px);xh.setAttribute('visibility','visible');dot.setAttribute('cx',px);dot.setAttribute('cy',py);dot.setAttribute('visibility','visible');showTip(ev,lines)};
  hit.addEventListener('pointermove',mv);hit.addEventListener('pointerdown',mv);
  hit.addEventListener('pointerleave',()=>{xh.setAttribute('visibility','hidden');dot.setAttribute('visibility','hidden');hideTip()})}

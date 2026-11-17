@@ -63,6 +63,8 @@ def test_state():
                  'read_at': '2026-11-17T17:03:20+00:00', 'order_by': None, 'misread': False}, s
     ob = mqtt.state(dict(v, order_by='2026-12-16T02:13:20+00:00'), 1794935060)['order_by']
     assert ob == '2026-12-16T02:13:20+00:00', ob  # the dashboard's order date, as a timestamp HA shows in local time
+    for code in (16382, 16383):  # the sensor's 'nearly empty' / 'no level' codes are not distances
+        assert mqtt.state(dict(v, level=code), 1794935060)['distance'] is None, code
     disc = [json.loads(p) for t, p in mqtt.discovery('pico1', 'c0:04:56:c4:0c:71', 'Tank 1', '1.2.54') if 'order_by' in t]
     assert disc and disc[0]['device_class'] == 'timestamp' and disc[0]['default_entity_id'] == 'sensor.hawki_0c71_order_by', disc
     heard_later = mqtt.state(dict(v, good_at=1794931400), 1794935060)  # measured 16:03, re-heard since

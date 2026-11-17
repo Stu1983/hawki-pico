@@ -150,7 +150,8 @@ def state(v, now):
         read_at = '%04d-%02d-%02dT%02d:%02d:%02d+00:00' % (y, mo, d, h, mi, s)
     r = lambda x, n=0: None if x is None else (round(x) if n == 0 else round(x, n))
     return {'litres': r(v.get('litres')), 'total': r(v.get('total')), 'percent': r(v.get('percent'), 1),
-            'distance': v.get('level'), 'battery': v.get('battery'), 'rssi': v.get('rssi'), 'read_at': read_at,
+            'distance': None if v.get('level') in (16382, 16383) else v.get('level'),  # (codes, not distances)
+            'battery': v.get('battery'), 'rssi': v.get('rssi'), 'read_at': read_at,
             'order_by': v.get('order_by'),
             'misread': v.get('misread') is not None}
 

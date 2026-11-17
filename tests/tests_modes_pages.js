@@ -68,4 +68,7 @@ const st=(t2cfg,primary)=>({tanks:[tank(A1,'Tank 1',250,{}),tank(A2,'Tank 2',t2c
   const f=posts.filter(p=>p[0]==='/api/forecast');ok(f.length===1&&f[0][1].mac===A1&&f[0][1].cum.length===400&&f[0][1].reserve===200,'dashboard sends its forecast once ('+f.length+'), 400 days of running totals')}
  {const posts=[],s=st({litres:7,cfg:{mode:'off',isolated:1790000000}},A2);const w=open('ui.html','http://pico/#dash',s,posts);await wait(500);
   ok(!posts.some(p=>p[0]==='/api/forecast'),'an off tank on the dashboard: nothing sent')}
+ /* the sensor's 'nearly empty' code is not a distance */
+ {const s=st({litres:0,cfg:{mode:'standby',isolated:1790000000}},A1);s.tanks[1].level=16382;const w=open('ui.html','http://pico/#tanks',s);await wait(400);
+  const t=w.document.getElementById('tanks').textContent;ok(/nearly empty/.test(t)&&!/16382 mm/.test(t),'level code 16382 shows as "nearly empty", not "16382 mm to oil"')}
  process.exit(fails?1:0)})();

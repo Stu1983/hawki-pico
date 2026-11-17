@@ -266,7 +266,7 @@ function render(){
   <div class="row" style="margin-top:6px"><span class="big">${big==null?'–':Math.round(big)+' L'}</span><span class="big">${pc==null?'':pc+'%'}</span></div>
   <div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div>
   <div class="mut" style="min-height:36px">${big==null?'&nbsp;':tot==null?'Usable oil only (set the whole-tank capacity under Edit to see all of it)':'All the oil: '+Math.round(t.litres)+' L usable + '+Math.round(tot-t.litres)+' L below the outlet'}${t.total_standard!=null?' · Magnus-style maths (which also counts all the oil): '+Math.round(t.total_standard)+' L':''}</div>
-  <div class="row mut" style="flex-wrap:wrap;gap:2px 12px"><span style="white-space:nowrap">${t.level==null||t.level===16383?'no reading yet':t.level+' mm to oil'} · battery ${t.battery??'–'}%</span>${t.misread!=null?'<span style="white-space:nowrap;color:var(--warn)">latest reading '+(t.misread<0||t.misread===16383?'had no level':'was a misread ('+t.misread+' mm)')+(t.level!=null&&t.level!==16383?': showing the last good reading':'')+'</span>':''}<span style="white-space:nowrap">${readAt(t)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div>
+  <div class="row mut" style="flex-wrap:wrap;gap:2px 12px"><span style="white-space:nowrap">${t.level==null||t.level===16383?'no reading yet':t.level===16382?'nearly empty':t.level+' mm to oil'} · battery ${t.battery??'–'}%</span>${t.misread!=null?'<span style="white-space:nowrap;color:var(--warn)">latest reading '+(t.misread<0||t.misread===16383?'had no level':'was a misread ('+t.misread+' mm)')+(t.level!=null&&t.level!==16383?': showing the last good reading':'')+'</span>':''}<span style="white-space:nowrap">${readAt(t)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div>
   <details class="rd" data-mac="${okMac(t.mac)}"${RDO.has(t.mac)?' open':''} ontoggle="rdToggle(this)"><summary>Today's readings</summary><div class="rdb">${RD[t.mac]?RD[t.mac].html:'Loading…'}</div></details></div>`}).join('')
   :'<div class="empty">No tanks yet: add one from the sensors below.</div>');
  RDO.forEach(m=>rdLoad(m));  /* open ones: refresh when a new reading has come */
@@ -417,7 +417,7 @@ async function exportCsv(){try{bst('Preparing CSV…');const s=await api('/api/s
  for(const t of s.tanks){const cv=await api('/api/curve?mac='+t.mac),v=new DataView(await getBin(t.mac)),cap=+t.cfg.capacity_l;
   const toL=mm=>{if(mm===16382||mm>=cv.h)return 0;const i=mm/cv.step,a=Math.floor(i),l=cv.l;return a>=l.length-1?l[l.length-1]:l[a]+(l[a+1]-l[a])*(i-a)};
   const recs=[];for(let i=0;i+6<=v.byteLength;i+=6)recs.push([v.getUint32(i,true),v.getUint16(i+4,true)]);recs.sort((a,b)=>a[0]-b[0]);
-  for(const[ts,mm]of recs){const L=toL(mm),d=new Date(ts*1000);rows.push([q(t.name),t.mac,d.toISOString(),mm,L.toFixed(1),(100*L/cap).toFixed(1)].join(','))}}
+  for(const[ts,mm]of recs){const L=toL(mm),d=new Date(ts*1000);rows.push([q(t.name),t.mac,d.toISOString(),mm===16382?'':mm,L.toFixed(1),(100*L/cap).toFixed(1)].join(','))}}
  download('oil-tanks-readings-'+day()+'.csv',rows.join('\n')+'\n','text/csv');bst('CSV saved: '+(rows.length-1)+' readings. Times are UTC.')}catch(e){bst('Export failed: '+e.message)}}
 async function importBackup(f){$('impf').value='';if(!f)return;let o;
  try{o=JSON.parse(await f.text())}catch(e){alert('That file isn\'t a backup (not valid JSON).');return}
