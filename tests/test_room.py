@@ -4,9 +4,9 @@ src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).
 tree = ast.parse(src)
 want = {'prune_seen', 'make_room', 'with_room'}
 code = ast.Module([n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in want
-                   or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('SEEN_MAX', 'SEEN_AGE') for t in n.targets)], [])
+                   or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('SEEN_MAX', 'SEEN_AGE', 'HAWKI_MAX', 'HAWKI_AGE') for t in n.targets)], [])
 now = time.time()
-g = {'time': time, 'gc': gc, 'cfg': {'tanks': {'t1': {}}}, 'hawki': {'nb': {}},
+g = {'time': time, 'gc': gc, 'cfg': {'tanks': {'t1': {}}}, 'hawki': {'nb': {'rx': now}},  # (a HAWKi nearby, heard just now)
      'seen': {'t1': {'last': 0}, 'nb': {'last': 0}, 'old': {'last': now - 3600}, 'new': {'last': now}}}
 exec(compile(code, 'app.py', 'exec'), g)
 fails = 0

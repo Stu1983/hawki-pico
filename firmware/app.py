@@ -110,12 +110,19 @@ hawki = {}   # mac -> latest decoded reading
 seen = {}    # mac -> BLE devices heard lately (debug + names); pruned, see prune_seen()
 SEEN_MAX = 60
 SEEN_AGE = 600  # forget other devices (phones change address every ~15 min) after 10 minutes
+HAWKI_MAX = 8    # HAWKis that aren't set up as tanks (the Sensors nearby list): at most this many...
+HAWKI_AGE = 900  # ...each forgotten 15 minutes after it was last heard (set-up tanks never are)
 
 
 def prune_seen(all_others=False):
     # Long-lived little objects scattered through the heap chop it up, and a secure (TLS) connection
     # needs one big unbroken block of ~40 KB: keep this list short.
-    old = time.time() - SEEN_AGE
+    now = time.time()
+    for k in list(hawki):  # HAWKis that aren't tanks (a sensor nearby, or someone sending its id): not heard lately
+        d = hawki.get(k)
+        if d is not None and k not in cfg['tanks'] and now - d.get('rx', 0) > HAWKI_AGE:
+            hawki.pop(k, None)
+    old = now - SEEN_AGE
     for k in list(seen):  # a snapshot: the BLE callback can add devices between our steps
         e = seen.get(k)
         if e is not None and k not in cfg['tanks'] and (all_others or e.get('last', 0) < old):
@@ -197,6 +204,24 @@ def name_of(adv):
     return ''
 
 
+def hawki_room():
+    # make room for another HAWKi that isn't set up as a tank: when there are HAWKI_MAX already, the one heard
+    # longest ago goes (a real sensor adverts every 4 s, so someone sending its id from many addresses can't
+    # keep a new one out). Set-up tanks never count or go.
+    n, old = len(hawki), None
+    for t in cfg['tanks']:
+        if t in hawki:
+            n -= 1
+    if n < HAWKI_MAX:
+        return
+    for k, d in hawki.items():
+        if k not in cfg['tanks'] and (old is None or d.get('rx', 0) < hawki[old].get('rx', 0)):
+            old = k
+    if old is not None:
+        hawki.pop(old, None)
+        seen.pop(old, None)
+
+
 def irq(ev, data):
     if ev == 5:  # _IRQ_SCAN_RESULT
         at, addr, adv_type, rssi, adv = data
@@ -204,8 +229,8 @@ def irq(ev, data):
         e = seen.get(k)
         if e is None:
             if (len(seen) >= SEEN_MAX and k not in cfg['tanks'] and k not in hawki
-                    and not (adv_type == 0 and HAWKI_UUID in bytes(adv))):  # memory guard (never shuts out a HAWKi, even a new one)
-                return
+                    and not (adv_type == 0 and HAWKI_UUID in bytes(adv) and mfr_from_adv(adv))):
+                return  # memory guard (a new HAWKi still gets in: hawki_room() below keeps that list short)
             e = seen[k] = {'at': at, 'n': 0, 'max': rssi, 'name': '', 'adv': {}}
         e['n'] += 1
         e['rssi'] = rssi
@@ -219,6 +244,8 @@ def irq(ev, data):
                 hawki[k]['name'] = e['name']
         if adv_type == 0 and HAWKI_UUID in bytes(adv):
             m = mfr_from_adv(adv)
+            if m and k not in hawki and k not in cfg['tanks']:
+                hawki_room()
             if m:
                 d = decode(m)
                 d['raw'] = hx(m)
