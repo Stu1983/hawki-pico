@@ -29,7 +29,7 @@
 #   address to automatic).
 # Maintenance (token, and only if switched on in Software settings - off by default):
 #   PUT /file?name=x&t=TOK, GET /reboot?t=TOK, GET /run?name=x.py&t=TOK
-# Debug: GET /devices[?name=&addr=], GET /reset
+# Debug: GET /devices[?name=&addr=] (signed in, or maintenance on + &t=TOK), GET /reset
 #
 # No Wi-Fi configured, or it can't connect for 60 s: the Pico also opens a setup network
 # "HAWKi-Setup-XXXX" (password: oiltanks); browse to http://192.168.4.1/
@@ -1092,6 +1092,38 @@ async def alerts():
         await asyncio.sleep(300)
 
 
+UPD_CACHE_S = 600
+upd_cache = [None, None]  # the last check's answer (good or not) and mono_s() when
+
+
+def update_check(fresh):
+    # Checking means a blocking HTTPS fetch (seconds, ~40 KB): answered from the last 10 minutes unless the signed-in
+    # owner asks (fresh), and even then not more than every 10 s; a failure is remembered too
+    age = None if upd_cache[1] is None else mono_s() - upd_cache[1]
+    if age is not None and (age < 10 or not fresh and age < UPD_CACHE_S):
+        return dict(upd_cache[0], age=age)  # (the page says how long ago it was checked)
+    try:
+        import updater
+        res = with_room(updater.check, VERSION)
+        manifest[0] = res.pop('manifest')
+    except Exception as ex:
+        manifest[0] = None
+        res = {'current': VERSION, 'error': str(ex) or repr(ex)}
+    gc.collect()
+    upd_cache[0], upd_cache[1] = res, mono_s()
+    return dict(res, age=0)
+
+
+def manifest_fresh():
+    # Install uses the release the last check found, if that check is under 10 minutes old; else it checks again
+    return manifest[0] is not None and upd_cache[1] is not None and mono_s() - upd_cache[1] < UPD_CACHE_S
+
+
+def may_setup(auth, peer):
+    # slow or revealing requests: signed in, or setting up (no PIN yet, or over the setup network)
+    return authed(auth) or not cfg.get('pin') or on_ap(peer)
+
+
 def update_info():
     try:
         last = json.load(open('upd.last'))
@@ -1677,14 +1709,7 @@ async def handle(r, w):
                 return await send(w, 400, json.dumps('Could not save: %s' % ex))
             return await send(w, 200, '"ok"')
         if path == '/api/update/check':
-            try:
-                import updater
-                res = with_room(updater.check, VERSION)
-                manifest[0] = res.pop('manifest')
-            except Exception as ex:
-                res = {'current': VERSION, 'error': str(ex) or repr(ex)}
-            gc.collect()
-            return await send(w, 200, json.dumps(res))
+            return await send(w, 200, json.dumps(update_check(authed(auth))))
         if path == '/api/update/install' and method == 'POST':
             if installing[0]:
                 return await send(w, 409, json.dumps('An update is already being installed'))
@@ -1693,7 +1718,11 @@ async def handle(r, w):
             installing[0] = True
             try:
                 import updater
-                m = manifest[0] or with_room(updater.check, VERSION)['manifest']
+                m = manifest[0] if manifest_fresh() else with_room(updater.check, VERSION)['manifest']
+                want = (json.loads(body) if body else {}).get('version')
+                if want and m['version'] != want:  # (a newer release since the page showed it: never install unseen)
+                    installing[0] = False
+                    return await send(w, 409, json.dumps('Version %s is out now: check for updates again' % m['version']))
                 if updater.vtuple(m['version']) <= updater.vtuple(VERSION):
                     installing[0] = False
                     return await send(w, 400, json.dumps('Already up to date'))
@@ -1732,6 +1761,8 @@ async def handle(r, w):
             save_cfg(cfg)
             return await send(w, 200, '"ok"')
         if path == '/api/wifi/scan':
+            if not may_setup(auth, peer):  # (it blocks for seconds: not for anyone on the Wi-Fi to repeat)
+                return await send(w, 401, json.dumps({'auth': 'login'}))
             nets = {}
             for n in wlan.scan():
                 s = n[0].decode('utf-8', 'replace')
@@ -1793,7 +1824,9 @@ async def handle(r, w):
                 return await send_file(w, hist_name(mac), 'application/octet-stream')
             except OSError:
                 return await send(w, 200, b'', 'application/octet-stream')
-        if path == '/devices':
+        if path == '/devices':  # (every Bluetooth device nearby, with raw adverts: signed in or maintenance only)
+            if not (authed(auth) or cfg.get('maint') and q.get('t') == TOKEN):
+                return await send(w, 401, json.dumps({'auth': 'login'}))
             f, a = q.get('name', '').lower(), q.get('addr', '').lower()
             out = {k: v for k, v in seen.items()
                    if (not f or f in v['name'].lower()) and (not a or k.startswith(a))}

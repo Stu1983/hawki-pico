@@ -368,7 +368,7 @@ async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').
  if(b.shape=='cuboid'&&(!b.length_cm||!b.width_cm)){ftab('mea');alert('A rectangular tank needs length and width.');return false}
  try{await api('/api/tank',b);dlg.close();load()}catch(x){alert(x.message)}return false}
 async function delTank(){if(!confirm('Remove this tank? The monitor will show under Sensors nearby again.'))return;try{await api('/api/tank/delete',{mac:cur});dlg.close();load()}catch(x){alert(x.message)}}
-async function openWifi(){$('w_pw').value='';wdlg.showModal();try{const l=await api('/api/wifi/scan');$('w_ssid').innerHTML=l.map(n=>`<option value="${esc(n.ssid)}">${esc(n.ssid)} (${n.rssi} dBm)</option>`).join('')||'<option value="">No networks found</option>'}catch(x){$('w_ssid').innerHTML='<option value="">Scan failed</option>'}}
+async function openWifi(){$('w_pw').value='';wdlg.showModal();try{const l=await api('/api/wifi/scan');$('w_ssid').innerHTML=l.map(n=>`<option value="${esc(n.ssid)}">${esc(n.ssid)} (${n.rssi} dBm)</option>`).join('')||'<option value="">No networks found</option>'}catch(x){$('w_ssid').innerHTML='<option value="">'+(/PIN/.test(x.message)?'Sign in to scan for networks':'Scan failed')+'</option>'}}
 async function saveWifi(e){e.preventDefault();try{await api('/api/wifi',{ssid:$('w_ssid').value,pw:$('w_pw').value});wdlg.close();$('status').textContent='Restarting to join '+$('w_ssid').value+'…'}catch(x){alert(x.message)}return false}
 $('dlg').addEventListener('input',()=>{draw();uEst()});$('m_nr').addEventListener('change',()=>ribInputs());
 $('dlg').addEventListener('focusin',e=>{focusF=e.target.dataset&&e.target.dataset.f||null;draw()});
@@ -390,13 +390,13 @@ async function updClick(){const b=$('updBtn'),box=$('updBox');
  try{UPD=await api('/api/update/check');
   if(UPD.error){box.textContent='Could not check: '+UPD.error;b.textContent='Check for updates'}
   else if(UPD.newer){box.textContent='Version '+UPD.latest+' is available.'+(UPD.notes?'\n'+UPD.notes:'');b.textContent='Install '+UPD.latest;b.className='pri'}
-  else{box.textContent='Up to date (latest is '+UPD.latest+').';b.textContent='Check for updates'}}
+  else{box.textContent='Up to date (latest is '+UPD.latest+(UPD.age>=60?', checked '+Math.round(UPD.age/60)+' min ago: sign in to check again now':'')+').';b.textContent='Check for updates'}}
  catch(e){box.textContent='Could not check: '+e.message;b.textContent='Check for updates'}
  b.disabled=false}
 async function installUpd(){const b=$('updBtn'),box=$('updBox'),v=UPD.latest;
  if(!confirm('Install version '+v+'?\n\nThe Pico downloads it from GitHub, checks every file, then restarts (about a minute). If the new version won\'t run, it goes back to this one by itself.'))return;
  b.disabled=true;b.textContent='Installing…';box.textContent='Downloading and checking files…';
- try{await api('/api/update/install',{})}catch(e){box.textContent=e.message.replace(/^"|"$/g,'');b.disabled=false;b.textContent='Check for updates';b.className='';UPD=null;return}
+ try{await api('/api/update/install',{version:v})}catch(e){box.textContent=e.message.replace(/^"|"$/g,'');b.disabled=false;b.textContent='Check for updates';b.className='';UPD=null;return}
  box.textContent='Installed. Restarting…';
  for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,3000));try{S=await api('/api/state');if(S.update&&S.update.version===v){box.textContent='Now running version '+v+'. Reloading the page…';setTimeout(()=>location.reload(),1500);break}}catch(e){}}
  if(!(S.update&&S.update.version===v))box.textContent='The Pico has not come back on version '+v+' yet. Refresh this page in a minute.';
