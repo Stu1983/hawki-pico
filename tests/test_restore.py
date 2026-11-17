@@ -12,7 +12,7 @@ import tankcalc
 
 src = open(os.path.join(FW, 'app.py')).read()
 tree = ast.parse(src)
-names = ('MODES', 'MEASURED_KEYS', 'isolated_since', 'num', 'opt', 'set_tank', 'clean_delivery', 'restore_deliveries', 'STAGE', 'restore', 'merge_hist')
+names = ('MODES', 'MEASURED_KEYS', 'isolated_since', 'num', 'opt', 'check_shape', 'set_tank', 'clean_delivery', 'restore_deliveries', 'STAGE', 'restore', 'merge_hist')
 fails = 0
 
 
@@ -32,7 +32,7 @@ def save_deliv(d):
 
 
 g = {'time': time, 'json': json, 'os': os, 'struct': struct, 'cfg': {'tanks': {}}, 'hawki': {}, 'save_cfg': lambda c: saves.append(1),
-     'SHAPES': tankcalc.SHAPES, 'link': tankcalc.link, 'above': tankcalc.above, 'restore_groups': tankcalc.restore_groups,
+     'SHAPES': tankcalc.SHAPES, 'link': tankcalc.link, 'litres_many': tankcalc.litres_many, 'whole': tankcalc.whole, 'above': tankcalc.above, 'restore_groups': tankcalc.restore_groups,
      'load_deliv': lambda: json.loads(json.dumps(store['deliv'])), 'save_deliv': save_deliv}
 os.chdir(tempfile.mkdtemp())
 g['load_json'] = lambda n, bad: json.load(open(n)) if os.path.exists(n) else {}

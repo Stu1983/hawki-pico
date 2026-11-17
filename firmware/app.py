@@ -35,7 +35,7 @@
 # "HAWKi-Setup-XXXX" (password: oiltanks); browse to http://192.168.4.1/
 import bluetooth, binascii, json, time, network, machine, asyncio, gc, os, struct
 from hawki_decode import decode, mfr_from_adv
-from tankcalc import reading, litres, litres_many, link, restore_groups, SHAPES, below, above, tank_equiv, total
+from tankcalc import reading, litres, litres_many, link, restore_groups, SHAPES, below, above, tank_equiv, total, whole
 import histstore
 from version import VERSION
 from listen import Listener
@@ -1443,9 +1443,29 @@ def set_tank(b, restore=False):
             raise ValueError('the capacity is too small for that outlet height')
     else:
         t['capacity_l'] = num(b['capacity_l'], 1, 100000)
+    if not restore:  # (a backup is taken as it was saved: refusing it would refuse the whole import)
+        check_shape(t)
     link(cfg['tanks'], mac, t, b, restore)
     if not restore:
         save_cfg(cfg)
+
+
+def check_shape(t):
+    # Each setting is checked on its own range, but some combinations break the model so the litres go DOWN as the
+    # oil rises (window widths typed in mm, a capacity far below the box's size): refuse those
+    shapes = [t]
+    if t.get('tank_l') not in (None, ''):  # and the whole tank, floor to monitor (the part below the outlet too)
+        shapes.append(whole(t))
+    for s in shapes:
+        H, low = int(float(s['height_cm']) * 10), None
+        for x in litres_many(s, range(0, H + 1, 5)):  # distance from the monitor: 0 = full, so litres only go down
+            if x is None:
+                continue
+            if low is not None and x > low + 0.5:  # (against the lowest so far: small steps up add up)
+                if t.get('window_model') == 'measured':
+                    raise ValueError('with these window sizes the oil would go down as it rises: check they are in cm')
+                raise ValueError('with this capacity the oil would go down as it rises: check the capacity and the sizes')
+            low = x if low is None else min(low, x)
 
 
 # ---------- deliveries (supplier + price per fill) ----------

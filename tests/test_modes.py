@@ -12,7 +12,7 @@ import tankcalc
 
 src = open(os.path.join(FW, 'app.py')).read()
 tree = ast.parse(src)
-names = ('MODES', 'MEASURED_KEYS', 'CFG_KEYS', 'isolated_since', 'num', 'set_tank', 'mode_of', 'reserve_of', 'reorder_alert', 'cfg_view')
+names = ('MODES', 'MEASURED_KEYS', 'CFG_KEYS', 'isolated_since', 'num', 'check_shape', 'set_tank', 'mode_of', 'reserve_of', 'reorder_alert', 'cfg_view')
 fails = 0
 
 
@@ -24,7 +24,7 @@ def ok(c, m):
 
 A1, A2 = 'c0:04:56:c4:0c:71', 'c6:76:1b:dc:39:1c'
 g = {'time': time, 'cfg': {'tanks': {}}, 'hawki': {A1: {'level': 700}, A2: {'level': 700}}, 'save_cfg': lambda c: None,
-     'SHAPES': tankcalc.SHAPES, 'link': tankcalc.link, 'above': tankcalc.above, 'reading': tankcalc.reading,
+     'SHAPES': tankcalc.SHAPES, 'link': tankcalc.link, 'litres_many': tankcalc.litres_many, 'whole': tankcalc.whole, 'above': tankcalc.above, 'reading': tankcalc.reading,
      '_equiv': {}, 'tank_equiv': lambda t: None}
 exec(compile(ast.Module([n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in names
                          or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in names for t in n.targets)], []),

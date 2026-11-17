@@ -350,4 +350,5 @@ def reading(tank, level_mm):
     v = litres(tank, level_mm)
     if v is None:
         return None, None
-    return round(v, 1), round(100.0 * v / above(tank), 1)
+    cap = above(tank)
+    return round(v, 1), (round(100.0 * v / cap, 1) if cap > 0 else None)  # (nothing usable: no percentage)
