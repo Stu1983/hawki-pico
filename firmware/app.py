@@ -1313,9 +1313,63 @@ def update_info():
     return {'version': VERSION, 'last': last, 'pending': pending}
 
 
+class _Req:  # a request handed straight to handle(), no network (the update self-check)
+    def __init__(self, data):
+        self.d = data
+
+    async def read(self, n):
+        b, self.d = self.d[:n], self.d[n:]
+        return b
+
+
+class _Resp:  # ...and its answer: the headers kept, the rest only counted
+    def __init__(self):
+        self.head, self.n = b'', 0
+
+    def get_extra_info(self, k):
+        return ('127.0.0.1', 0)
+
+    def write(self, b):
+        self.n += len(b)
+        if len(self.head) < 400:
+            self.head += bytes(b[:400])
+
+    def complete(self):
+        # a 200 whose body is all there (Content-Length): a page cut off part-way doesn't count
+        i = self.head.find(b'\r\n\r\n')
+        if not self.head.startswith(b'HTTP/1.0 200') or i < 0:
+            return False
+        for ln in self.head[:i].split(b'\r\n'):
+            if ln.lower().startswith(b'content-length:'):
+                return self.n - i - 4 == int(ln.split(b':')[1].decode().strip()) > 100
+        return False
+
+    async def drain(self):
+        pass
+
+    def close(self):
+        pass
+
+    async def wait_closed(self):
+        pass
+
+
+async def web_ok(secs=30):
+    # Does the web side of this version work? The state API and the main page, through the real handle()
+    # (the Pico can't connect to itself over the network: tested on the Pico 2 W, both its own address and
+    # 127.0.0.1 fail). Measured there: both answer 200 in under 0.2 s.
+    for path in ('/api/state', '/'):
+        w = _Resp()
+        await asyncio.wait_for(handle(_Req(('GET %s HTTP/1.0\r\n\r\n' % path).encode()), w), max(1, secs))
+        if not w.complete():
+            return False
+    return True
+
+
 async def update_guard():
-    # Confirm a fresh update once it has run for 2 minutes with Wi-Fi up (or no Wi-Fi set up yet).
-    # If it can't get onto the Wi-Fi it used to join within 10 minutes, put the old version back.
+    # Confirm a fresh update once it has run for 2 minutes with Wi-Fi up (or no Wi-Fi set up yet) AND its web
+    # pages work: a version that imports and joins the Wi-Fi but whose page is broken could never be updated again
+    # from that page. Otherwise, after 10 minutes, put the old version back.
     if not update_info()['pending']:
         try:  # a power cut during a download leaves its .new files (only load the updater if there are any)
             if any(n.endswith('.new') or n == 'upd.tmp' for n in os.listdir()):
@@ -1325,14 +1379,22 @@ async def update_guard():
             print('tidy err', ex)
         return
     import updater
-    for i in range(60):
+    why, t0 = 'no Wi-Fi after the update', mono_s()
+    while mono_s() - t0 < 600:  # (10 minutes by the clock: slow checks can't stretch it)
         await asyncio.sleep(10)
-        if i >= 11 and (wlan.isconnected() or not cfg.get('ssid')):
-            print('update confirmed', updater.commit())
-            return
+        if mono_s() - t0 >= 120 and (wlan.isconnected() or not cfg.get('ssid')):
+            try:
+                good = await web_ok(min(30, 600 - (mono_s() - t0)))
+            except Exception as ex:
+                print('web check err', repr(ex))
+                good = False
+            if good:
+                print('update confirmed', updater.commit())
+                return
+            why = 'the web page of the new version is not working'
     import rollback
-    if rollback.undo('no Wi-Fi after the update'):  # (not finished: the journal stays and the next boot tries again;
-        machine.reset()                              # restarting now would only loop)
+    if rollback.undo(why):  # (not finished: the journal stays and the next boot tries again;
+        machine.reset()     # restarting now would only loop)
 
 
 manifest = [None]
@@ -1657,8 +1719,9 @@ hist_busy = [False]
 
 async def handle(r, w):
     conns[0] += 1
+    me = isinstance(w, _Resp)  # the Pico checking its own pages after an update (web_ok): no side effects
     try:
-        if conns[0] > 6:  # don't let a pile of idle connections starve the Pico
+        if conns[0] > 6 and not me:  # don't let a pile of idle connections starve the Pico
             return
         dl = time.ticks_add(time.ticks_ms(), 15000)  # the whole request line + headers within 15 s
 
@@ -1700,9 +1763,9 @@ async def handle(r, w):
             elif hl.startswith(b'x-auth:'):
                 auth = h.split(b':', 1)[1].strip().decode()
         path, q = parse_q(path)
-        if peer and not on_ap(peer):
+        if peer and not on_ap(peer) and not me:
             net_proof()
-        if path in LOADS:
+        if path in LOADS and not me:
             page_s[0] = mono_s()
         maint = bool(cfg.get('maint')) and q.get('t') == TOKEN
         if method == 'PUT' and path == '/file' and maint:
