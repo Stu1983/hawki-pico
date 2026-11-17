@@ -43,6 +43,7 @@ import notify
 import weather
 import price
 import netcfg
+import unset
 import mqtt
 import drops
 
@@ -105,6 +106,12 @@ def save_cfg(c):
 
 cfg = load_cfg()
 TOKEN = cfg['token']
+try:
+    BOOT = (int(cfg.get('boots') or 0) + 1) & 0xffff  # which start this is (readings kept while the clock is unset)
+except (TypeError, ValueError):
+    BOOT = 1
+cfg['boots'] = BOOT
+save_cfg(cfg)
 led = machine.Pin('LED', machine.Pin.OUT)
 hawki = {}   # mac -> latest decoded reading
 seen = {}    # mac -> BLE devices heard lately (debug + names); pruned, see prune_seen()
@@ -264,6 +271,15 @@ def irq(ev, data):
                     now_s = int(time.time())
                     d['good_at'] = None if now_s < 1700000000 else prev.get('good_at') if prev.get('raw') == d['raw'] and prev.get('good_at') and prev['good_at'] <= now_s else now_s  # clock not set: unknown
                 hawki[k] = d
+                if k in cfg['tanks'] and 'bad_level' not in d:
+                    if time.time() < 1700000000:
+                        if k in unset_raw and unset_raw[k] != d['raw'] and len(pending_unset) < 50:
+                            pending_unset.append((k, time.ticks_ms(), d.get('timestamp') or 0, d['level']))  # (unset.py)
+                        unset_raw[k] = d['raw']  # (the first one after a start may be one already saved: only a baseline)
+                    elif k not in anchor:  # the first NEW measurement once the clock is set: it places earlier starts'
+                        base = unset_raw.get(k) or anchor_base.setdefault(k, d['raw'])  # readings (never a repeat of
+                        if d['raw'] != base:                                              # one from before the sync)
+                            anchor[k] = (int(time.time()), d.get('timestamp') or 0)
                 if k in cfg['tanks']:  # new hourly measurement? (its payload changes) -> queue it for saving
                     r = listener.heard(k, d['raw'], 16383 if 'bad_level' in d else d.get('level'), int(time.time()))  # (16383: not saved)
                     if r and r[1] not in (None, 16383):
@@ -287,6 +303,13 @@ scan_running = [False]
 hook = [None]  # experiments (/run) receive every non-scan BLE event here
 listener = Listener()
 pending = []  # (mac, time, level) new measurements, saved by recorder()
+pending_unset = []  # (mac, ticks_ms, sensor time, level) heard while the clock isn't set (unset.py)
+unset_raw = {}      # mac -> payload last heard while the clock isn't set
+clock_set_at = [None]  # epoch when the clock came back this start (the end of the gap)
+gap_from = {}  # mac -> its last reading saved before the clock was lost (the start of the gap), fixed when it came back
+clock_mono = [None]  # mono_s() at that moment: this start's readings are placed by that one mapping
+anchor = {}       # mac -> (epoch, sensor time) of its first new measurement once the clock was set
+anchor_base = {}  # mac -> payload when the clock was set, if none was heard before (an anchor must differ from it)
 MIN_MM = 30  # closer than this to the sensor can't be a real reading (radar blind zone)
 discover_until = [None]  # ticks_ms: listen actively (names, new sensors) until then; None when off
 
@@ -588,6 +611,10 @@ async def recorder():
         now = time.time()
         while len(pending) > 100:  # bound: a stuck flash can't eat the memory
             pending.pop(0)
+        try:
+            note_clock(now)  # (before any reading heard since the clock came back is saved: the gap is fixed first)
+        except Exception as ex:
+            print('unset err', ex)
         while pending:
             mac, t, lvl = pending[0]
             if t >= 1700000000 and mac in cfg['tanks']:  # clock set, tank still configured
@@ -606,9 +633,56 @@ async def recorder():
                     print('drop check err', ex)
                 continue
             pending.pop(0)
+        try:
+            unset_step(now)
+        except Exception as ex:
+            print('unset err', ex)
         if now >= 1700000000 and (now // 3600) % 24 >= 3 and done_day != now // 86400:
             done_day = now // 86400
             await compact_all(now)
+
+
+def note_clock(now):
+    # the moment the clock is first set this start: the end of the gap, and its start for each tank (the last
+    # reading saved before it was lost), fixed before anything else is saved or placed
+    if now < 1700000000 or clock_set_at[0] is not None:
+        return
+    clock_set_at[0], clock_mono[0] = int(now), mono_s()
+    for mac in cfg['tanks']:
+        gap_from[mac] = max([t for t, mm in hist_tail(mac, 60) if t < clock_set_at[0]] or [0])
+
+
+def unset_step(now):
+    # readings heard while the clock wasn't set: keep them aside; once it is, place them in the gap (unset.py)
+    while pending_unset:
+        mac, tk, sts, mm = pending_unset.pop(0)
+        unset.add(mac, mono_s() - time.ticks_diff(time.ticks_ms(), tk) // 1000, sts, mm, BOOT)
+    if now < 1700000000 or clock_set_at[0] is None:
+        return
+    for mac in list(cfg['tanks']):
+        recs = unset.records(mac)
+        if not recs or hist_busy[0]:
+            continue
+        a = anchor.get(mac)
+        if unset.needs_anchor(recs, BOOT) and a is None and now - clock_set_at[0] < 2 * 3600:
+            continue  # (wait up to 2 hours for a new measurement to tell the sensor's clock from real time)
+        placed = unset.place(recs, BOOT, clock_set_at[0], clock_mono[0], a, gap_from.get(mac, 0), clock_set_at[0])
+        if placed:
+            with open('u.up', 'wb') as f:
+                for t, mm in placed:
+                    f.write(struct.pack('<IH', t, mm))
+            unset.clear(mac)  # (first: a power cut after this can lose them, but never add them twice)
+            hist_busy[0] = True
+            try:
+                merge_hist(hist_name(mac), 'u.up')
+            except ValueError as ex:  # (refused: dropped, rather than tried again every 10 s)
+                print('unset merge refused', ex)
+            finally:
+                hist_busy[0] = False
+                rm('u.up')
+            last_saved.pop(mac, None)
+        print('unset: %s placed %d of %d' % (mac, len(placed), len(recs)))
+        unset.clear(mac)
 
 
 def curve(t):
@@ -2022,6 +2096,7 @@ async def handle(r, w):
         if path == '/api/tank/delete' and method == 'POST':
             dm = str(json.loads(body).get('mac', '')).lower()
             cfg['tanks'].pop(dm, None)
+            unset.clear(dm)  # (readings kept aside while the clock was unset: not for a tank that's gone)
             last_saved.pop(dm, None)
             save_cfg(cfg)
             return await send(w, 200, '"ok"')

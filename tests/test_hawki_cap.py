@@ -27,7 +27,7 @@ clock = [1790000000.0]
 T = types.SimpleNamespace(time=lambda: clock[0])
 TANK = 'c0:04:56:c4:0c:71'
 g = {'binascii': binascii, 'time': T, 'decode': hawki_decode.decode, 'mfr_from_adv': hawki_decode.mfr_from_adv,
-     'cfg': {'tanks': {TANK: {}}}, 'hawki': {}, 'seen': {}, 'pending': [],
+     'cfg': {'tanks': {TANK: {}}}, 'hawki': {}, 'seen': {}, 'pending': [], 'pending_unset': [], 'unset_raw': {}, 'anchor': {}, 'anchor_base': {},
      'listener': types.SimpleNamespace(heard=lambda *a: None)}
 exec(compile(ast.Module([n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in names
                          or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in names for t in n.targets)], []),
@@ -68,5 +68,14 @@ bare = bytes.fromhex('110733e1dcda6f883335ddff22132319000000')
 for i in range(1000):
     g['irq'](5, (0, mac(20000 + i), 0, -60, bare))
 ok(len(g['seen']) <= g['SEEN_MAX'], 'the HAWKi id with no data from 1000 addresses: device list stays capped (%d)' % len(g['seen']))
+# readings heard while the clock was unset are placed by an anchor: the first NEW measurement after the sync
+g['hawki'].clear(); g['seen'].clear(); g['anchor'].clear()
+raw = ADV[-10:].hex()
+g['unset_raw'][TANK] = raw  # the payload last heard while the clock was unset
+g['irq'](5, (0, bytes.fromhex(TANK.replace(':', '')), 0, -60, ADV))
+ok(TANK not in g['anchor'], 'the same measurement heard again after the sync is not an anchor (it was measured before)')
+g['unset_raw'][TANK] = 'something else'
+g['irq'](5, (0, bytes.fromhex(TANK.replace(':', '')), 0, -60, ADV))
+ok(g['anchor'].get(TANK, (0, 0))[1] == 1794787572, 'a new measurement after the sync is, with the sensor\'s own time')
 print('all ok' if not fails else '%d FAILED' % fails)
 raise SystemExit(1 if fails else 0)
