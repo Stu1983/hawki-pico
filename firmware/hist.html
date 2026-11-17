@@ -398,7 +398,7 @@ async function useFit(mac){const t=S.tanks.find(x=>x.mac===mac),v=FIT&&FIT[mac],
  const b=Object.assign({},t.cfg,{mac,name:t.name,tank_l:v});delete b.tank_l_equiv;
  const r=await authFetch('/api/tank',{method:'POST',body:JSON.stringify(b)});if(!r.ok){alert(await r.json().catch(()=>'Could not save'));return}location.reload()}
 function costs(){const ids=['c_last','c_avg','c_spent','c_run'];ids.forEach(i=>{$(i).textContent='–';$(i+'2').textContent=''});$('c_run3').textContent=$('c_run4').textContent='';spendByYear();
- const rc=receipts().filter(x=>x.t>now-730*DAY);if(rc.length){const okL=rc.every(x=>x.l!=null),okC=rc.every(x=>x.c!=null);$('c_spent').textContent=okL?L0(rc.reduce((a,x)=>a+x.l,0)/2):'–';$('c_spent2').textContent=(okC?'≈ '+gbp0(rc.reduce((a,x)=>a+x.c,0)/2)+' a year · ':'')+'2-year average'+(okL&&okC?'':' (a receipt is missing its litres or cost)')}
+ const rc=receipts().filter(x=>x.t>now-365*DAY);if(rc.length){const okL=rc.every(x=>x.l!=null),okC=rc.every(x=>x.c!=null);$('c_spent').textContent=okL?L0(rc.reduce((a,x)=>a+x.l,0)):'–';$('c_spent2').textContent=(okC?gbp0(rc.reduce((a,x)=>a+x.c,0))+' · ':'')+'bought in the last 12 months'+(okL&&okC?'':' (a receipt is missing its litres or cost)')}  /* (Stu: what's been entered, as it is: one big two-tank fill is the year's oil) */
  const pr=deliveries().filter(x=>pplOf(x)!=null&&litresOf(x)!=null);
  $('c_hint').textContent=pr.length?'Prices include VAT. Running costs use the last price paid.':'Add the price to a delivery (Edit) to track costs.';
  if(!pr.length)return;const last=pr[0];
