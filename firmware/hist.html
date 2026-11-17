@@ -18,7 +18,7 @@ button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#f
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .tile .v{font-size:26px;font-weight:700;line-height:1.15;min-height:30px}.tile .k{font-size:13px;color:var(--mut)}.tile .n{font-size:12px;color:var(--mut);min-height:16px}
 .tile.warn .v{color:var(--warn)}.tile.bad .v{color:var(--bad)}
-svg{width:100%;height:auto;display:block;touch-action:pan-y}
+svg{width:100%;height:auto;display:block;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 svg text{font:11px system-ui,sans-serif;fill:var(--mut)}
 .gl{stroke:var(--grid)}.ax{stroke:var(--line)}
 .ln{fill:none;stroke:var(--s1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
@@ -28,7 +28,7 @@ svg text{font:11px system-ui,sans-serif;fill:var(--mut)}
 .fill{fill:var(--card);stroke:var(--s3);stroke-width:2}
 .xh{stroke:var(--mut);stroke-width:1}.dot{fill:var(--s1);stroke:var(--card);stroke-width:2}
 .bar:hover,.bar:focus{opacity:.8;outline:none}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-top:6px;min-height:20px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-top:6px;min-height:20px;-webkit-user-select:none;user-select:none}
 .legend i{display:inline-block;width:12px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .legend i.l{height:0;border-top:2px solid;border-radius:0;width:16px;vertical-align:3px}.legend i.d{height:0;border-top:2px dashed;border-radius:0;width:16px;vertical-align:3px;background:none}
 #tip{position:fixed;pointer-events:none;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:13px;box-shadow:0 4px 14px #0003;z-index:9;max-width:220px}
@@ -123,6 +123,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <script src="/common.js"></script>
 <script>
 'use strict';
+document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('svg'))e.preventDefault()});/* a long press on a chart reads the value: no Android menu or text selection */
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 // ---------- admin PIN: changes need a signed-in browser ----------
 const SK='hawkiSession';let SESS=null,PMODE='login',pinRes=null;try{SESS=localStorage.getItem(SK)}catch(e){}
@@ -185,13 +186,13 @@ function drawWeather(){const c4=$('c4'),c5=$('c5'),c6=$('c6');[c4,c5,c6].forEach
  {const ph=H4-mt-mb,um=Math.max(1,...days.map(t=>use(t)||0)),st=niceStep(um,3),top=Math.ceil(um/st)*st,y=v=>mt+ph-v/top*ph;
   for(let v=0;v<=top+1e-9;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},c4);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},c4,v+(v+st>top+1e-9?' L':''))}
   for(const t of days){const u=use(t);if(u==null)continue;const h=Math.max(1,mt+ph-y(u)),r=el('path',{d:bar(x(t)+1,mt+ph-h,bw,h),fill:'var(--s1)',class:'bar',tabindex:0},c4),w=wx(t);
-   const lines=[u.toFixed(1)+' L',fmtD(t)+(w?' · '+w[0].toFixed(1)+' to '+w[1].toFixed(1)+' °C':'')];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}
+   const lines=[u.toFixed(1)+' L',fmtD(t)+(w?' · '+w[0].toFixed(1)+' to '+w[1].toFixed(1)+' °C':'')];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}
   el('line',{x1:ml,x2:W-mr,y1:mt+ph,y2:mt+ph,class:'ax'},c4);xlab(c4,H4)}
  // temperatures: a band from the day's lowest to its highest
  {const ph=H4-mt-mb,ws=days.map(wx).filter(Boolean),lo=Math.floor(Math.min(0,...ws.map(w=>w[0]))/5)*5,hi=Math.ceil(Math.max(10,...ws.map(w=>w[1]))/5)*5,y=v=>mt+ph-(v-lo)/(hi-lo)*ph;
   for(let v=lo;v<=hi;v+=5){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:v===0?'ax':'gl'},c5);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},c5,v+(v+5>hi?' °C':''))}
   for(const t of days){const w=wx(t);if(!w)continue;const r=el('path',{d:bar(x(t)+1,y(w[1]),bw,Math.max(1,y(w[0])-y(w[1]))),fill:'var(--s2)',class:'bar',tabindex:0},c5);
-   const lines=[w[0].toFixed(1)+' to '+w[1].toFixed(1)+' °C',fmtD(t)+(use(t)!=null?' · '+use(t).toFixed(1)+' L':'')];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}
+   const lines=[w[0].toFixed(1)+' to '+w[1].toFixed(1)+' °C',fmtD(t)+(use(t)!=null?' · '+use(t).toFixed(1)+' L':'')];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}
   xlab(c5,H4)}
  // scatter: every day with both figures (all of the history, not just 60 days)
  const pts=[];if(A&&A.days)for(const k in A.days){const t=+k,w=wx(t),u=A.days[k];if(w&&u!=null&&u>=0&&!(A.gap&&A.gap[k]))pts.push([(w[0]+w[1])/2,u,t])}
@@ -205,7 +206,7 @@ function drawWeather(){const c4=$('c4'),c5=$('c5'),c6=$('c6');[c4,c5,c6].forEach
  // straight-line fit: litres a day against temperature
  const n=pts.length,mx=pts.reduce((a,p)=>a+p[0],0)/n,my=pts.reduce((a,p)=>a+p[1],0)/n,sxx=pts.reduce((a,p)=>a+(p[0]-mx)**2,0),sxy=pts.reduce((a,p)=>a+(p[0]-mx)*(p[1]-my),0),b=sxx>0?sxy/sxx:0,a=my-b*mx;
  const syy=pts.reduce((a2,p)=>a2+(p[1]-my)**2,0),r2=sxx>0&&syy>0?sxy*sxy/(sxx*syy):0;
- for(const p of pts){const c=el('circle',{cx:X(p[0]),cy:Y(p[1]),r:4,fill:'var(--s1)','fill-opacity':.55,stroke:'var(--card)','stroke-width':1,tabindex:0},c6),lines=[p[1].toFixed(1)+' L',fmtD(p[2])+' · average '+p[0].toFixed(1)+' °C'];c.addEventListener('pointermove',e=>showTip(e,lines));c.addEventListener('pointerleave',hideTip)}
+ for(const p of pts){const c=el('circle',{cx:X(p[0]),cy:Y(p[1]),r:4,fill:'var(--s1)','fill-opacity':.55,stroke:'var(--card)','stroke-width':1,tabindex:0},c6),lines=[p[1].toFixed(1)+' L',fmtD(p[2])+' · average '+p[0].toFixed(1)+' °C'];c.addEventListener('pointermove',e=>showTip(e,lines));c.addEventListener('pointerdown',e=>showTip(e,lines));c.addEventListener('pointerleave',hideTip)}
  if(n>=14&&sxx>0){const ya=Math.max(0,Math.min(yt,a+b*xl)),yb=Math.max(0,Math.min(yt,a+b*xh));el('line',{x1:X(xl),y1:Y(ya),x2:X(xh),y2:Y(yb),stroke:'var(--s2)','stroke-width':2,'stroke-dasharray':'6 4'},c6)}
  note.textContent=(n>=14&&b<0?'About '+(-b).toFixed(2)+' L a day more for each degree colder (from '+n+' days; the line explains '+Math.round(r2*100)+'% of the day-to-day change). ':n<14?'The trend line appears once there are 14 days with both figures. ':'')+'Weather for '+(S.wx&&S.wx.name||'your location')+' from Open-Meteo.'}
 function drawLevel(){
@@ -265,9 +266,9 @@ function drawMonths(){
    if(o&&o.used>0){const h=Math.max(1,ph-(y(o.used)-mt));top=y(o.used);
     const r=el('path',{d:bar(bx,top,bw,h),fill:colour(yr),class:'bar',tabindex:0,opacity:o.days<new Date(yr,m+1,0).getDate()-1?.55:1},svg);
     const pc=priceAt(new Date(yr,m+1,0).getTime()/1000),lines=[L0(o.used),MON[m]+' '+yr+(o.days<new Date(yr,m+1,0).getDate()?' · '+o.days+' days of data':''),(o.used/o.days).toFixed(1)+' L/day'+(pc!=null?' · ≈ '+gbp0(o.used*pc/100):'')];
-    r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip);r.addEventListener('focus',e=>{const b=r.getBoundingClientRect();showTip({clientX:b.right,clientY:b.top},lines)});r.addEventListener('blur',hideTip)}
+    r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip);r.addEventListener('focus',e=>{const b=r.getBoundingClientRect();showTip({clientX:b.right,clientY:b.top},lines)});r.addEventListener('blur',hideTip)}
    if(f>0){const h=ph-(y(f)-mt);const r=el('rect',{x:bx+1,y:top-h+1,width:bw-2,height:Math.max(0,h-2),rx:3,fill:'none',stroke:colour(yr),'stroke-width':2,'stroke-dasharray':'4 3',class:'bar',tabindex:0},svg);
-    const pc=priceAt(now),lines=['≈ '+L0(f)+(pc!=null?' · ≈ '+gbp0(f*pc/100):''),'forecast for the rest of '+MON[m]+' '+yr];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}})}
+    const pc=priceAt(now),lines=['≈ '+L0(f)+(pc!=null?' · ≈ '+gbp0(f*pc/100):''),'forecast for the rest of '+MON[m]+' '+yr];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}})}
  years.forEach(yr=>{const s=document.createElement('span'),i=document.createElement('i');i.style.background=colour(yr);s.appendChild(i);s.appendChild(document.createTextNode(String(yr)));$('lg2').appendChild(s)});
  {const s=document.createElement('span'),i=document.createElement('i');i.style.cssText='border:2px dashed var(--mut);background:none';s.appendChild(i);s.appendChild(document.createTextNode('forecast'));$('lg2').appendChild(s)}
  const hr=document.createElement('tr');['Month'].concat(years.map(String)).forEach(h=>{const th=document.createElement('th');th.textContent=h;hr.appendChild(th)});$('tbl').appendChild(hr);
@@ -294,7 +295,7 @@ function drawHours(){const svg=$('c3');svg.textContent='';const Hh=200,W=fit(svg
   if(!x)return;const top=y(x.lph),h=mt+ph-top;
   const lines=[(x.lph<0?'0':x.lph.toFixed(1))+' L an hour',String(k).padStart(2,'0')+':00–'+String((k+1)%24).padStart(2,'0')+':00 · '+x.n+' hours of readings'+(x.lph<0?' (the oil warmed up)':'')];
   const e=el('path',{d:h>0.5?bar(bx,top,bw,h):`M${bx},${mt+ph-1}h${bw}v1h${-bw}Z`,fill:'var(--s1)',class:'bar',tabindex:0},svg);
-  e.addEventListener('pointermove',ev=>showTip(ev,lines));e.addEventListener('pointerleave',hideTip)})}
+  e.addEventListener('pointermove',ev=>showTip(ev,lines));e.addEventListener('pointerdown',ev=>showTip(ev,lines));e.addEventListener('pointerleave',hideTip)})}
 function bar(x,y,w,h){const r=Math.min(4,w/2,h);return `M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`}
 
 // ---------- tiles, deliveries, explanation ----------
