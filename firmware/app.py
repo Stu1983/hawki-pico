@@ -93,7 +93,11 @@ def load_cfg():
     return c
 
 
+cfg_gen = [0]  # counts settings saves (e.g. a changed shape or mode works the switch hint out again)
+
+
 def save_cfg(c):
+    cfg_gen[0] += 1
     with open('config.tmp', 'w') as f:
         json.dump(c, f)
     os.rename('config.tmp', 'config.json')
@@ -745,6 +749,64 @@ def saved_last(mac):
     return last_saved[mac]
 
 
+def hist_tail(mac, n):
+    # the newest n saved readings [(t, mm), ...]
+    try:
+        k = os.stat(hist_name(mac))[6] // 6
+        with open(hist_name(mac), 'rb') as f:
+            f.seek(max(0, k - n) * 6)
+            raw = f.read()
+        return [struct.unpack('<IH', raw[i:i + 6]) for i in range(0, len(raw) - 5, 6)]
+    except Exception:
+        return []
+
+
+def fell_in_a_day(mac, t, now, since=0):
+    # litres the tank went down over about the last day, counting only readings from `since` (when it went on
+    # standby); median of 5 readings at each end (5 mm steps jitter, and one misread mustn't tip it). None without
+    # a reading in the last 3 hours and 5 from 20+ hours before it
+    recs = [r for r in hist_tail(mac, 60) if r[0] >= since]
+    if len(recs) < 10 or now - recs[-1][0] > 3 * 3600:
+        return None
+    old = [r for r in recs if r[0] <= recs[-1][0] - 20 * 3600][-5:]
+    if len(old) < 5:
+        return None
+    med = lambda rs: sorted(r[1] for r in rs)[2]
+    a, b = reading(t, med(old))[0], reading(t, med(recs[-5:]))[0]
+    return None if a is None or b is None else a - b
+
+
+SWITCH_FELL_L = 8.0   # a standby tank down this much in a day...
+SWITCH_STEADY_L = 3.0  # ...while the tank in use moved less than this (either way): the valves were probably switched
+_hint = [None, None]  # (what it was worked out from, the hint)
+
+
+def switch_hint(now):
+    # "Looks like you've switched to Tank 2": only ever shown as a hint; the modes are the user's to change
+    use = [m for m, t in cfg['tanks'].items() if mode_of(t) == 'use']
+    sb = [m for m, t in cfg['tanks'].items() if mode_of(t) == 'standby']
+    if len(use) != 1 or not sb:
+        return None
+    key = (now // 600, cfg_gen[0]) + tuple(saved_last(m) for m in use + sb)
+    if _hint[0] != key:  # (every 10 minutes at most: a few hundred bytes read per tank)
+        h = None
+        try:  # (never let a hint break /api/state)
+            u = fell_in_a_day(use[0], cfg['tanks'][use[0]], now)
+            if u is not None and abs(u) < SWITCH_STEADY_L:
+                fell = []
+                for m in sb:
+                    iso = cfg['tanks'][m].get('isolated')
+                    f = fell_in_a_day(m, cfg['tanks'][m], now, iso if type(iso) is int else 0)
+                    if f is not None and f >= SWITCH_FELL_L:
+                        fell.append((m, f))
+                if len(fell) == 1:  # (two standby tanks going down: can't tell which)
+                    h = {'from': use[0], 'to': fell[0][0], 'fell': round(fell[0][1])}
+        except Exception as ex:
+            print('switch hint err', ex)
+        _hint[0], _hint[1] = key, h
+    return _hint[1]
+
+
 def tank_view(mac, t, now):
     d = hawki.get(mac) or {}
     lvl = d.get('level')
@@ -1092,7 +1154,7 @@ def state():
         found.append({'mac': m, 'name': d.get('name', ''), 'rssi': d.get('rssi'),
                       'age': now - d['rx'], 'level': d.get('level')})
     found.sort(key=lambda f: -(f['rssi'] or -999))
-    return {'tanks': tanks, 'found': found,
+    return {'tanks': tanks, 'found': found, 'switch': switch_hint(now),
             'ssid': cfg.get('ssid') if wlan.isconnected() else None,
             'ip': wlan.ifconfig()[0] if wlan.isconnected() else None,
             'wifi_rssi': wlan.status('rssi') if wlan.isconnected() else None,

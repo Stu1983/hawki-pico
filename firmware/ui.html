@@ -47,6 +47,7 @@ dialog::backdrop{background:#0008}
 
 <section id="p_dash">
 <div class="row dh"><b id="d_name">&nbsp;</b><a class="lnk" id="d_hist" href="/history">History &amp; forecast</a></div>
+<div id="d_sw" class="mut" style="display:flex;gap:8px;align-items:center;height:0;overflow:hidden"></div>
 <div class="tiles">
  <div class="card tile"><div class="tl">Usable oil left</div><div class="big" id="d_l">–</div><div class="mut" id="d_l2">&nbsp;</div><div class="bar"><i id="d_bar" style="width:0"></i></div></div>
  <div class="card tile"><div class="tl">Using</div><div class="big" id="d_r">–</div><div class="mut" id="d_r2">&nbsp;</div><div class="mut" id="d_r3">&nbsp;</div></div>
@@ -537,7 +538,11 @@ async function anLoad(mac,ck,get){const k=mac+'|'+ck;if(AN&&(AN.mac!==mac||AN.ck
  return ANP.p}
 function anReset(){AN=ANF=ANP=null;ANW=0}  /* the history changed (backup imported, another tank): forget it all, including a download still on its way */
 const anFailed=(mac,ck)=>!AN&&!!ANF&&ANF.k===mac+'|'+ck;
-async function dash(){if(!S.update)return;await dlvLoad();const act=S.tanks.filter(x=>modeOf(x.cfg)!=='off');  /* off tanks are left out of 'all tanks together' */
+/* "Looks like you've switched": the Pico saw a standby tank go down while the tank in use held steady. Only a hint: the button opens that tank's settings, nothing changes until it's saved. Its room is kept while any tank is on standby, so nothing below moves when it comes and goes */
+function swHint(){const el=$('d_sw'),h=S.switch,sb=S.tanks.some(x=>modeOf(x.cfg)==='standby'),to=h&&S.tanks.find(x=>x.mac===h.to),fr=h&&S.tanks.find(x=>x.mac===h.from);el.style.height=sb?'2.4em':'0';el.textContent='';if(!to||!fr)return;  /* one line, always the same height: the text is cut short (all of it on hover) rather than wrapping */
+ const tx=document.createElement('span'),full='Switched to '+to.name+'? '+fr.name+' held steady for a day while '+to.name+' went down '+h.fell+' L.';tx.textContent=full;tx.title=full;tx.style.cssText='flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+ const b=document.createElement('button');b.textContent='Edit '+to.name;b.style.cssText='flex:none;max-width:45%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';b.onclick=()=>edit(to.mac);el.append(tx,b)}
+async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.tanks.filter(x=>modeOf(x.cfg)!=='off');  /* off tanks are left out of 'all tanks together' */
  if(S.primary==='all'&&act.length>1)return dashAll(act);const t=S.primary==='all'?act[0]:S.tanks.find(x=>x.mac===S.primary);
  $('d_name').textContent=t?t.name:S.tanks.length?'All tanks are off':'No tanks yet';
  $('d_hist').style.visibility=t?'visible':'hidden';if(t)$('d_hist').href='/history?mac='+okMac(t.mac);
