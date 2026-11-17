@@ -157,9 +157,20 @@ def irq(ev, data):
                 d['rssi'] = rssi
                 d['rx'] = time.time()
                 d['name'] = e['name']
+                lv = d.get('level')
+                prev = hawki.get(k) or {}
+                if lv is None or lv == 16383 or lv < MIN_MM:  # no level, or inside the radar's blind zone: a misread
+                    d['bad_level'] = lv            # (seen: 0 mm on a cold morning), never real. Keep showing the last good level
+                    d['level'] = prev['level'] if prev.get('level') is not None else 16383   # (and its time); don't save it
+                    d['good_at'] = prev.get('good_at')
+                    if d['good_at'] and d['good_at'] > time.time():
+                        d['good_at'] = None  # the clock was put back: that time can't be trusted
+                else:  # a good reading: when it first arrived (a repeat of the same measurement keeps that time)
+                    now_s = int(time.time())
+                    d['good_at'] = None if now_s < 1700000000 else prev.get('good_at') if prev.get('raw') == d['raw'] and prev.get('good_at') and prev['good_at'] <= now_s else now_s  # clock not set: unknown
                 hawki[k] = d
                 if k in cfg['tanks']:  # new hourly measurement? (its payload changes) -> queue it for saving
-                    r = listener.heard(k, d['raw'], d.get('level'), int(time.time()))
+                    r = listener.heard(k, d['raw'], 16383 if 'bad_level' in d else d.get('level'), int(time.time()))  # (16383: not saved)
                     if r and r[1] not in (None, 16383):
                         pending.append((k, r[0], r[1]))
         h = hx(adv)
@@ -181,6 +192,7 @@ scan_running = [False]
 hook = [None]  # experiments (/run) receive every non-scan BLE event here
 listener = Listener()
 pending = []  # (mac, time, level) new measurements, saved by recorder()
+MIN_MM = 30  # closer than this to the sensor can't be a real reading (radar blind zone)
 discover_until = [None]  # ticks_ms: listen actively (names, new sensors) until then; None when off
 
 ble = bluetooth.BLE()
@@ -513,9 +525,10 @@ def tank_view(mac, t, now):
         pass
     r1 = lambda v: None if v is None else round(v, 1)
     return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct,
-            'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': unusable(t), 'listen': listener.info(mac),
+            # misread: the rejected reading (-1: no level at all), or None
+            'misread': (-1 if d['bad_level'] is None else d['bad_level']) if 'bad_level' in d else None, 'good_at': d.get('good_at'), 'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': unusable(t), 'listen': listener.info(mac),
             'battery': d.get('battery'), 'rssi': d.get('rssi'),
-            'age': (now - d['rx']) if d.get('rx') else None,
+            'age': (now - d['good_at'] if d.get('good_at') else None) if 'bad_level' in d else (now - d['rx']) if d.get('rx') else None,  # after a misread: the shown level's own age
             'cfg': cfg_view(t)}
 
 
@@ -728,8 +741,8 @@ async def alerts():
                     except Exception as ex:
                         print('battery alert err', ex)
                     lvl = d.get('level')
-                    if lvl in (None, 16383):
-                        continue
+                    if lvl in (None, 16383) or 'bad_level' in d:
+                        continue  # no reading, or the latest was a misread (the level shown is an older one)
                     lit = reading(t, lvl)[0]
                     if lit is None:
                         continue
