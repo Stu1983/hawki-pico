@@ -1,11 +1,11 @@
 {
- "version": "1.2.39",
- "ref": "v1.2.39",
- "notes": "A sensor reading inside the radar's blind zone (e.g. 0 mm on a cold morning) or with no level is ignored: the last good level stays, with its own time, nothing is saved and no alert acts on it; the Tanks card notes the misread.",
+ "version": "1.2.40",
+ "ref": "v1.2.40",
+ "notes": "After a restart each tank shows its last saved reading (with its own time) until the first good one arrives, including when the first one heard is a misread.",
  "files": {
   "app.py": [
-   "633c0a0a0f698ae808544dbfed8ea6cecea47eb9c3e0290b0c9ffcb3189d4884",
-   64235
+   "96459bdab0e415bd090acd4db48622a0b767b1f10b4e992b3832c2383fb9cf42",
+   65577
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -48,15 +48,15 @@
    9040
   ],
   "ui.html": [
-   "d9dc2a2e0b51255911d361b6c128d0c6f28ab202cec5f7f40a0668f9fda05c23",
-   69545
+   "4fe64b3062fe028bbbdf33de7862b3b75e491dcd525084d8e0774def6be80fef",
+   69561
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "afc601c968628e49318477788d96094aacfcf348f57ab5a3c555a665cad885fd",
+   "d22124ab39be375a991e3b3e722eaac4e4b69943b7edd0fcac6178aced745614",
    19
   ],
   "weather.py": [
@@ -65,7 +65,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"633c0a0a0f698ae808544dbfed8ea6cecea47eb9c3e0290b0c9ffcb3189d4884\", 64235], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"993861e8df63c0ce712439a76496f7178833f2e58ac93d1d2b9f1e586d05d8ab\", 56183], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"d9dc2a2e0b51255911d361b6c128d0c6f28ab202cec5f7f40a0668f9fda05c23\", 69545], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"afc601c968628e49318477788d96094aacfcf348f57ab5a3c555a665cad885fd\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"A sensor reading inside the radar's blind zone (e.g. 0 mm on a cold morning) or with no level is ignored: the last good level stays, with its own time, nothing is saved and no alert acts on it; the Tanks card notes the misread.\", \"ref\": \"v1.2.39\", \"version\": \"1.2.39\"}",
-  "sig": "75e148a8ed6a341fb3388e4c10f89d760f699f3d50bcb0148e864511323fb159b53ce38e48b5743d7fd79b3eb04f9e96e778522afca5008f172d2f4ef5b17da119c67c3272395b5cfe74d4d6ec72182e69fd64b3d4b39603f7a3d178abc5991b8e954a2c0ac90e83b95d2b34f940ea43826573ad86b042ee908d88da1fc11d5bf747fe7a7a3c9491a40876c14d9d75972c79377cee203d90b6245e8c1e825661811e2db6921f260e365e9eb723c24e787a95427b6a02d78aa7c055d7d6dfcdae2ece9f9a673fdc6a810d546271173d2ba8ebeae2bd7ca99838fe53ff066d10b76acaff8263036ef202169a51fa5542e96ef9cd5932c48ee85912dadf08293555"
+  "body": "{\"files\": {\"app.py\": [\"96459bdab0e415bd090acd4db48622a0b767b1f10b4e992b3832c2383fb9cf42\", 65577], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"993861e8df63c0ce712439a76496f7178833f2e58ac93d1d2b9f1e586d05d8ab\", 56183], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"4fe64b3062fe028bbbdf33de7862b3b75e491dcd525084d8e0774def6be80fef\", 69561], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"d22124ab39be375a991e3b3e722eaac4e4b69943b7edd0fcac6178aced745614\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"After a restart each tank shows its last saved reading (with its own time) until the first good one arrives, including when the first one heard is a misread.\", \"ref\": \"v1.2.40\", \"version\": \"1.2.40\"}",
+  "sig": "4ee27f574f41bfb7439ac54663a30c283a75f373cca00f152622479222aefbb5ebf9977fd4341e58346c17c6ae63c39069a59e53ee0b16807d86ca31f609ab11ca51ae0b16e199a5f516dd6aacd6652c32da6212d0df367f47b57537b45967103f35483a20cbb83ed9a0ab3453d735a0a990ceff04952252cb9766d5ca8334f6c84b80cd545fe40e2a7c54b5f68b34a72f939786d69e24fb2a7b556aeaed3828fa8aafa4b93cda24f828c20b2a04f36ac375fe0c72d13a24960119ad84497f4c40bbf0d7b0df41b2a72a0d66d876cc0d7bf6191e0f6530c229dcbc20df42784d79b3a87f69a8810a9f6f66f58db569380a4dce68fab8e254b4f9ffd9f0d9eb81"
  }
 }

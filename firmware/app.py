@@ -361,6 +361,8 @@ async def recorder():
                 try:
                     with open(hist_name(mac), 'ab') as f:
                         f.write(struct.pack('<IH', t, lvl))
+                    if mac not in last_saved or last_saved[mac] is None or t >= last_saved[mac][0]:
+                        last_saved[mac] = (t, lvl)
                 except Exception as ex:
                     print('hist err', ex)
                     break  # keep it; try again next time
@@ -510,9 +512,31 @@ MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api
 
 # ---------- views ----------
 
+last_saved = {}  # mac -> (epoch, mm): the newest reading in its history file (read once, then kept up to date)
+
+
+def saved_last(mac):
+    if mac not in last_saved:
+        last_saved[mac] = None
+        try:
+            n = os.stat(hist_name(mac))[6] // 6
+            if n:
+                with open(hist_name(mac), 'rb') as f:
+                    f.seek((n - 1) * 6)
+                    last_saved[mac] = struct.unpack('<IH', f.read(6))
+        except Exception:
+            pass
+    return last_saved[mac]
+
+
 def tank_view(mac, t, now):
     d = hawki.get(mac) or {}
     lvl = d.get('level')
+    if lvl in (None, 16383):  # nothing heard yet since a restart, or only a misread: the last saved reading,
+        s = saved_last(mac)   # with its own time (so it's never passed off as fresh, and alerts don't use it)
+        if s and 1700000000 < now and s[0] <= now + 60:  # (not one dated ahead of a clock that was put back)
+            d = dict(d, good_at=s[0], bad_level=d.get('bad_level')) if 'bad_level' in d else dict(d, good_at=s[0], saved=True)
+            lvl = s[1]
     lit, pct = reading(t, lvl) if lvl is not None else (None, None)
     std = tot = tot_std = None  # Magnus-style standard model, for comparison; and all the oil (floor up)
     try:
@@ -526,9 +550,9 @@ def tank_view(mac, t, now):
     r1 = lambda v: None if v is None else round(v, 1)
     return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct,
             # misread: the rejected reading (-1: no level at all), or None
-            'misread': (-1 if d['bad_level'] is None else d['bad_level']) if 'bad_level' in d else None, 'good_at': d.get('good_at'), 'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': unusable(t), 'listen': listener.info(mac),
+            'misread': (-1 if d['bad_level'] is None else d['bad_level']) if 'bad_level' in d else None, 'good_at': d.get('good_at'), 'saved': bool(d.get('saved')), 'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': unusable(t), 'listen': listener.info(mac),
             'battery': d.get('battery'), 'rssi': d.get('rssi'),
-            'age': (now - d['good_at'] if d.get('good_at') else None) if 'bad_level' in d else (now - d['rx']) if d.get('rx') else None,  # after a misread: the shown level's own age
+            'age': (now - d['good_at'] if d.get('good_at') else None) if 'bad_level' in d or d.get('saved') else (now - d['rx']) if d.get('rx') else None,  # after a misread: the shown level's own age
             'cfg': cfg_view(t)}
 
 
@@ -1091,6 +1115,7 @@ async def handle(r, w):
                 if got != clen:
                     return await send(w, 400, '"short upload"')
                 n = merge_hist(hist_name(mac), 'hist.up')
+                last_saved.pop(mac, None)  # the file changed: read its newest reading again
                 return await send(w, 200, json.dumps(n))
             finally:
                 hist_busy[0] = False
@@ -1234,7 +1259,9 @@ async def handle(r, w):
                 return await send(w, 400, json.dumps('Could not save: %s' % ex))
             return await send(w, 200, json.dumps(res if res is not None else 'ok'))
         if path == '/api/tank/delete' and method == 'POST':
-            cfg['tanks'].pop(str(json.loads(body).get('mac', '')).lower(), None)
+            dm = str(json.loads(body).get('mac', '')).lower()
+            cfg['tanks'].pop(dm, None)
+            last_saved.pop(dm, None)
             save_cfg(cfg)
             return await send(w, 200, '"ok"')
         if path == '/api/wifi/scan':
