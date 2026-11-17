@@ -1045,6 +1045,25 @@ async def silent_check(n, mac, t, e, now, start, a):
             save_cfg(cfg)
 
 
+low_seen = {}  # mac -> [payload of the last reading counted, low readings in a row, when it first read low]
+
+
+def low_confirmed(mac, raw, low, now):
+    # two hourly readings in a row at or below the reorder level before warning (like the battery and drop checks:
+    # one bad reading mustn't send "time to order oil"); the same reading repeats every 4 s and counts once. Or low
+    # for 70 minutes on end (a sensor whose payload stopped changing). Not low now: starts again (a changed reorder
+    # level or tank shape counts at once).
+    e = low_seen.setdefault(mac, [None, 0, None])
+    if not low:
+        e[0], e[1], e[2] = raw, 0, None
+        return False
+    if raw != e[0]:
+        e[0], e[1] = raw, e[1] + 1
+    if e[2] is None:
+        e[2] = now
+    return e[1] >= 2 or now - e[2] >= 70 * 60
+
+
 def mode_of(t):
     m = t.get('mode')
     return m if m in MODES else 'standby' if t.get('isolated') else 'use'
@@ -1106,10 +1125,11 @@ async def alerts():
                     if lit is None:
                         continue
                     reserve = reserve_of(t)
+                    low2 = low_confirmed(mac, d.get('raw'), lit <= reserve, time.time())
                     if a.get('reorder') and lit >= reserve + REARM_L:
                         a.pop('reorder')  # topped up (in any mode): arm it again
                         save_cfg(cfg)
-                    elif mode_of(t) == 'use' and n.get('reorder', True) and not a.get('reorder') and lit <= reserve:  # (standby: no warning of its own)
+                    elif mode_of(t) == 'use' and n.get('reorder', True) and not a.get('reorder') and lit <= reserve and low2:  # (standby: no warning of its own)
                         res = await send_alert(*reorder_alert(mac, t, lit))
                         if 'ok' in res.values():
                             a['reorder'] = int(time.time())
