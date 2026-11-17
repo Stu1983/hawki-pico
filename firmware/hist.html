@@ -187,9 +187,9 @@ let rsT=null,rsW=innerWidth;addEventListener('resize',()=>{if(innerWidth===rsW)r
 // ---------- use and the weather ----------
 let WX=null;  /* 'YYYY-MM-DD' -> [min, max] in C, from /api/weather (Open-Meteo, for the location set in Config) */
 const ymdL=t=>{const d=new Date(t*1000);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
-async function loadWx(){try{const b=await (await fetch('/api/weather')).arrayBuffer(),v=new DataView(b),m={};
+async function loadWx(g){try{const b=await (await fetch('/api/weather')).arrayBuffer(),v=new DataView(b),m={};if(g!==LG)return;
  for(let i=0;i+6<=b.byteLength;i+=6){const d=new Date((946684800+v.getUint16(i,true)*86400)*1000),k=d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate());if(v.getInt16(i+2,true)!==-32768)m[k]=[v.getInt16(i+2,true)/10,v.getInt16(i+4,true)/10]}
- WX=m}catch(e){WX={}}drawWeather()}
+ WX=m}catch(e){if(g!==LG)return;WX={}}drawWeather()}  /* (g: an older load's late answer is dropped) */
 function drawWeather(){const c4=$('c4'),c5=$('c5'),c6=$('c6');[c4,c5,c6].forEach(x=>x.textContent='');
  const has=WX&&Object.keys(WX).length,note=$('wxNote');
  const H4=150,W=fit(c4,H4);fit(c5,H4);const H6=220,W6=fit(c6,H6),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr;
@@ -426,8 +426,8 @@ function spendByYear(){const tb=$('yrs'),Y={};tb.textContent='';
 let PR=null,PRH0=null,PRR='3';try{PRR=localStorage.hawkiPrRange||'3'}catch(e){}
 const prRead=b=>{const v=new DataView(b),o=[];for(let i=0;i+6<=b.byteLength;i+=6){const c=v.getInt16(i+2,true);if(c!==-32768)o.push([946684800+v.getUint16(i,true)*86400+43200,c/10,v.getInt16(i+4,true)/10])}return o};
 /* the Pico's own daily quotes, and before them the imported Northern Ireland history (PRH0: where that ends) */
-async function loadPrices(){try{const[a,b]=await Promise.all(['/api/prices','/api/prices?h=1'].map(u=>fetch(u).then(r=>r.ok?r.arrayBuffer():new ArrayBuffer(0))));
- const own=prRead(a),first=own.length?own[0][0]:Infinity,old=prRead(b).filter(r=>r[0]<first);PRH0=old.length?old[old.length-1][0]:null;PR=old.concat(own)}catch(e){PR=[]}drawPrices()}
+async function loadPrices(g){try{const[a,b]=await Promise.all(['/api/prices','/api/prices?h=1'].map(u=>fetch(u).then(r=>r.ok?r.arrayBuffer():new ArrayBuffer(0))));if(g!==LG)return;
+ const own=prRead(a),first=own.length?own[0][0]:Infinity,old=prRead(b).filter(r=>r[0]<first);PRH0=old.length?old[old.length-1][0]:null;PR=old.concat(own)}catch(e){if(g!==LG)return;PR=[]}drawPrices()}
 function drawPrices(){const c7=$('c7');c7.textContent='';const Hh=200,W=fit(c7,Hh),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb,pr=S&&S.price||{};
  $('prHead').textContent=pr.on?'· '+(pr.pc||'Northern Ireland'):'';
  const paid=receipts().filter(r=>r.c!=null&&r.l).map(r=>[r.t,r.c/r.l*100]);let q=PR||[];
@@ -480,28 +480,32 @@ async function delDel(){if(!EDIT||!EDIT.r||!confirm('Delete the saved details fo
  if(await postDel({mac:EDIT.r.mac||T.mac,old_t:EDIT.r.t,delete:true}))$('ddlg').close()}
 
 // ---------- load ----------
-async function load(){
- S=await (await fetch('/api/state')).json();
- const q=new URLSearchParams(location.search),multi=S.tanks.length>1;let mac=q.get('mac');
- if(!(mac==='all'&&multi)&&!S.tanks.find(t=>t.mac===mac))mac=multi?'all':S.tanks[0]&&S.tanks[0].mac;  /* with 2+ tanks: all of them together first */
- const tb=$('tabs');tb.textContent='';if(multi)[{mac:'all',name:'All tanks'}].concat(S.tanks).forEach(t=>{const b=document.createElement('button');b.textContent=t.name;b.setAttribute('aria-pressed',t.mac===mac);b.onclick=()=>{history.replaceState(null,'','?mac='+t.mac);load()};tb.appendChild(b)});
- if(!mac){$('sub').textContent='No tanks set up yet.';return}
- now=Date.now()/1000;const live=(t,cv)=>t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383?[now-t.age,toL(t.level,cv),t.level]:null;
- const dlP=fetch('/api/deliveries').then(r=>r.json()).catch(()=>({}));let late=[];
- if(mac==='all'){const ts=S.tanks,got=await Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+t.mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+t.mac).then(r=>r.json())])));
-  CVS={};got.forEach(([buf,cv],k)=>{CVS[ts[k].mac]=cv});const series=got.map(([buf,cv],k)=>{const s=parse(buf).map(([t,mm])=>[t,toL(mm,cv)]),l=live(ts[k],cv);if(l)s.push(l.slice(0,2));return s});
+let LG=0;  /* load generation. Everything is fetched first and the page's data then changes all at once, so no handler (resize, range, sub-page) can draw one tank's readings with another's forecast; a load overtaken by a newer one (another tank's tab tapped) is dropped */
+async function load(){const g=++LG;FITGEN++;
+ const s0=await (await fetch('/api/state')).json();if(g!==LG)return;
+ const q=new URLSearchParams(location.search),multi=s0.tanks.length>1;let mac=q.get('mac');
+ if(!(mac==='all'&&multi)&&!s0.tanks.find(t=>t.mac===mac))mac=multi?'all':s0.tanks[0]&&s0.tanks[0].mac;  /* with 2+ tanks: all of them together first */
+ const tb=$('tabs');tb.textContent='';if(multi)[{mac:'all',name:'All tanks'}].concat(s0.tanks).forEach(t=>{const b=document.createElement('button');b.textContent=t.name;b.setAttribute('aria-pressed',t.mac===mac);b.onclick=()=>{history.replaceState(null,'','?mac='+t.mac);run()};tb.appendChild(b)});
+ if(!mac){S=s0;$('ttl').textContent='';$('sub').textContent='No tanks set up yet.';return}
+ const nw=Date.now()/1000,live=(t,cv)=>t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383?[nw-t.age,toL(t.level,cv),t.level]:null;
+ const dlP=fetch('/api/deliveries').then(r=>r.json()).catch(()=>({}));let late=[],t1,cv1=null,p1,cvs=null,tf=null;
+ if(mac==='all'){const ts=s0.tanks,got=await Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+t.mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+t.mac).then(r=>r.json())])));if(g!==LG)return;
+  cvs={};got.forEach(([buf,cv],k)=>{cvs[ts[k].mac]=cv});const series=got.map(([buf,cv],k)=>{const s=parse(buf).map(([t,mm])=>[t,toL(mm,cv)]),l=live(ts[k],cv);if(l)s.push(l.slice(0,2));return s});
   const sum=f=>ts.reduce((a,t)=>a+(+f(t)||0),0),known=ts.every(t=>t.litres!=null),cap=sum(t=>t.cfg.capacity_l);
-  T={mac:'all',all:true,name:ts.length>2?'All tanks':'Both tanks',cfg:{capacity_l:cap,reserve_l:Math.max(...ts.map(t=>t.cfg.reserve_l??200))},litres:known?sum(t=>t.litres):null,percent:known&&cap?Math.round(sum(t=>t.litres)/cap*1000)/10:null};
-  CV=null;P=combine(series,ts.map(t=>t.cfg.isolated)).map(p=>[p[0],p[1],null]);TF={};ts.forEach((t,k)=>{TF[t.mac]=analyse(series[k],{now}).fills});
-  const t0=P.length?P[0][0]:0;late=series.map((s,k)=>s.length&&s[0][0]>t0+DAY?ts[k].name+' from '+fmtDY(s[0][0]):null).filter(Boolean)}  /* tanks whose readings start later: held level before then */
- else{T=S.tanks.find(t=>t.mac===mac);const[buf,cv]=await Promise.all([fetch('/api/hist?mac='+mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+mac).then(r=>r.json())]);
-  CV=cv;P=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);const l=live(T,cv);if(l)P.push(l);if(T.cfg.isolated)P=holdIsolated(P,T.cfg.isolated)}  /* valve closed: its readings never count as use */
- $('ttl').textContent=T.name;D=(await dlP)||{};
- const WV=await wxLoad(S);A=analyse(P,{now,reserve:T.cfg.reserve_l??200,heat:WV&&WV.heat,wxName:WV&&WV.name});
- if(!(A.recent!=null&&A.span>=2))A.fc=null;  /* no forecast line until there's a forecast */
+  t1={mac:'all',all:true,name:ts.length>2?'All tanks':'Both tanks',cfg:{capacity_l:cap,reserve_l:Math.max(...ts.map(t=>t.cfg.reserve_l??200))},litres:known?sum(t=>t.litres):null,percent:known&&cap?Math.round(sum(t=>t.litres)/cap*1000)/10:null};
+  p1=combine(series,ts.map(t=>t.cfg.isolated)).map(p=>[p[0],p[1],null]);tf={};ts.forEach((t,k)=>{tf[t.mac]=analyse(series[k],{now:nw}).fills});
+  const t0=p1.length?p1[0][0]:0;late=series.map((s,k)=>s.length&&s[0][0]>t0+DAY?ts[k].name+' from '+fmtDY(s[0][0]):null).filter(Boolean)}  /* tanks whose readings start later: held level before then */
+ else{t1=s0.tanks.find(t=>t.mac===mac);const[buf,cv]=await Promise.all([fetch('/api/hist?mac='+mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+mac).then(r=>r.json())]);if(g!==LG)return;
+  cv1=cv;p1=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);const l=live(t1,cv);if(l)p1.push(l);if(t1.cfg.isolated)p1=holdIsolated(p1,t1.cfg.isolated)}  /* valve closed: its readings never count as use */
+ const d0=(await dlP)||{};if(g!==LG)return;
+ const WV=await wxLoad(s0);if(g!==LG)return;const a=analyse(p1,{now:nw,reserve:t1.cfg.reserve_l??200,heat:WV&&WV.heat,wxName:WV&&WV.name});
+ if(!(a.recent!=null&&a.span>=2))a.fc=null;  /* no forecast line until there's a forecast */
+ S=s0;now=nw;T=t1;CV=cv1;P=p1;D=d0;A=a;if(cvs){CVS=cvs;TF=tf}FITGEN++;  /* the page's data, all at once (and any capacity fit still running for the last one is dropped) */
+ $('ttl').textContent=T.name;
  $('sub').textContent=(P.length?'Readings since '+fmtDY(P[0][0])+' · '+(A.span<1?Math.round(A.span*24)+' hours':Math.round(A.span)+' days'):'No readings saved yet')+(late.length?' · readings for '+late.join(', ')+' (held level before then)':'');
  const rg=$('rng');rg.textContent='';[['7','7 days'],['30','30 days'],['365','1 year'],['all','All']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',k===R);b.onclick=()=>{R=k;try{localStorage.hawkiRange=k}catch(e){}[...rg.children].forEach(c=>c.setAttribute('aria-pressed',c===b));drawLevel()};rg.appendChild(b)});
- tiles();drawLevel();drawMonths();drawHours();loadWx();loadPrices()}
+ tiles();drawLevel();drawMonths();drawHours();loadWx(g);loadPrices(g)}
+function run(){const p=load(),g=LG;p.catch(e=>{if(g===LG)$('sub').textContent='Could not load: '+e})}  /* (an older load's error never overwrites a newer one's page) */
 try{R=localStorage.hawkiRange||'30'}catch(e){}
 /* Usage | Costs | Deliveries: sub-pages, the choice remembered; charts are drawn when their page shows */
 const PGS={use:'',cost:'#costs',del:'#deliveries'};let PG='use';try{const v=localStorage.hawkiPage;if(Object.prototype.hasOwnProperty.call(PGS,v))PG=v}catch(e){}for(const k in PGS)if(PGS[k]&&location.hash===PGS[k])PG=k;
@@ -509,5 +513,5 @@ function page(k,quiet){PG=k;try{localStorage.hawkiPage=k}catch(e){}history.repla
  document.querySelectorAll('#pgs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.pg===k));
  if(quiet||typeof A==='undefined'||!A)return;if(k==='use'){drawLevel();drawMonths();drawHours();drawWeather()}else if(k==='cost')drawPrices()}
 page(PG,true);
-load().catch(e=>{$('sub').textContent='Could not load: '+e});
+run();
 </script></body></html>
