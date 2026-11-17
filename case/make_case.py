@@ -30,7 +30,8 @@ WALL, FLOOR, TOP = 2.0, 2.0, 2.0
 GAP = 0.6                                      # air around the board
 UNDER = 10.0                                   # under the board: headers stick out ~8.5 mm
 OVER = 5.5                                     # over the board: USB socket, RF can, header stubs
-PLUG_W, PLUG_H, PLUG_R = 11.0, 7.5, 2.0       # opening for the cable's plug (9.5 x 6.5 overmould + clearance)
+PLUG_W, PLUG_H, PLUG_R = 12.0, 8.5, 2.0       # opening for the cable's plug (9.5 x 6.5 overmould + clearance; +1 mm after a
+                                               # test print only just fitted). The U's bottom is PLUG_H/2 under the socket centre
 LIP, LIP_CLR = 3.0, 0.15                       # lid lip depth, clearance per side
 # the lid clicks on: a rounded ridge along each long side of the lip snaps into a groove in the base wall
 RIDGE_R, RIDGE_LEN, GROOVE_EXTRA = 0.45, 24.0, 0.15   # ridge radius (0.3 mm of snap past the clearance), length; groove a little bigger
