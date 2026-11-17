@@ -224,9 +224,15 @@ def install(m, current):
         _rm(n + '.bak')
     had = [n for n in files if _exists(n)]
     j = {'from': current, 'to': m['version'], 'files': list(files), 'had': had, 'stage': 'swapping', 'boots': 0}
-    with open('upd.tmp', 'w') as f:
-        json.dump(j, f)
-    os.rename('upd.tmp', 'upd.pending')
+    try:
+        with open('upd.tmp', 'w') as f:
+            json.dump(j, f)
+        os.rename('upd.tmp', 'upd.pending')
+    except Exception:  # (flash full?) nothing was replaced: leave no downloads behind
+        for n in files:
+            _rm(n + '.new')
+        _rm('upd.tmp')
+        raise
     try:
         for n in files:
             if n in had:
@@ -243,17 +249,56 @@ def install(m, current):
     return m['version']
 
 
-def commit():
-    """The new version is running fine: forget the backups."""
+BAD = object()
+
+
+def _journal():
+    """upd.pending as a dict, None if there is none, or BAD (unreadable). (Here too, not only in rollback.py:
+    an older rollback.py, which never comes over the air, can't read a damaged one.)"""
     try:
-        p = json.load(open('upd.pending'))
-    except (OSError, ValueError):
+        f = open('upd.pending')
+    except OSError:
         return None
-    if p.get('stage') == 'swapping':
-        return None  # never confirm a half-finished install
+    try:
+        with f:
+            p = json.load(f)
+    except Exception:
+        return BAD
+    return p if isinstance(p, dict) else BAD
+
+
+def commit():
+    """The new version is running fine: forget the backups. Removing upd.pending is the commit point: cut off
+    before it, nothing is lost (a rollback still has every backup); after it, a left-over .bak is harmless
+    (install() clears them first). An unreadable upd.pending is cleared the same way."""
+    p = _journal()
+    if p is None:
+        return None
+    if p is BAD:
+        p = {'had': [n[:-4] for n in os.listdir() if n.endswith('.bak') and ok_name(n[:-4])]}
+    elif p.get('stage') != 'installed':
+        return None  # never confirm a half-finished install, or a rollback under way
+    try:
+        os.remove('upd.pending')
+    except OSError:
+        return None  # still there: keep every backup
     for n in p.get('had', []):
         _rm(n + '.bak')
-    _rm('upd.pending')
-    with open('upd.last', 'w') as f:
-        json.dump({'ok': True, 'from': p.get('from'), 'to': p.get('to')}, f)
+    try:
+        with open('upd.last', 'w') as f:
+            json.dump({'ok': True, 'from': p.get('from'), 'to': p.get('to')}, f)
+    except OSError:
+        pass
     return p
+
+
+def tidy():
+    """At start, with no update pending: remove what a power cut during a download left (*.new, upd.tmp)."""
+    try:
+        os.stat('upd.pending')
+        return
+    except OSError:
+        pass
+    for n in os.listdir():
+        if n == 'upd.tmp' or n.endswith('.new') and ok_name(n[:-4]):
+            _rm(n)

@@ -966,6 +966,12 @@ async def update_guard():
     # Confirm a fresh update once it has run for 2 minutes with Wi-Fi up (or no Wi-Fi set up yet).
     # If it can't get onto the Wi-Fi it used to join within 10 minutes, put the old version back.
     if not update_info()['pending']:
+        try:  # a power cut during a download leaves its .new files (only load the updater if there are any)
+            if any(n.endswith('.new') or n == 'upd.tmp' for n in os.listdir()):
+                import updater
+                updater.tidy()
+        except Exception as ex:
+            print('tidy err', ex)
         return
     import updater
     for i in range(60):
@@ -974,8 +980,8 @@ async def update_guard():
             print('update confirmed', updater.commit())
             return
     import rollback
-    rollback.undo('no Wi-Fi after the update')
-    machine.reset()
+    if rollback.undo('no Wi-Fi after the update'):  # (not finished: the journal stays and the next boot tries again;
+        machine.reset()                              # restarting now would only loop)
 
 
 manifest = [None]
