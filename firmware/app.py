@@ -43,6 +43,7 @@ import notify
 import weather
 import price
 import netcfg
+import mqtt
 import drops
 
 # HAWKi service UUID 00001923-1322-ffdd-3533-886fdadce133, as it appears in the advert (LE)
@@ -650,7 +651,7 @@ def rm(name):
 
 
 MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
-            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location', '/api/price', '/api/net')
+            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location', '/api/price', '/api/net', '/api/mqtt')
 
 
 # ---------- views ----------
@@ -992,7 +993,7 @@ def state():
             'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint')),
             'primary': cfg.get('primary') if cfg.get('primary') in cfg['tanks'] or cfg.get('primary') == 'all' and len(tanks) > 1
                        else (tanks[0]['mac'] if tanks else None),
-            'hostname': HOSTNAME, 'net': net_view(), 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'price': price_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
+            'hostname': HOSTNAME, 'net': net_view(), 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'price': price_view(), 'mqtt': mqtt_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
 
 
 def num(v, lo, hi):
@@ -1399,6 +1400,12 @@ async def handle(r, w):
                 return await send(w, 200, json.dumps(price_view()))
             except Exception as ex:
                 return await send(w, 400, json.dumps(str(ex)))
+        if path == '/api/mqtt' and method == 'POST':
+            try:
+                set_mqtt(json.loads(body or '{}'))
+                return await send(w, 200, json.dumps(mqtt_view()))
+            except Exception as ex:
+                return await send(w, 400, json.dumps(str(ex)))
         if path == '/api/prices':
             try:
                 return await send_file(w, price.HFILE if q.get('h') == '1' else price.FILE, 'application/octet-stream')
@@ -1737,6 +1744,127 @@ def set_price(b):
     save_cfg(cfg)
 
 
+# ---------- Home Assistant over MQTT (mqtt.py) ----------
+# The Pico logs in to the MQTT broker (in HA: the Mosquitto add-on) and HA finds the tanks by itself.
+# cfg['mqtt'] = {host, port, user, pw}; cfg['mqtt_macs'] = the tanks HA was told about, kept even while MQTT is off,
+# so a tank removed meanwhile has its sensors taken out of HA when it's back on
+mqtt_state = {'connected': False, 'err': None, 'sent_at': None, 'gen': 0}
+
+
+def mqtt_view():
+    c = cfg.get('mqtt')
+    return {'on': c is not None, 'host': c and c.get('host'), 'port': c and c.get('port'), 'user': c and c.get('user'),
+            'pw_set': bool(c and c.get('pw')), 'connected': mqtt_state['connected'], 'err': mqtt_state['err'],
+            'sent_at': mqtt_state['sent_at']}  # (never the password)
+
+
+def set_mqtt(b):
+    old = cfg.get('mqtt')
+    if b.get('off'):
+        cfg.pop('mqtt', None)
+    else:
+        cfg['mqtt'] = mqtt.clean(b, old)
+    mqtt_state['err'] = None
+    mqtt_state['gen'] += 1  # the task reconnects with the new settings
+    save_cfg(cfg)
+
+
+def mqtt_err(ex):
+    n = ex.args[0] if getattr(ex, 'args', None) else None
+    if isinstance(ex, asyncio.TimeoutError):
+        return 'no answer from the broker: check its address'
+    if n == 111:
+        return 'the broker refused the connection: is the Mosquitto add-on running, and the port right?'
+    if n in (113, 118, 119, 103, 104, 110):
+        return 'could not reach the broker (%s)' % n
+    return str(ex) or repr(ex)
+
+
+async def mqtt_task():
+    await asyncio.sleep(15)
+    pico = binascii.hexlify(wlan.config('mac')).decode()
+    base = 'hawki/' + pico
+    while True:
+        c = cfg.get('mqtt')
+        if not c or not wlan.isconnected():
+            mqtt_state['connected'] = False
+            await asyncio.sleep(5)
+            continue
+        gen, w, wait = mqtt_state['gen'], None, 1
+        try:
+            r, w = await asyncio.wait_for(asyncio.open_connection(c['host'], c['port']), 10)
+
+            async def put(b):  # (a stalled broker must not hold the task up forever: timeout -> reconnect)
+                w.write(b)
+                await asyncio.wait_for(w.drain(), 15)
+
+            async def pub(topic, payload):
+                await put(mqtt.publish_pkt(topic, payload))
+            await put(mqtt.connect_pkt('hawki-' + pico, c.get('user'), c.get('pw'), base + '/status', b'offline'))
+            e = mqtt.connack(await asyncio.wait_for(r.readexactly(4), 10))
+            if e:
+                raise ValueError(e)
+            await pub(base + '/status', 'online')
+            mqtt_state.update(connected=True, err=None)
+            told, last, ping, wifi_at = None, {}, time.ticks_ms(), 0
+            while cfg.get('mqtt') is c and mqtt_state['gen'] == gen and wlan.isconnected():
+                now = time.time()
+                tanks = cfg['tanks']
+                key = repr(sorted((m, t.get('name')) for m, t in tanks.items()))
+                if key != told:  # tell HA what's there (again after a rename, a new or a removed tank)
+                    for m, t in tanks.items():
+                        for tp, pl in mqtt.discovery(pico, m, t.get('name', m), VERSION):
+                            await pub(tp, pl)
+                    for m in cfg.get('mqtt_macs', []):
+                        if m not in tanks:
+                            for tp, pl in mqtt.removal(m, pico):
+                                await pub(tp, pl)
+                    if sorted(cfg.get('mqtt_macs', [])) != sorted(tanks):
+                        cfg['mqtt_macs'] = list(tanks)
+                        save_cfg(cfg)
+                    told, last = key, {}
+                for m, t in tanks.items():
+                    v = tank_view(m, t, now)
+                    s = (json.dumps(mqtt.state(v, now)), mqtt.avail(v))
+                    if last.get(m) != s:
+                        await pub('%s/%s/state' % (base, mqtt.nomac(m)), s[0])
+                        await pub('%s/%s/avail' % (base, mqtt.nomac(m)), s[1])
+                        last[m] = s
+                        mqtt_state['sent_at'] = now
+                if now - wifi_at > 600:
+                    await pub(base + '/pico', json.dumps({'wifi': wlan.status('rssi')}))
+                    wifi_at = now
+                if time.ticks_diff(time.ticks_ms(), ping) > 60000:
+                    await put(mqtt.PING)
+                    if await asyncio.wait_for(r.readexactly(2), 10) != b'\xd0\x00':
+                        raise ValueError('the broker stopped answering')
+                    ping = time.ticks_ms()
+                await asyncio.sleep(10)
+            if cfg.get('mqtt') is not c or mqtt_state['gen'] != gen:  # settings changed or turned off: say goodbye
+                try:
+                    await pub(base + '/status', 'offline')
+                    await put(mqtt.DISCONNECT)
+                except Exception:
+                    pass
+        except Exception as ex:
+            if mqtt_state['gen'] == gen:
+                mqtt_state['err'] = mqtt_err(ex)
+                print('mqtt', ex)
+            wait = 30
+        finally:
+            mqtt_state['connected'] = False
+            if w:
+                try:
+                    w.close()
+                    await w.wait_closed()
+                except Exception:
+                    pass
+        for _ in range(wait):  # (a settings change cuts the wait short)
+            if mqtt_state['gen'] != gen:
+                break
+            await asyncio.sleep(1)
+
+
 async def price_task():
     # once a day, after 09:00 UTC (their figures update early morning); a failure is retried after 30 minutes
     await asyncio.sleep(120)
@@ -1787,6 +1915,7 @@ async def main():
     asyncio.create_task(alerts())
     asyncio.create_task(weather_task())
     asyncio.create_task(price_task())
+    asyncio.create_task(mqtt_task())
     asyncio.create_task(net_trial_guard())
     asyncio.create_task(update_guard())
     asyncio.create_task(bootsel_reset())

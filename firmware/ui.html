@@ -104,6 +104,17 @@ dialog::backdrop{background:#0008}
 <div class="row" style="gap:8px;justify-content:flex-start"><input id="prq" placeholder="e.g. BT51" maxlength="5" autocapitalize="characters" style="flex:1;margin:0" oninput="this.dataset.typed=1" onkeydown="if(event.key==='Enter')prSave()"><button onclick="prSave()">Save</button></div>
 <div class="mut" id="prs" style="min-height:22px;margin-top:6px"></div></div>
 
+<h2>Home Assistant</h2>
+<div class="card"><div class="row"><div><div id="mq1">…</div><div class="mut" id="mq2">&nbsp;</div></div><button id="mqOffB" onclick="mqOff()" style="visibility:hidden">Turn off</button></div>
+<div class="mut" style="margin:10px 0 6px">Sends the readings to Home Assistant over MQTT, and Home Assistant finds each tank by itself. In Home Assistant: install the <b>Mosquitto broker</b> add-on, make a user for the monitor (Settings → People → Users), then enter its details here.</div>
+<div class="grid">
+<label>Home Assistant's address<input id="mq_host" placeholder="e.g. 192.168.1.50" autocapitalize="off" spellcheck="false"></label>
+<label>Port<input id="mq_port" type="number" min="1" max="65535" placeholder="1883"></label>
+<label>Username<input id="mq_user" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+<label>Password<input id="mq_pw" type="password" autocomplete="new-password"></label>
+</div>
+<div class="acts"><button class="pri" onclick="mqSave()">Save</button></div></div>
+
 <h2>Software</h2>
 <div class="card"><div class="row"><div><div id="ver">Version …</div><div class="mut" id="ver2">&nbsp;</div></div><button id="updBtn" onclick="updClick()">Check for updates</button></div>
 <div class="mut" id="updBox" style="white-space:pre-wrap;min-height:18px;margin-top:6px"></div></div>
@@ -246,7 +257,7 @@ function render(){
  $('status').textContent=S.ap?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
  if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
   $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
- secRender();netRender();notifyRender();wxRender();prRender();if(!$('p_dash').hidden)dash();
+ secRender();netRender();notifyRender();wxRender();prRender();mqRender();if(!$('p_dash').hidden)dash();
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
  $('tanks').innerHTML=(S.tanks.length>1?`<div class="card"><div class="row" style="min-height:34px"><div><b>Both tanks together</b><div class="mut">Oil, use and forecast for the tanks combined</div></div>${S.primary==='all'?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('all')">Show on dashboard</button>`}</div></div>`:'')+(S.tanks.length?S.tanks.map(t=>{/* the Tanks page shows ALL the oil in the tank (the dashboard shows the usable oil): usable + what's below the outlet */
   const tot=t.total,whole=+t.cfg.tank_l,pc=tot!=null&&whole?Math.round(tot/whole*1000)/10:t.percent,big=tot??t.litres,p=pc??0;  /* total: worked out on the Pico from the reading, floor to surface */return `<div class="card"><div class="row"><b>${esc(t.name)}</b><button onclick="edit('${okMac(t.mac)}')">Edit</button></div>
@@ -486,6 +497,16 @@ async function wxFind(){const q=$('wxq').value.trim(),box=$('wxr');if(q.length<2
  catch(e){box.textContent='Could not reach Open-Meteo from this browser.'}}
 const prDate=d=>new Date((946684800+d*86400)*1000).toLocaleDateString(undefined,{day:'numeric',month:'short',timeZone:'UTC'});
 let PRNEAR=null;  /* nearest postcode district to the weather location (a suggestion only) */
+function mqRender(){const m=S.mqtt||{on:false};
+ $('mq1').textContent=!m.on?'Off':m.connected?'Connected to '+m.host:'Not connected to '+m.host;
+ $('mq2').textContent=!m.on?'Fill in the details below and Save.':m.err?m.err:m.connected?(m.sent_at?'Last sent '+new Date(m.sent_at*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'Connected.'):'Connecting…';
+ $('mqOffB').style.visibility=m.on?'visible':'hidden';
+ for(const [id,v] of [['mq_host',m.host],['mq_port',m.port],['mq_user',m.user]]){const el=$(id);if(document.activeElement!==el&&!el.dataset.typed)el.value=v??''}
+ const pw=$('mq_pw');if(document.activeElement!==pw&&!pw.value)pw.placeholder=m.pw_set?'(saved: blank keeps it, if the rest is unchanged)':''}
+for(const id of ['mq_host','mq_port','mq_user'])$(id).addEventListener('input',e=>e.target.dataset.typed=1);
+async function mqSave(){try{await api('/api/mqtt',{host:$('mq_host').value,port:$('mq_port').value,user:$('mq_user').value,pw:$('mq_pw').value});
+ for(const id of ['mq_host','mq_port','mq_user'])delete $(id).dataset.typed;$('mq_pw').value='';await load();setTimeout(load,4000)}catch(x){alert(x.message)}}
+async function mqOff(){if(!confirm('Stop sending readings to Home Assistant?'))return;try{await api('/api/mqtt',{off:true});await load()}catch(x){alert(x.message)}}
 function prRender(){const p=S.price||{on:false},n=p.now,td=new Date(),today=Math.round((Date.UTC(td.getFullYear(),td.getMonth(),td.getDate())/1000-946684800)/86400);
  $('pr1').textContent=p.on?'Prices for '+(p.pc||'Northern Ireland (average)'):'Off';
  $('pr2').textContent=!p.on?'Enter your postcode district and Save.':p.err?'Could not fetch the price: '+p.err:n&&n[1]!=null?(n[0]===today?'Today':prDate(n[0]))+': '+n[1].toFixed(1)+'p/L cheapest · '+n[2].toFixed(1)+'p/L average (900 L)':'The first price comes in the morning.';
