@@ -1,19 +1,19 @@
 {
- "version": "1.2.46",
- "ref": "v1.2.46",
- "notes": "Titan R1225 preset: whole-tank capacity 1306 L (refitted to the metered delivery with the measured 173 x 69 cm).",
+ "version": "1.2.47",
+ "ref": "v1.2.47",
+ "notes": "Tanks page: Today's readings under each tank (time, distance, litres, change, missed hours, when the next is due). Dashboard: the Used today tile is gone (a few litres hide inside the sensor's 5 mm steps).",
  "files": {
   "app.py": [
-   "4726b9bb9b03fb5a6d871da3331a63ac841e4d3117bb13d81e3cfea74204ff69",
-   74714
+   "ec0d8879459b76b4997c4c6bef98605a115f1e705765a70ad6a27b409fc37354",
+   75876
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
    7065
   ],
   "common.js.html": [
-   "a2986d72078cde07f36390d69caed5ceb41d45bdd6aab872f6f6f57e15f90149",
-   18073
+   "9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01",
+   17938
   ],
   "drops.py": [
    "bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81",
@@ -52,15 +52,15 @@
    9040
   ],
   "ui.html": [
-   "551584458e5f55bfcc71d5571cbe93d5630166d7a59d10c5ca32bd1acc1f1c93",
-   76462
+   "1967dd5b126ab24ce653a9b19bfafad4af030eee4e0589e59b2a6a08022d3925",
+   79195
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "ff05d96a7b9d3dcf8000ea1f6ffc2091ed40af4ebc9d7ee7a5e16cd10fe0042f",
+   "9bf8cbcca8e6adc77beafe5f16cdd1b7c0a099307749a9cf984b6859c14bc370",
    19
   ],
   "weather.py": [
@@ -69,7 +69,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"4726b9bb9b03fb5a6d871da3331a63ac841e4d3117bb13d81e3cfea74204ff69\", 74714], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"a2986d72078cde07f36390d69caed5ceb41d45bdd6aab872f6f6f57e15f90149\", 18073], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"7794b79f7a5343bd0ee6fef1cd4838bf33973c5e1660ccea2a2d7b92dc9a16f4\", 57496], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"551584458e5f55bfcc71d5571cbe93d5630166d7a59d10c5ca32bd1acc1f1c93\", 76462], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"ff05d96a7b9d3dcf8000ea1f6ffc2091ed40af4ebc9d7ee7a5e16cd10fe0042f\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Titan R1225 preset: whole-tank capacity 1306 L (refitted to the metered delivery with the measured 173 x 69 cm).\", \"ref\": \"v1.2.46\", \"version\": \"1.2.46\"}",
-  "sig": "7ae30de683ded94e5fbfa414e8d515d304338abb744859c1432ec12e399f5d90439f0a0150a92b2715fc862dfd5d4d79b0a8d38d085fae8ccb1eb825eb3eba7946d1f49b5821d253a2b8a0a54d0da3838de54cac38f621f450ff76120d95684a34f7ec3a9b522fa3a60ba8d4cca55a07e5a6f84d91e9f6f7fa8a92698361847722871cb037c2fc78c4607e36182dcb3ce8946223d7d7e34f393dd96f823c9078c47d4d8422325d5517196e8fe2843e2298c8088e852ba3902900ba14c86c93aa52afed635032b08f55daa6fec70c7356d0bc6fe6d9a672eab6d4b126d5ec5a3c379971df3425d388046991aaf4455cf8b237f4a44aaf806f28da757c9b8010f1"
+  "body": "{\"files\": {\"app.py\": [\"ec0d8879459b76b4997c4c6bef98605a115f1e705765a70ad6a27b409fc37354\", 75876], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"7794b79f7a5343bd0ee6fef1cd4838bf33973c5e1660ccea2a2d7b92dc9a16f4\", 57496], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"1967dd5b126ab24ce653a9b19bfafad4af030eee4e0589e59b2a6a08022d3925\", 79195], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"9bf8cbcca8e6adc77beafe5f16cdd1b7c0a099307749a9cf984b6859c14bc370\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Tanks page: Today's readings under each tank (time, distance, litres, change, missed hours, when the next is due). Dashboard: the Used today tile is gone (a few litres hide inside the sensor's 5 mm steps).\", \"ref\": \"v1.2.47\", \"version\": \"1.2.47\"}",
+  "sig": "290eab0bf5290ffc3966db4b7d46644123489661a34dac151a621867111f5909168c643380ecb8973b04bb7736bea34c7b41afe61a28c351264d85e51ad5af95aab647c447bb1265cfeb7ca2f43eaab74e5bcb15529a7999245943e1c25d17f4ace3d9a75debba277bd943700bd6b7ec9381a8a40a03c401e14b8fcd33f3fd60f2aecd413f040791c0117e21bb1a3e988c403a5b746cf20da9a8e7fdcf3b1b680980c4fe8c582542a97843551e28d3819ad64e9aa561abb9411efee039e3b3b0f0f431ce2a514db6c7d0853e5da3fdec63e3f02f51f8a7f9063dc2d414b8495ba0bf2735f5cea7f37f6a6b142695ca278544a4a98c47ef7ac6280c12ac1c7068"
  }
 }

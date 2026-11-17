@@ -1487,6 +1487,26 @@ async def handle(r, w):
                     except ValueError:
                         return await send(w, 400, '"bad tank_l"')
                 return await send(w, 200, json.dumps(curve(t)))
+            if q.get('since'):  # only the readings from then on (the Tanks page's "today's readings")
+                try:
+                    since = int(q['since'])
+                    n = os.stat(hist_name(mac))[6] // 6
+                    out = []
+                    with open(hist_name(mac), 'rb') as f:  # newest at the end: read backwards a block at a time
+                        k = n
+                        while k > 0:
+                            a = max(0, k - 64)
+                            f.seek(a * 6)
+                            blk = f.read((k - a) * 6)
+                            recs = [blk[i:i + 6] for i in range(0, len(blk), 6)]
+                            keep = [r for r in recs if struct.unpack('<I', r[:4])[0] >= since]
+                            out = keep + out
+                            if len(keep) < len(recs) or len(out) > 200:
+                                break
+                            k = a
+                    return await send(w, 200, b''.join(out[-200:]), 'application/octet-stream')
+                except (OSError, ValueError):
+                    return await send(w, 200, b'', 'application/octet-stream')
             try:
                 return await send_file(w, hist_name(mac), 'application/octet-stream')
             except OSError:
