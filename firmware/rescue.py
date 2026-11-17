@@ -1,11 +1,22 @@
 # Minimal recovery server: joins Wi-Fi (or opens the setup AP) and accepts
 #   PUT /file?name=x&t=TOKEN, GET /reboot?t=TOKEN, GET /crash
+# After 15 minutes with no request it restarts, so the app gets another go (a passing fault, such as a
+# Wi-Fi or memory hiccup at start, doesn't leave the monitor dead until someone pulls the plug).
 import json, network, socket, time, machine
-try:
-    cfg = json.load(open('config.json'))
-except Exception:
-    cfg = {}
-tok = cfg.get('token', '')
+IDLE_MS = 15 * 60000
+
+
+def _load(n):
+    try:
+        with open(n) as f:
+            c = json.load(f)
+        return c if isinstance(c, dict) else {}
+    except Exception:
+        return {}
+
+
+cfg = _load('config.json')
+tok = cfg.get('token', '') or _load('config.bad').get('token', '')  # (the copy kept of a damaged one)
 w = network.WLAN(network.STA_IF)
 w.active(True)
 if cfg.get('ssid'):
@@ -42,8 +53,16 @@ class Lines:
         return ln
 
 
+s.settimeout(30)
+idle = time.ticks_ms()
 while True:
-    c, _ = s.accept()
+    try:
+        c, _ = s.accept()
+    except OSError:  # (timed out: nobody asked)
+        if time.ticks_diff(time.ticks_ms(), idle) > IDLE_MS:
+            machine.reset()
+        continue
+    idle = time.ticks_ms()
     c.settimeout(10)  # one silent client must not block recovery for everyone
     try:
         t0 = time.ticks_ms()

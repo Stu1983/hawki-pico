@@ -383,8 +383,9 @@ async def answers(ip, port, secs=2):
     # EINPROGRESS (115); then EALREADY (114) for as long as nothing answers, EISCONN (106) once accepted, and
     # EBADF (9) once refused (the refusal tears the socket down).
     import socket
-    s = socket.socket()
+    s = None
     try:
+        s = socket.socket()  # (inside the try: out of sockets is "no answer", never a dead Wi-Fi keeper)
         s.setblocking(False)
         try:
             s.connect((ip, port))
@@ -406,7 +407,8 @@ async def answers(ip, port, secs=2):
     except Exception:
         return False
     finally:
-        s.close()
+        if s is not None:
+            s.close()
 
 
 def net_proof():
@@ -476,7 +478,7 @@ async def wifi_keeper():
     wlan.config(pm=0xa11140)  # power-save off: steadier for BLE coexistence + HTTP
     net_apply()
     while True:
-        mono_s()  # (no allocation: can't raise; item 5 guards the rest of this loop)
+        mono_s()
         if cfg.get('ssid') and not wlan.isconnected():
             try:
                 net_apply()
@@ -1328,7 +1330,11 @@ async def handle(r, w):
                 got = await read_body_to(r, 'hist.up', clen, buf[0])
                 if got != clen:
                     return await send(w, 400, '"short upload"')
-                n = merge_hist(hist_name(mac), 'hist.up')
+                wd_hold[0] += 1
+                try:
+                    n = merge_hist(hist_name(mac), 'hist.up')
+                finally:
+                    wd_hold[0] -= 1
                 last_saved.pop(mac, None)  # the file changed: read its newest reading again
                 return await send(w, 200, json.dumps(n))
             finally:
@@ -1512,7 +1518,11 @@ async def handle(r, w):
                     installing[0] = False
                     return await send(w, 400, json.dumps('Already up to date'))
                 make_room()
-                v = updater.install(m, VERSION)
+                wd_hold[0] += 1
+                try:
+                    v = updater.install(m, VERSION)
+                finally:
+                    wd_hold[0] -= 1
             except Exception as ex:
                 gc.collect()
                 installing[0] = False  # updater.install() undoes its own half-done swap
@@ -1622,7 +1632,11 @@ async def handle(r, w):
                      'hook': hook, 'asyncio': asyncio}
                 try:
                     exec(open(q['name']).read(), g)
-                    res = json.dumps(await g['run'](q))
+                    wd_hold[0] += 1
+                    try:
+                        res = json.dumps(await g['run'](q))
+                    finally:
+                        wd_hold[0] -= 1
                 except Exception as ex:
                     res = json.dumps({'error': repr(ex)})
                 finally:
@@ -1969,21 +1983,51 @@ async def price_task():
         await asyncio.sleep(600)
 
 
-async def main():
-    asyncio.create_task(wifi_keeper())
-    asyncio.create_task(recorder())
-    asyncio.create_task(scan_scheduler())
-    asyncio.create_task(alerts())
-    asyncio.create_task(weather_task())
-    asyncio.create_task(price_task())
-    asyncio.create_task(mqtt_task())
-    asyncio.create_task(net_trial_guard())
-    asyncio.create_task(update_guard())
-    asyncio.create_task(bootsel_reset())
-    asyncio.create_task(close_first_pin_window())
-    await asyncio.start_server(handle, '0.0.0.0', 80)
+async def keep(fn, name):
+    # A task that stops on an error is started again (otherwise it is gone until a restart: a dead Wi-Fi keeper
+    # means no reconnect and no setup network). Waits 10 s, doubling to 10 min while it keeps failing quickly.
+    wait = 10
     while True:
-        await asyncio.sleep(60)
+        t0 = mono_s()
+        try:
+            await fn()
+            return  # finished on its own (the one-off tasks)
+        except Exception as ex:
+            print('task', name, 'stopped:', repr(ex))
+        wait = 10 if mono_s() - t0 > 600 else min(wait * 2, 600)
+        await asyncio.sleep(wait)
+
+
+# Soft watchdog: the main loop beats every 30 s; if it hasn't for WD_MINUTES (the event loop stuck, or blocked
+# far longer than any fetch or update takes), restart. (The hardware watchdog can't wait more than 8 s, and one
+# HTTPS fetch blocks longer than that.) The timer callback only compares two small ints.
+WD_MINUTES = 10
+beat = [0]
+wd = [0, 0]  # beat last seen, minutes it hasn't changed
+wd_hold = [0]  # long jobs on purpose (an update over weak Wi-Fi, a maintenance script, a big history upload)
+
+
+def wd_check(_t=None):
+    if beat[0] != wd[0] or wd_hold[0]:
+        wd[0], wd[1] = beat[0], 0
+        return
+    wd[1] += 1
+    if wd[1] >= WD_MINUTES:
+        machine.reset()
+
+
+async def main():
+    for fn, name in ((wifi_keeper, 'wifi'), (recorder, 'recorder'), (scan_scheduler, 'scan'), (alerts, 'alerts'),
+                     (weather_task, 'weather'), (price_task, 'price'), (mqtt_task, 'mqtt'),
+                     (net_trial_guard, 'net trial'), (update_guard, 'update guard'), (bootsel_reset, 'bootsel'),
+                     (close_first_pin_window, 'pin window')):
+        asyncio.create_task(keep(fn, name))
+    await asyncio.start_server(handle, '0.0.0.0', 80)
+    wd_timer = machine.Timer(mode=machine.Timer.PERIODIC, period=60000, callback=wd_check)  # noqa: F841 (kept)
+    while True:
+        for _ in range(2):
+            await asyncio.sleep(30)
+            beat[0] = (beat[0] + 1) & 0xffff
         gc.collect()
 
 

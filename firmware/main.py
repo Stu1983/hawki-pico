@@ -29,4 +29,10 @@ except Exception as ex:
             machine.reset()
     except Exception as ex2:
         sys.print_exception(ex2)
-    import rescue  # noqa: F401
+    try:
+        import rescue  # noqa: F401  (runs until it restarts the Pico)
+    except Exception as ex3:  # even the rescue server can't start: try everything again in a minute
+        sys.print_exception(ex3)
+        import time
+        time.sleep(60)
+        machine.reset()
