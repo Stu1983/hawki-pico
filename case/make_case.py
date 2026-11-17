@@ -4,8 +4,8 @@ python3 case/make_case.py  ->  case/out/*.stl and hawki_case.3mf (needs trimesh,
 
 Base: the board sits on 4 pegs 10 mm up (room for soldered headers underneath): short pins on one diagonal line it up,
 two M2 self-tapping screws on the other hold it down. USB opening at one end, two screw ears to fix it to a wall or
-beam. Lid: a lip that locates it and two clips that hook into pockets on the outside of the base (no posts:
-nothing to line up with the pins), a hole over the BOOTSEL button (hold it 5 s with a pen to clear a forgotten PIN), raised text.
+beam. Lid: a skirt that overlaps the top of the base wall, with a V ridge that snaps into a V groove (the same
+fit as the popular Raspberry Pi Pico case: thin overlapping walls flex, nothing sticks out to break; no posts), a hole over the BOOTSEL button (hold it 5 s with a pen to clear a forgotten PIN), raised text.
 All sizes in mm; change them below.
 """
 import os
@@ -27,18 +27,17 @@ BOOTSEL_X, BOOTSEL_Y = 12.0, 7.0              # BOOTSEL centre: from the USB-end
 BOOTSEL_TOP = 2.5                             # actuator top above the component face
 LED_X, LED_Y, LED_D = 4.8, 4.8, 2.5           # LED window (same frame)
 # --- case ---
-WALL, FLOOR, TOP = 2.0, 2.0, 2.0
+WALL, FLOOR, TOP = 2.4, 2.0, 2.0   # walls 2.4: the top SKIRT of it is split 1.2 base (inside) + 1.2 lid skirt (outside)
 GAP = 0.6                                      # air around the board
 UNDER = 10.0                                   # under the board: headers stick out ~8.5 mm
 OVER = 5.5                                     # over the board: USB socket, RF can, header stubs
 PLUG_W, PLUG_H, PLUG_R = 12.0, 8.5, 2.0       # opening for the cable's plug (9.5 x 6.5 overmould + clearance; +1 mm after a
                                                # test print only just fitted). The U's bottom is PLUG_H/2 under the socket centre
-LIP, LIP_CLR = 3.0, 0.15                       # lid lip depth, clearance per side
-# the lid clips on: a flexible tab down each long side, outside the base, with a hook that clicks into a pocket in the
-# base's outer wall well below the rim (where the wall is stiff). Flat catch on top: it stays on; pull the tabs out to open.
-CLIP_W, CLIP_T, CLIP_L, CLIP_GAP = 10.0, 1.5, 8.0, 0.1   # tab width, thickness, reach below the lid's underside, gap to the wall
-HOOK, HOOK_H = 0.7, 1.8                        # hook: how far it reaches in, its height (lead-in ramp below the catch)
-POCKET_D = 0.9                                 # pocket depth in the base wall (hook + gap + a little)
+# snap fit: the lid's skirt (SKIRT_T thick, SKIRT deep) drops over the base wall's stepped-in top; a V ridge on the
+# skirt's inside snaps into a V groove in the base wall, along the middle SNAP_LEN of each long side
+SKIRT, SKIRT_T, SKIRT_CLR = 4.0, 1.2, 0.05
+SNAP_D, SNAP_H, SNAP_LEN = 0.43, 0.75, 40.0    # V depth, half its height (so ~30 degrees off the wall), length
+LIP, LIP_CLR = SKIRT, 0.0                      # (cut depths through the lid's underside)
 # board fixing: locating pins on one diagonal, M2 self-tapping screws (pan head, ~6 mm) on the other (as on the MiSTer mount)
 PIN_D, PIN_UP, PIN_CH = 1.9, 0.8, 0.4          # pin (Pico holes are 2.1), how far it stands above the board, tip chamfer
 PEG_D, SCREW_PEG_D, PILOT_D, PILOT_DEEP = 3.6, 4.6, 1.7, 7.0   # pegs; the screw pegs are fatter round a 1.7 mm pilot this deep
@@ -48,7 +47,9 @@ TEXT, SUB = 'Oil Monitor', 'HAWKi'
 # cable-tie strain relief off the USB end: a tab, then a saddle (past the plug's 20 mm overmould) with a groove for the
 # cable and a slot under it for the tie
 PLUG_LEN = 20.0                                # straight plug overmould length out of the case
-TAB_OUT, TAB_WIDE, TAB_THK = 32.0, 16.0, 4.0   # how far the tab sticks out, its width and thickness
+TAB_OUT, TAB_WIDE, TAB_THK = 37.0, 16.0, 4.0   # how far the tab sticks out, its width and thickness
+SAD_OUT = 5.0                                  # saddle this much further out than just past the plug
+GUSSET_H, GUSSET_L, GUSSET_T = 6.0, 8.0, 2.0   # braces where the tab meets the end wall: up the wall, along the tab, thick
 SAD_L, SAD_W = 8.0, 12.0                       # saddle length (along the cable) and width
 CABLE_D = 4.0                                  # cable groove fits up to this diameter
 TIE_W, TIE_H = 2.6, 5.2                        # tie slot, on its side (ties up to ~4.8 x 1.5 go through on edge), pointed
@@ -133,12 +134,19 @@ def base():
         cuts += [cyl(OUT_L / 2, y, -1, 5, SCREW_D), cone(OUT_L / 2, y, 4 - (HEAD_D - SCREW_D) / 2, 4.01, SCREW_D, HEAD_D)]
     # strain relief: tab + saddle, cable groove on top at the cable's height, tie slot through under it
     cy = Y0 + PCB_W / 2
-    sx1 = -(PLUG_LEN - WALL) - 3.0                 # saddle starts 3 mm past the end of the plug overmould
+    sx1 = -(PLUG_LEN - WALL) - 3.0 - SAD_OUT       # saddle starts 3 mm (+ SAD_OUT) past the end of the plug overmould
     sx0 = max(sx1 - SAD_L, -TAB_OUT + 2)
     groove_bot = usb_z - CABLE_D / 2
     tab = rbox(-TAB_OUT, cy - TAB_WIDE / 2, 0, 3.0, cy + TAB_WIDE / 2, TAB_THK, 3)
+    # triangular braces on the tab's two edges, against the end wall (outside the plug opening's width)
+    gus = []
+    for gy in (cy - TAB_WIDE / 2, cy + TAB_WIDE / 2 - GUSSET_T):
+        g = trimesh.creation.extrude_polygon(Polygon([(0.5, TAB_THK - 0.01), (0.5, TAB_THK + GUSSET_H), (-GUSSET_L, TAB_THK - 0.01)]), GUSSET_T)
+        g.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (1, 0, 0)))   # (x, z) outline, thickness along y
+        g.apply_translation((0, gy - g.bounds[0][1], 0))
+        gus.append(g)
     saddle = rbox(sx0, cy - SAD_W / 2, 0, sx1, cy + SAD_W / 2, groove_bot + 1.2, 1.5)
-    body = U(body, tab, saddle)
+    body = U(body, tab, saddle, *gus)
     groove = cyl(0, 0, sx0 - 1, sx1 + 1, CABLE_D + 0.4)
     groove.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
     groove.apply_translation(((sx0 + sx1) / 2 - groove.centroid[0], cy - groove.centroid[1], usb_z - groove.centroid[2]))
@@ -151,11 +159,15 @@ def base():
     tie.apply_translation((mx, cy - SAD_W / 2 - 1 - tie.bounds[0][1], 0))
     cuts += [groove, tie]
     body = D(body, *cuts)
-    # clip pockets in the outer face of each long wall (catch face flush with the hook's catch when the lid is down)
-    zc = BASE_H - CLIP_L + HOOK_H
+    # snap: step the top SKIRT of the wall in by the lid's skirt, then the V groove in that thin wall's outer face
+    st = SKIRT_T + SKIRT_CLR
+    outline = Polygon([(0, 0), (OUT_L, 0), (OUT_L, OUT_W), (0, OUT_W)]).buffer(-3).buffer(3, resolution=12)
+    ring = outline.difference(outline.buffer(-st, join_style=2))
+    body = D(body, extrude(ring, BASE_H - SKIRT, SKIRT + 1))
+    zm = BASE_H - SKIRT / 2
     for side in (0, 1):
-        body = D(body, prism_yz(Polygon([(-1, zc + 0.05), (POCKET_D, zc + 0.05), (POCKET_D, BASE_H - CLIP_L - 0.4), (-1, BASE_H - CLIP_L - 0.4)]),
-                                OUT_L / 2 - CLIP_W / 2 - 0.5, OUT_L / 2 + CLIP_W / 2 + 0.5, side))
+        body = D(body, prism_yz(Polygon([(st - 0.01, zm - SNAP_H), (st + SNAP_D, zm), (st - 0.01, zm + SNAP_H)]),
+                                OUT_L / 2 - SNAP_LEN / 2 - 1, OUT_L / 2 + SNAP_LEN / 2 + 1, side))
     top = FLOOR + UNDER                       # the board's underside
     posts, pilots = [], []
     for i, (x, y) in enumerate(holes):
@@ -213,16 +225,13 @@ def lid():
     (z TOP-INLAY..TOP): the lid minus the text, plus the text as its own body for a 2nd filament."""
     plate = rbox(0, 0, 0, OUT_L, OUT_W, TOP, 3)
     c = LIP_CLR
-    lip = D(box(WALL + c, WALL + c, -LIP, OUT_L - WALL - c, OUT_W - WALL - c, 0.01),
-            box(WALL + c + 1.6, WALL + c + 1.6, -LIP - 1, OUT_L - WALL - c - 1.6, OUT_W - WALL - c - 1.6, 0.02))
-    clips = []
-    zc = -CLIP_L + HOOK_H                         # the hook's flat catch (top)
-    x0, x1 = OUT_L / 2 - CLIP_W / 2, OUT_L / 2 + CLIP_W / 2
-    for side in (0, 1):   # (y, z) drawn for the y = 0 side, outward = -y; mirrored for the other
-        tab = Polygon([(-CLIP_GAP - CLIP_T, -CLIP_L), (-CLIP_GAP, -CLIP_L), (-CLIP_GAP, 0), (1.0, 0), (1.0, TOP), (-CLIP_GAP - CLIP_T, TOP)])
-        hook = Polygon([(-CLIP_GAP - 0.01, zc), (-CLIP_GAP + HOOK, zc), (-CLIP_GAP + HOOK, zc - 0.4), (-CLIP_GAP - 0.01, -CLIP_L)])
-        clips.append(prism_yz(tab.union(hook), x0, x1, side))
-    body = U(plate, lip, *clips)
+    # skirt round the edge, over the base wall's stepped-in top (0.1 short, so the plate seats on the wall top)
+    outline = Polygon([(0, 0), (OUT_L, 0), (OUT_L, OUT_W), (0, OUT_W)]).buffer(-3).buffer(3, resolution=12)
+    skirt = extrude(outline.difference(outline.buffer(-SKIRT_T, join_style=2)), -SKIRT + 0.1, SKIRT - 0.1 + 0.01)
+    zm = -SKIRT / 2
+    ridges = [prism_yz(Polygon([(SKIRT_T - 0.01, zm - SNAP_H), (SKIRT_T + SNAP_D, zm), (SKIRT_T - 0.01, zm + SNAP_H)]),
+                       OUT_L / 2 - SNAP_LEN / 2, OUT_L / 2 + SNAP_LEN / 2, side) for side in (0, 1)]
+    body = U(plate, skirt, *ridges)
     bx, by = X0 + BOOTSEL_X, Y0 + BOOTSEL_Y
     # flexible button: tongue from the hinge (away from USB) to a round tip just past the button
     tip = bx - TAB_TIP                               # USB-side end of the tongue
