@@ -99,9 +99,16 @@ function analyse(pts,o){
  // recent rate: last 14 days (or what there is)
  const tEnd=pts[n-1][0],tStart=Math.max(pts[0][0],tEnd-14*DAY),win=(tEnd-tStart)/DAY;
  const a0=at(tStart),a1=sm[n-1];
- out.recent=win>=1&&a0!=null?Math.max(0,(a0-a1)/win):null;out.recentDays=win;
+ // litres a day since t0: the slope of a straight line through the (smoothed, delivery-adjusted) level every 3 hours
+ // across the window, so the 5 mm steps the readings come in average out (two end readings a step apart would swing a
+ // 3-day figure ~2 L/day) and every stretch of time counts the same however many readings it has. Falls back to the
+ // two ends when there are too few points for a line.
+ const slope=(t0,v0)=>{let n2=0,sx=0,sy=0,sxx=0,sxy=0;const add=(x,y)=>{n2++;sx+=x;sy+=y;sxx+=x*x;sxy+=x*y};
+  let miss=0;for(let t=t0;t<tEnd;t+=3*H){const v=t===t0?v0:at(t);if(v!=null)add((t-t0)/DAY,v);else miss++}add((tEnd-t0)/DAY,a1);
+  const den=n2*sxx-sx*sx;if(miss||n2<6||!(den>0))  /* a gap in the readings: the two ends are the fair figure */return v0!=null?(v0-a1)/((tEnd-t0)/DAY):null;return -(n2*sxy-sx*sy)/den};
+ out.recent=win>=1&&a0!=null?Math.max(0,slope(tStart,a0)):null;out.recentDays=win;
  // shorter averages for the Using tile (same smoothed level, so 5 mm steps don't swing them)
- out.avgs={};for(const d of[3,7]){const s0=Math.max(pts[0][0],tEnd-d*DAY),w=(tEnd-s0)/DAY,v=at(s0);out.avgs[d]=w>=d-0.01&&v!=null?Math.max(0,(v-a1)/w):null}
+ out.avgs={};for(const d of[3,7]){const s0=Math.max(pts[0][0],tEnd-d*DAY),w=(tEnd-s0)/DAY,v=at(s0);out.avgs[d]=w>=d-0.01&&v!=null?Math.max(0,slope(s0,v)):null}
  if(out.recent==null)return out;
  const recentDays=[];for(let t=tStart;t<tEnd;t+=DAY)recentDays.push(t);
  const avgOver=f=>mean(recentDays.map(f));
@@ -151,5 +158,24 @@ function howText(A){
 // Several tanks as one: their litres added at every reading time. A tank's level holds at its last reading
 // (and, before its first, at that first one): a tank not being read is one not being used, as with tanks
 // switched over by hand valves.
-function combine(series){const ts=[...new Set(series.flatMap(s=>s.map(p=>p[0])))].sort((a,b)=>a-b),idx=series.map(()=>0);
- return ts.map(t=>[t,series.reduce((sum,s,k)=>{if(!s.length)return sum;while(idx[k]+1<s.length&&s[idx[k]+1][0]<=t)idx[k]++;return sum+s[idx[k]][1]},0)  /* last reading at or before t (before a tank's first reading: that first one) */])}
+// Before a tank's first reading it is held at the average of its first day (when that day is steady): a single first
+// reading can be a radar step or two (5-7 L near the bottom) off, which would read as oil appearing or vanishing.
+const STEADY_L=12;
+// A tank not in use still jitters a radar step or two. Stretches where it stays within STEADY_L and its slope is
+// indistinguishable from zero (under twice its standard error, plus 0.3 L/day) count as their average. Real use,
+// even ~1 L/day of summer hot water over days, has a clear slope and is left exactly as read.
+function flatten(s){const out=s.slice();let i=0;
+ while(i<s.length){let j=i,mn=s[i][1],mx=s[i][1];while(j+1<s.length&&Math.max(mx,s[j+1][1])-Math.min(mn,s[j+1][1])<=STEADY_L){j++;mn=Math.min(mn,s[j][1]);mx=Math.max(mx,s[j][1])}
+  const n=j-i+1;if(n>=12&&s[j][0]-s[i][0]>=DAY){let sx=0,sy=0;for(let k=i;k<=j;k++){sx+=s[k][0]/DAY;sy+=s[k][1]}const xm=sx/n,ym=sy/n;let sxx=0,sxy=0;for(let k=i;k<=j;k++){const dx=s[k][0]/DAY-xm;sxx+=dx*dx;sxy+=dx*(s[k][1]-ym)}
+   const b=sxx>0?sxy/sxx:0;let rss=0;for(let k=i;k<=j;k++){const r=s[k][1]-(ym+b*(s[k][0]/DAY-xm));rss+=r*r}const se=sxx>0&&n>2?Math.sqrt(rss/(n-2)/sxx):Infinity;
+   if(Math.abs(b)<2*se+0.3)for(let k=i;k<=j;k++)out[k]=[s[k][0],ym]}
+  i=j+1}
+ return out}
+function firstLevel(s){const d=s.filter(p=>p[0]-s[0][0]<=DAY).map(p=>p[1]);return Math.max(...d)-Math.min(...d)<=STEADY_L?d.reduce((a,b)=>a+b,0)/d.length:s[0][1]}
+function combine(series){if(series.length>1)series=series.map(flatten);const f0=series.map(s=>s.length?firstLevel(s):0),all=[...new Set(series.flatMap(s=>s.map(p=>p[0])))].sort((a,b)=>a-b),idx=series.map(()=>0);
+ /* tanks read a minute or two apart count as one reading time (the later), so the sum has one point an hour like a single tank */
+ const ts=[];let g0=-Infinity;for(const t of all){if(t-g0<900)ts[ts.length-1]=t;else{ts.push(t);g0=t}}  /* a group spans at most 15 minutes from its first reading */
+ /* each tank at time t: its last reading at or before t; before its first reading, its first day's average
+    (firstLevel) */
+ return ts.map(t=>[t,series.reduce((sum,s,k)=>{if(!s.length)return sum;while(idx[k]+1<s.length&&s[idx[k]+1][0]<=t)idx[k]++;
+  const a=s[idx[k]];return sum+(t<a[0]?f0[k]:a[1])},0)])}

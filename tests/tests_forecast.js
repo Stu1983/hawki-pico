@@ -1,7 +1,7 @@
 // node tests/tests_forecast.js  - the seasonal model in firmware/common.js.html, without a browser
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const ctx={};vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;this.wxHeat=wxHeat;this.wxKey=wxKey;this.WX_BASE=WX_BASE;this.howText=howText;',ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;this.wxHeat=wxHeat;this.wxKey=wxKey;this.WX_BASE=WX_BASE;this.howText=howText;this.combine=combine;this.flatten=flatten;',ctx);
 let fails=0;const ok=(c,m)=>{console.log((c?'ok   ':'FAIL ')+m);if(!c)fails++};
 const DAY=86400,H=3600,T=(y,m,d)=>new Date(y,m,d,12).getTime()/1000;
 // a household: hot water 0.85 L/day in August (+25 % in Feb), heating only Sep-May
@@ -65,4 +65,13 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  const p=[];let L=900;for(let t=T(2026,5,1);t<now;t+=H){L-=3/24;p.push([t,L])}
  const A=ctx.analyse(p,{now,heat:ctx.wxHeat(rec,fc,norm),wxName:'Coleraine'});
  ok(A.wx===null&&/typical UK year/.test(ctx.howText(A)),'a week of missing weather: built-in shape, and the words say so')}
+// 10. two tanks: one in use (6 L/day, in 3.5 L steps), one idle and jittering 0 / 2 / 7 L, starting later
+{const now=T(2026,10,17),q=v=>Math.round(v/3.5)*3.5,a=[],b=[];let L=600;
+ for(let t=now-20*DAY;t<=now;t+=H){L-=6/24*(new Date(t*1000).getHours()<7?0.2:1.3);a.push([t,q(L)])}
+ const jit=[2.1,7.4,0,2.1,7.4,2.1,7.4,7.4,2.1,0];let i=0;for(let t=now-DAY;t<=now;t+=H)b.push([t+60,jit[i++%jit.length]]);
+ const A1=ctx.analyse(a,{now}),AC=ctx.analyse(ctx.combine([a,b]),{now});
+ ok(Math.abs(AC.avgs[3]-A1.avgs[3])<0.3&&Math.abs(AC.avgs[7]-A1.avgs[7])<0.3,'idle tank jitter does not move the combined use: 3-day '+AC.avgs[3].toFixed(2)+' vs '+A1.avgs[3].toFixed(2)+', 7-day '+AC.avgs[7].toFixed(2)+' vs '+A1.avgs[7].toFixed(2));
+ ok(Math.abs(A1.avgs[3]-6)<0.6,'3-day use from a line through the readings, not two end readings: '+A1.avgs[3].toFixed(2)+' L/day (true 6)');
+ const slow=[];let S2=500;for(let t=now-10*DAY;t<=now;t+=H){S2-=0.9/24;slow.push([t,q(S2)])}
+ const fl=ctx.flatten(slow);ok(fl[0][1]-fl[fl.length-1][1]>5,'a tank slowly in use (0.9 L/day, summer hot water) is not flattened: '+(fl[0][1]-fl[fl.length-1][1]).toFixed(1)+' L over 10 days')}
 process.exit(fails?1:0);
