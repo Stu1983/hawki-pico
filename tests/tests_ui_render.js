@@ -8,7 +8,7 @@ const dom=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,before
   w.alert=m=>console.log('ALERT',m);w.onerror=(m)=>console.log('ERR',m)}});
 setTimeout(()=>{const w=dom.window;
   w.edit('aa:bb:cc:00:00:01');
-  const d=w.document;console.log('meas visible:',d.getElementById('meas').style.display!=='none','rib inputs:',d.querySelectorAll('#ribbox input').length);
+  const d=w.document;console.log('ribs tab open:',!d.querySelector('.ftabs button[data-t="rib"]').disabled,'windows measured:',d.getElementById('wmeas').style.visibility!=='hidden','rib inputs:',d.querySelectorAll('#ribbox input').length);
   d.getElementById('m_wo').dispatchEvent(new w.FocusEvent('focusin',{bubbles:true}));
   const svg=d.getElementById('viz').outerHTML.replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="800" height="460" ');
   // inline the CSS vars (light theme) so the rasteriser can draw it

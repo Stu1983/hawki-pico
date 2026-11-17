@@ -26,6 +26,9 @@ dialog::backdrop{background:#0008}
 .lnk{color:var(--acc);font-size:14px;margin-right:8px;text-decoration:none}.empty{color:var(--mut);font-size:14px;padding:6px 2px}.hint{font-size:12px;color:var(--mut);margin-top:3px}
 .tabs{display:flex;gap:4px;margin:12px 0 14px;border-bottom:1px solid var(--line)}.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mut);padding:8px 14px;font-weight:600}
 .tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}
+.ftabs{display:flex;margin:10px 0 12px;border-bottom:1px solid var(--line)}.ftabs button{flex:1;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mut);padding:8px 4px;font-weight:600;font-size:14px}
+.ftabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}.ftabs button:disabled{opacity:.4;cursor:default}#dlg{height:min(860px,calc(100dvh - 24px));max-height:none;padding:14px 16px}#dlg form{display:flex;flex-direction:column;height:100%;overflow-y:auto}#dlg #viz{flex:0 1 auto;min-height:0;margin-bottom:6px}#dlg .acts{flex:none;margin-top:10px}
+.fpg{flex:1 0 150px;min-height:150px;overflow-y:auto;overscroll-behavior:contain;padding:2px 2px 8px}.fpg[hidden]{display:none}.ftabs{flex:none}
 .dh{margin:0 0 8px;min-height:24px}.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.tile{margin:0 0 10px;min-height:118px}.tl{color:var(--mut);font-size:13px}
 .tile .big{font-size:26px;margin:2px 0}.tile.warn{border-color:var(--warn)}.tile.bad{border-color:var(--bad)}
 @media (max-width:560px){.tiles{grid-template-columns:1fr 1fr}.tiles .tile:first-child{grid-column:1/-1}.tile .big{font-size:22px;white-space:nowrap}}
@@ -115,36 +118,45 @@ dialog::backdrop{background:#0008}
 <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button onclick="exportBackup()">Export backup</button><button onclick="exportCsv()">Export readings (CSV)</button><button onclick="$('impf').click()">Import backup</button>
 <input type="file" id="impf" accept=".json,application/json" hidden onchange="importBackup(this.files[0])"></div><div class="mut" id="bkst" style="min-height:18px;margin-top:6px"></div></div>
 </section>
-<dialog id="dlg"><form method="dialog" onsubmit="return saveTank(event)">
+<dialog id="dlg"><form method="dialog" novalidate onsubmit="return saveTank(event)">
 <div class="row"><b id="dlgT">Add tank</b><span class="mut" id="dlgMac"></span></div>
-<div id="m_row" style="margin:12px 0 0"><label style="margin:0">Same tank as<select id="m_from" onchange="copyFrom()"></select></label><div class="hint" id="m_hint" style="min-height:2.6em"></div></div>
-<div style="margin:12px 0"><button type="button" onclick="preset()">Fill in Titan R1225</button><div class="hint">A Titan R1225 as measured on one. Check the two heights on yours: they depend on how it was installed.</div></div>
+<svg id="viz" viewBox="0 0 400 230" role="img" aria-label="Tank drawing" style="margin-top:10px"></svg>
+<div class="hint" id="vizN" style="min-height:1.4em;margin:-2px 0 0;flex:none">&nbsp;</div>
+<div class="ftabs" role="tablist"><button type="button" data-t="det">Details</button><button type="button" data-t="mea">Measurements</button><button type="button" data-t="win">Windows</button><button type="button" data-t="rib">Ribs</button></div>
+<div class="fpg" data-t="det">
+<label style="margin:0 0 12px;display:block">Name<input id="f_name" required maxlength="24" placeholder="e.g. Back tank"></label>
+<div id="m_row"><label style="margin:0">Same tank as<select id="m_from" onchange="copyFrom()"></select></label><div class="hint" id="m_hint" style="min-height:2.6em"></div></div>
+<div style="margin:4px 0 12px"><button type="button" onclick="preset()">Fill in Titan R1225</button><div class="hint">A Titan R1225 as measured on one. Check the heights on yours (Measurements): they depend on how the outlet and monitor were fitted.</div></div>
 <div class="grid">
-<label style="grid-column:1/-1">Name<input id="f_name" required maxlength="24" placeholder="e.g. Back tank"></label>
-<label>Shape<select id="f_shape" onchange="wmShow()"><option value="cuboid">Rectangular (cuboid)</option><option value="horizontal">Horizontal cylinder</option><option value="vertical">Vertical cylinder</option><option value="other">Other (linear)</option></select></label>
-<label>Windows (holes through)<select id="f_windows"><option value="0">None</option><option value="1">1</option><option value="2">2</option></select></label>
-<label>Ground to the bottom of the monitor, cm<input id="f_top" type="number" step="0.1" min="10" required data-f="top"></label>
-<label>Ground to the top of the outlet, cm<input id="f_out" type="number" step="0.5" min="0" placeholder="0" data-f="outlet"></label>
-<div class="hint" style="grid-column:1/-1;margin-top:-4px" id="f_hh">&nbsp;</div>
-<label>Length, cm<input id="f_l" type="number" step="0.1" min="1"></label>
-<label>Width, cm<input id="f_w" type="number" step="0.1" min="1"></label>
-<label style="grid-column:1/-1">Tank capacity, litres<input id="f_c" type="number" step="1" min="1" required><div class="hint">From the spec sheet (brimful, if it gives one). After a delivery, if you're sure of the heights, adjust this until the “sensor saw” figure on the history page matches the litres on the delivery note.</div></label>
-<label style="grid-column:1/-1">Reorder below, litres<input id="f_r" type="number" step="10" min="0" placeholder="200"><div class="hint">Forecast warns before this.</div></label>
+<label style="grid-column:1/-1">Reorder below, litres<input id="f_r" type="number" step="10" min="0" max="100000" placeholder="200"><div class="hint">Forecast warns before this.</div></label>
 <label id="f_isoL" style="grid-column:1/-1;display:flex;gap:8px;align-items:flex-start"><input id="f_iso" type="checkbox" style="width:auto;margin-top:3px"><span>Isolated (valve closed)<div class="hint">Its oil still counts in what you have, and deliveries to it still show, but its readings never count as use. For a tank you're not drawing from.</div></span></label>
-<label style="grid-column:1/-1" id="wm_row">Window &amp; rib shape<select id="f_wm" onchange="wmShow()"><option value="standard">Standard (same maths as the Magnus app)</option><option value="measured">Measured</option></select></label>
-</div>
-<div id="meas" style="display:none;margin-top:10px">
-<div class="hint" style="margin-bottom:8px">Measure from the <b>ground</b>, in cm. Rough is fine: the total is always scaled to the capacity, so errors only move litres between heights. Dashed parts of the drawing are guesses until you fill them in.</div>
-<svg id="viz" viewBox="0 0 400 230" role="img" aria-label="Tank drawing"></svg>
+<label style="grid-column:1/-1">Shape<select id="f_shape" onchange="wmShow()"><option value="cuboid">Rectangular (cuboid)</option><option value="horizontal">Horizontal cylinder</option><option value="vertical">Vertical cylinder</option><option value="other">Other (linear)</option></select></label>
+<label class="cub">Windows<select id="f_windows" onchange="wmShow()"><option value="0">None</option><option value="1">1</option><option value="2">2</option></select></label>
+<label class="cub">Ribs<select id="m_nr" onchange="ribInputs()"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+</div></div>
+<div class="fpg" data-t="mea"><div class="grid">
+<label style="grid-column:1/-1">Base of the tank to the bottom of the monitor, cm<input id="f_top" type="number" step="0.1" min="10" required data-f="top"></label>
+<label style="grid-column:1/-1">Base of the tank to the top of the outlet, cm<input id="f_out" type="number" step="0.5" min="0" max="1000" placeholder="0" data-f="outlet"></label>
+<div class="hint" style="grid-column:1/-1;margin-top:-4px" id="f_hh">&nbsp;</div>
+<label class="cub">Length, cm<input id="f_l" type="number" step="0.1" min="1" max="2000"></label>
+<label class="cub">Width, cm<input id="f_w" type="number" step="0.1" min="1" max="2000"></label>
+<label style="grid-column:1/-1">Tank capacity, litres<input id="f_c" type="number" step="any" min="1" max="200000" required><div class="hint">From the spec sheet (brimful, if it gives one). After a delivery, if you're sure of the heights, adjust this until the “sensor saw” figure on the history page matches the litres on the delivery note.</div></label>
+</div></div>
+<div class="fpg" data-t="win">
+<label id="wm_row">How the windows are worked out<select id="f_wm" onchange="wmShow()"><option value="standard">Standard (same maths as the Magnus app)</option><option value="measured">From my measurements</option></select></label>
+<div class="hint" id="wm_h" style="min-height:2.6em;margin-bottom:8px"></div>
+<div class="grid" id="wmeas">
+<label>Window bottom<input id="m_wb" type="number" step="0.5" min="0" max="1000" data-f="win"></label>
+<label>Window top<input id="m_wt" type="number" step="0.5" min="0" max="1000" data-f="win"></label>
+<label>Opening width<input id="m_wo" type="number" step="0.5" min="0" max="1000" data-f="win"></label>
+<label>Narrowest width<input id="m_wi" type="number" step="0.5" min="0" max="1000" placeholder="half the opening" data-f="inner"></label>
+<label style="grid-column:1/-1">Narrowest height (in the middle)<input id="m_hi" type="number" step="0.5" min="0" max="1000" placeholder="half the opening" data-f="inner"></label>
+</div></div>
+<div class="fpg" data-t="rib">
+<div class="hint" style="margin-bottom:8px">Heights up from the base of the tank, in cm. Rough is fine: the total is always scaled to the capacity, so errors only move litres between heights.</div>
 <div class="grid">
-<label>Window bottom<input id="m_wb" type="number" step="0.5" min="0" data-f="win"></label>
-<label>Window top<input id="m_wt" type="number" step="0.5" min="0" data-f="win"></label>
-<label>Opening width<input id="m_wo" type="number" step="0.5" min="0" data-f="win"></label>
-<label>Narrowest width<input id="m_wi" type="number" step="0.5" min="0" placeholder="half the opening" data-f="inner"></label>
-<label style="grid-column:1/-1">Narrowest height (in the middle)<input id="m_hi" type="number" step="0.5" min="0" placeholder="half the opening" data-f="inner"></label>
-<label>Number of ribs<select id="m_nr"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
-<label>Rib band height<input id="m_rh" type="number" step="0.5" min="0" placeholder="12" data-f="ribs"></label>
-<label style="grid-column:1/-1">Rib sticks out by<input id="m_rd" type="number" step="0.1" min="0" placeholder="1.5" data-f="ribs"></label>
+<label>Rib band height<input id="m_rh" type="number" step="0.5" min="0" max="1000" placeholder="12" data-f="ribs"></label>
+<label>Rib sticks out by<input id="m_rd" type="number" step="0.1" min="0" max="1000" placeholder="1.5" data-f="ribs"></label>
 <div id="ribbox" class="grid" style="grid-column:1/-1"></div>
 </div></div>
 <div class="acts"><button type="button" class="del" id="dlgDel" onclick="delTank()">Remove</button><span style="flex:1"></span><button type="button" onclick="dlg.close()">Cancel</button><button class="pri">Save</button></div>
@@ -252,13 +264,13 @@ function render(){
 const MF={m_wb:'win_bottom_cm',m_wt:'win_top_cm',m_wo:'win_outer_w_cm',m_wi:'win_inner_w_cm',m_hi:'win_inner_h_cm',m_rh:'rib_h_cm',m_rd:'rib_depth_cm'};
 let curLevel=null,focusF=null;
 function ribInputs(vals){const n=+$('m_nr').value,old=vals||[...document.querySelectorAll('#ribbox input')].map(i=>i.value);
- $('ribbox').innerHTML=Array.from({length:n},(_,i)=>`<label>Rib ${i+1} centre (from bottom rib up)<input type="number" step="0.5" min="0" data-f="rib${i}" value="${esc(old[i]??'')}"></label>`).join('');draw()}
+ $('ribbox').innerHTML=Array.from({length:n},(_,i)=>`<label>Rib ${i+1} centre (from bottom rib up)<input type="number" step="0.5" min="0" max="1000" data-f="rib${i}" value="${esc(old[i]??'')}"></label>`).join('');wmShow()}
 function ribVals(){return [...document.querySelectorAll('#ribbox input')].map(i=>i.value===''?null:+i.value)}
-function draw(){const sv=$('viz');if(!sv||$('meas').style.display=='none')return;
+function draw(){const sv=$('viz');if(!sv)return;if($('f_shape').value!=='cuboid'){sv.innerHTML='<text x="200" y="118" text-anchor="middle" class="lbl">No drawing for this shape</text>';return}
  const g=k=>{const v=$(k).value;return v===''?null:+v};
  sv.innerHTML=tankSvg({L:+$('f_l').value||178,W:+$('f_w').value||75,nW:+$('f_windows').value,og:g('f_out'),top:g('f_top'),
   wb0:g('m_wb'),wt0:g('m_wt'),wo0:g('m_wo'),wi:g('m_wi'),hi:g('m_hi'),rh:g('m_rh'),rd:g('m_rd'),rv:ribVals(),level:curLevel,end:true,focus:focusF})}
-// The tank, front (and end) view, all heights in cm above the ground. Used by the tank form and the dashboard.
+// The tank, front (and end) view, all heights in cm above the base of the tank. Used by the tank form and the dashboard.
 function tankSvg(p){
  const L=p.L||178,W=p.W||75,nW=p.nW||0,og=p.og,out=og??(p.outGuess??8.5),top=Math.max(out+10,p.top??130),Hf=top-out,end=!!p.end,focusF=p.focus;
  const wb0=p.wb0,wt0=p.wt0,wo0=p.wo0;const mid=out+Hf/2;
@@ -307,13 +319,27 @@ function tankSvg(p){
  o+=`<text x="${X(L/2)}" y="${gy+11}" text-anchor="middle">front ${L} cm</text>`+(end?`<text x="${ex(W/2)}" y="${gy+11}" text-anchor="middle">end ${W} cm</text>`:'')}
  return o}
 function hfOf(){const t=$('f_top').value,o=$('f_out').value;return t===''?null:+t-(o===''?0:+o)}
-function uEst(){const hf=hfOf();$('f_hh').textContent=hf==null?'Both from the ground.':hf<10?'The monitor must be at least 10 cm above the outlet.':'Fill height '+(+hf.toFixed(1))+' cm. The oil below the outlet isn\'t counted.';}
-function wmShow(){uEst();const cub=$('f_shape').value=='cuboid';$('wm_row').style.display=cub?'':'none';$('meas').style.display=(cub&&$('f_wm').value=='measured')?'':'none';draw()}
+function uEst(){const hf=hfOf();$('f_hh').textContent=hf==null?'Both measured up from the base of the tank.':hf<10?'The monitor must be at least 10 cm above the outlet.':'Fill height '+(+hf.toFixed(1))+' cm. The oil below the outlet isn\'t counted.';}
+/* the tank form's tabs: Windows and Ribs only open when the tank has them (always shown, so nothing moves) */
+let FT='det';
+function ftab(t){const b=document.querySelector('.ftabs button[data-t="'+t+'"]');if(!b||b.disabled)t='det';FT=t;
+ document.querySelectorAll('.ftabs button').forEach(x=>x.setAttribute('aria-selected',x.dataset.t===t));document.querySelectorAll('.fpg').forEach(x=>x.hidden=x.dataset.t!==t)}
+document.querySelectorAll('.ftabs button').forEach(b=>b.onclick=()=>ftab(b.dataset.t));
+function wmMode(){const cub=$('f_shape').value=='cuboid';return !cub?'standard':+$('m_nr').value>0?'measured':+$('f_windows').value>0?$('f_wm').value:'standard'}
+function wmShow(){uEst();const cub=$('f_shape').value=='cuboid',nw=cub?+$('f_windows').value:0,nr=cub?+$('m_nr').value:0;
+ document.querySelectorAll('#dlg .cub').forEach(x=>x.style.visibility=cub?'':'hidden');
+ const tb=t=>document.querySelector('.ftabs button[data-t="'+t+'"]');tb('win').disabled=!nw;tb('rib').disabled=!nr;
+ tb('win').title=nw?'':'Set the number of windows on Details first';tb('rib').title=nr?'':'Set the number of ribs on Details first';
+ if(nr)$('f_wm').value='measured';$('f_wm').options[0].disabled=!!nr;
+ const ms=wmMode()==='measured';$('wmeas').style.visibility=ms?'':'hidden';
+ $('wm_h').textContent=nr?'Measured: the ribs need the tank measured, so the windows are too. Heights up from the base of the tank, in cm.':ms?'Heights up from the base of the tank, in cm. Rough is fine: the total is always scaled to the capacity. Dashed parts of the drawing are guesses until you fill them in.':'Standard: the window size is worked out from the capacity, as the Magnus app does. Choose “From my measurements” if the readings look off in the middle of the tank.';
+ $('vizN').textContent=cub?(ms?'Dashed parts are guesses until you fill them in. Tap a box to see where it is.':'The drawing shows the heights and size you enter.'):' ';
+ ftab(FT);draw()}
 function fill(c){$('f_name').value=c.name||'';$('f_iso').checked=!!c.isolated;$('f_isoL').style.display=S.tanks.length+(S.tanks.some(x=>x.mac===cur)?0:1)>1?'flex':'none';  /* only means something with 2+ tanks */$('f_shape').value=c.shape||'cuboid';$('f_windows').value=c.windows??0;$('f_top').value=c.height_cm!=null?Math.round((c.height_cm+(c.outlet_cm||0))*100)/100:'';$('f_out').value=c.outlet_cm??'';$('f_l').value=c.length_cm??'';$('f_w').value=c.width_cm??'';$('f_c').value=c.tank_l??c.tank_l_equiv??c.capacity_l??'';$('f_r').value=c.reserve_l??'';
  $('f_wm').value=c.window_model||'standard';for(const k in MF)$(k).value=c[MF[k]]??'';const r=c.ribs_cm||[];$('m_nr').value=r.length;ribInputs(r);wmShow()}
-function add(mac){cur=mac;curLevel=(S.found.find(f=>f.mac==mac)||{}).level??null;$('dlgT').textContent='Add tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='hidden';fill({});fromList();dlg.showModal()}
-function edit(mac){const t=S.tanks.find(x=>x.mac==mac);cur=mac;curLevel=t.level;$('dlgT').textContent='Edit tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='visible';fill(Object.assign({name:t.name},t.cfg));fromList();dlg.showModal()}
-// a Titan R1225 as measured on one (heights from the ground; capacity checked against a metered delivery)
+function add(mac){FT='det';cur=mac;curLevel=(S.found.find(f=>f.mac==mac)||{}).level??null;$('dlgT').textContent='Add tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='hidden';fill({});fromList();dlg.showModal()}
+function edit(mac){FT='det';const t=S.tanks.find(x=>x.mac==mac);cur=mac;curLevel=t.level;$('dlgT').textContent='Edit tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='visible';fill(Object.assign({name:t.name},t.cfg));fromList();dlg.showModal()}
+// a Titan R1225 as measured on one (heights from the base of the tank; capacity checked against a metered delivery)
 const R1225={shape:'cuboid',windows:2,height_cm:123,outlet_cm:9.5,length_cm:173,width_cm:69,tank_l:1306,window_model:'measured',
  win_bottom_cm:45,win_top_cm:79,win_outer_w_cm:39,win_inner_w_cm:17,win_inner_h_cm:14,ribs_cm:[31.5,62.5,93.5],rib_h_cm:12.5,rib_depth_cm:1.5};
 function preset(){fill(Object.assign({},R1225,{name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,isolated:$('f_iso').checked}))}
@@ -322,10 +348,12 @@ function linkOf(mac){const me=S.tanks.find(t=>t.mac===mac),g=me&&me.cfg.group;if
 function mHint(){const t=S.tanks.find(x=>x.mac===$('m_from').value);$('m_hint').textContent=t?'Its size, heights and capacity are shared with '+t.name+': a change here changes '+t.name+' too. Name, reorder level and isolated stay this tank\'s own.':'Got two of the same tank? Pick the other one: you then set them up once, and a change to one changes both.'}
 function fromList(){const o=S.tanks.filter(t=>t.mac!==cur);$('m_from').innerHTML='<option value="">No, its own settings</option>'+o.map(t=>`<option value="${okMac(t.mac)}">${esc(t.name)}</option>`).join('');$('m_from').value=linkOf(cur);$('m_row').style.display=o.length?'':'none';mHint()}
 function copyFrom(){mHint();const t=S.tanks.find(x=>x.mac===$('m_from').value);if(!t)return;const keep={name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,isolated:$('f_iso').checked};fill(Object.assign({},t.cfg,keep))}
-async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:Math.round((hfOf()??0)*100)/100,outlet_cm:$('f_out').value===''?null:+$('f_out').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,tank_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,window_model:$('f_wm').value,isolated:$('f_iso').checked,same_as:$('m_from').value};
- if(!(b.height_cm>=10)){alert('The monitor must be at least 10 cm above the top of the outlet.');return false}
- if(b.window_model=='measured'){for(const k in MF)b[MF[k]]=$(k).value===''?null:+$(k).value;const r=ribVals();if(r.some(v=>v==null)){alert('Fill in every rib height, or reduce the number of ribs.');return false}b.ribs_cm=r}
- if(b.shape=='cuboid'&&(!b.length_cm||!b.width_cm)){alert('A rectangular tank needs length and width.');return false}
+async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:Math.round((hfOf()??0)*100)/100,outlet_cm:$('f_out').value===''?null:+$('f_out').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,tank_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,window_model:wmMode(),isolated:$('f_iso').checked,same_as:$('m_from').value};
+ for(const el of $('dlg').querySelectorAll('input,select')){const pg=el.closest('.fpg'),tb=pg&&document.querySelector('.ftabs button[data-t="'+pg.dataset.t+'"]');if(el.closest('.cub')&&b.shape!=='cuboid'||tb&&tb.disabled)continue;  /* (a switched-off tab isn't saved) */if(!el.checkValidity()){ftab(el.closest('.fpg').dataset.t);el.reportValidity();return false}}  /* (on whichever tab it is) */
+ if(!(b.height_cm>=10&&b.height_cm<=500)){ftab('mea');alert(b.height_cm>500?'The monitor can be at most 500 cm above the top of the outlet.':'The monitor must be at least 10 cm above the top of the outlet.');return false}
+ if(b.window_model=='measured'){for(const k in MF){if(/^rib/.test(MF[k])?!+$('m_nr').value:!b.windows)continue;b[MF[k]]=$(k).value===''?null:+$(k).value}  /* (only the parts it has) */const r=ribVals();if(r.some(v=>v==null)){ftab('rib');alert('Fill in every rib height, or reduce the number of ribs.');return false}b.ribs_cm=r;
+  if(b.windows&&(b.win_bottom_cm==null||b.win_top_cm==null||b.win_outer_w_cm==null)){ftab('win');alert('Measured windows need the bottom, top and opening width.');return false}}
+ if(b.shape=='cuboid'&&(!b.length_cm||!b.width_cm)){ftab('mea');alert('A rectangular tank needs length and width.');return false}
  try{await api('/api/tank',b);dlg.close();load()}catch(x){alert(x.message)}return false}
 async function delTank(){if(!confirm('Remove this tank? The monitor will show under Sensors nearby again.'))return;try{await api('/api/tank/delete',{mac:cur});dlg.close();load()}catch(x){alert(x.message)}}
 async function openWifi(){$('w_pw').value='';wdlg.showModal();try{const l=await api('/api/wifi/scan');$('w_ssid').innerHTML=l.map(n=>`<option value="${esc(n.ssid)}">${esc(n.ssid)} (${n.rssi} dBm)</option>`).join('')||'<option value="">No networks found</option>'}catch(x){$('w_ssid').innerHTML='<option value="">Scan failed</option>'}}
