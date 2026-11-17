@@ -35,7 +35,7 @@
 # "HAWKi-Setup-XXXX" (password: oiltanks); browse to http://192.168.4.1/
 import bluetooth, binascii, json, time, network, machine, asyncio, gc, os, struct
 from hawki_decode import decode, mfr_from_adv
-from tankcalc import reading, litres, SHAPES, below, above, tank_equiv, total
+from tankcalc import reading, litres, litres_many, SHAPES, below, above, tank_equiv, total
 import histstore
 from version import VERSION
 from listen import Listener
@@ -497,7 +497,7 @@ async def recorder():
 def curve(t):
     H = float(t['height_cm']) * 10
     n = int(H // 10)
-    out = [round(litres(t, min(H, i * 10)), 1) for i in range(n + 1)]
+    out = [round(v, 1) for v in litres_many(t, [min(H, i * 10) for i in range(n + 1)])]
     if n * 10 < H:
         out.append(0.0)
     return {'step': 10, 'h': H, 'l': out}

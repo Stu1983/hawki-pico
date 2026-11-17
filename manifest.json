@@ -1,11 +1,11 @@
 {
- "version": "1.2.47",
- "ref": "v1.2.47",
- "notes": "Tanks page: Today's readings under each tank (time, distance, litres, change, missed hours, when the next is due). Dashboard: the Used today tile is gone (a few litres hide inside the sensor's 5 mm steps).",
+ "version": "1.2.48",
+ "ref": "v1.2.48",
+ "notes": "Dashboard loads faster: each tank's litres curve is worked out in ~40 ms instead of ~1 s",
  "files": {
   "app.py": [
-   "ec0d8879459b76b4997c4c6bef98605a115f1e705765a70ad6a27b409fc37354",
-   75876
+   "70c86c8a21e4d27d65aeaf63460a45cda11d1c622149895b8e3ef4e6fcd20f10",
+   75907
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -48,8 +48,8 @@
    1851
   ],
   "tankcalc.py": [
-   "5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233",
-   9040
+   "5d11fa4a7f05c00ebc30832b1a2589adb3210b8e6c1c94702310c8f17fb1a908",
+   11706
   ],
   "ui.html": [
    "1967dd5b126ab24ce653a9b19bfafad4af030eee4e0589e59b2a6a08022d3925",
@@ -60,7 +60,7 @@
    9943
   ],
   "version.py": [
-   "9bf8cbcca8e6adc77beafe5f16cdd1b7c0a099307749a9cf984b6859c14bc370",
+   "6700e7357694a940ffe88e632522267d220427521a0dba16ac617cd93be22c4c",
    19
   ],
   "weather.py": [
@@ -69,7 +69,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"ec0d8879459b76b4997c4c6bef98605a115f1e705765a70ad6a27b409fc37354\", 75876], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"7794b79f7a5343bd0ee6fef1cd4838bf33973c5e1660ccea2a2d7b92dc9a16f4\", 57496], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"1967dd5b126ab24ce653a9b19bfafad4af030eee4e0589e59b2a6a08022d3925\", 79195], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"9bf8cbcca8e6adc77beafe5f16cdd1b7c0a099307749a9cf984b6859c14bc370\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Tanks page: Today's readings under each tank (time, distance, litres, change, missed hours, when the next is due). Dashboard: the Used today tile is gone (a few litres hide inside the sensor's 5 mm steps).\", \"ref\": \"v1.2.47\", \"version\": \"1.2.47\"}",
-  "sig": "290eab0bf5290ffc3966db4b7d46644123489661a34dac151a621867111f5909168c643380ecb8973b04bb7736bea34c7b41afe61a28c351264d85e51ad5af95aab647c447bb1265cfeb7ca2f43eaab74e5bcb15529a7999245943e1c25d17f4ace3d9a75debba277bd943700bd6b7ec9381a8a40a03c401e14b8fcd33f3fd60f2aecd413f040791c0117e21bb1a3e988c403a5b746cf20da9a8e7fdcf3b1b680980c4fe8c582542a97843551e28d3819ad64e9aa561abb9411efee039e3b3b0f0f431ce2a514db6c7d0853e5da3fdec63e3f02f51f8a7f9063dc2d414b8495ba0bf2735f5cea7f37f6a6b142695ca278544a4a98c47ef7ac6280c12ac1c7068"
+  "body": "{\"files\": {\"app.py\": [\"70c86c8a21e4d27d65aeaf63460a45cda11d1c622149895b8e3ef4e6fcd20f10\", 75907], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"7794b79f7a5343bd0ee6fef1cd4838bf33973c5e1660ccea2a2d7b92dc9a16f4\", 57496], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5d11fa4a7f05c00ebc30832b1a2589adb3210b8e6c1c94702310c8f17fb1a908\", 11706], \"ui.html\": [\"1967dd5b126ab24ce653a9b19bfafad4af030eee4e0589e59b2a6a08022d3925\", 79195], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"6700e7357694a940ffe88e632522267d220427521a0dba16ac617cd93be22c4c\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Dashboard loads faster: each tank's litres curve is worked out in ~40 ms instead of ~1 s\", \"ref\": \"v1.2.48\", \"version\": \"1.2.48\"}",
+  "sig": "514890c41f8d32dcb2454d0d56339bd0db14310d1dd7b6c93109cde71710e54c2ceb988c50a88673c814a60b5442f96afcd862239cffdcc5c93485bdb6601cddc214d1d0dcde238a386b13f924bb775f6bc13ed010527ab3f75ab88a2671d58dbc0647beec98920bbc807f755ad35bdda95277a53b466a4f39a975df390ef097d921244ccbde457d2fd9f8226e670806a2088031c4f81b9f23e3d8d69b2ff2b8648af2e2aed4bad2f5a36ed75e2cefbf797747b183eae2f1f17c231ace0ec1d90d5d3c223349ab77e1d369d7beb5641544c0fa91e9c5a1de04754f39d6646d0ac5bbabb1a3171a40594014dd451ecb9a654c9496c88deea0b4c64a9d36fc1370"
  }
 }

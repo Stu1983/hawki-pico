@@ -214,6 +214,79 @@ def _litres(tank, level_mm):
     return cap * d / H  # vertical cylinder / other: linear
 
 
+def _model(tank):
+    """The tank's level -> litres function, with the settings read once (a curve calls it ~125 times)."""
+    H = float(tank['height_cm']) * 10.0
+    cap = float(tank['capacity_l'])
+    shape = tank.get('shape', 'cuboid')
+    tbl = None
+    if shape == 'cuboid' and tank.get('window_model') == 'measured':
+        tbl = _measured_table(tank, H, cap)
+    elif shape == 'cuboid':
+        A = float(tank['length_cm']) * float(tank['width_cm']) / 10000.0  # L per mm
+        win = int(tank.get('windows', 0)) > 0 and A * H > cap
+        if win:
+            z1, z2 = WIN_Z1 * H, WIN_Z2 * H
+            a = A - (A * H - cap) / (z2 - z1)  # window band L per mm
+
+    def f(level_mm):
+        if level_mm is None or level_mm == 16383:
+            return None
+        if level_mm == 16382:  # sensor's own 'nearly empty' code
+            return 0.0
+        d = H - level_mm
+        if d <= 0:
+            return 0.0
+        if d >= H:
+            return cap
+        if tbl is not None:
+            return min(cap, max(0.0, _interp(tbl, d)))
+        if shape == 'cuboid':
+            if win:
+                if d <= z1:
+                    v = A * d
+                elif d <= z2:
+                    v = A * z1 + a * (d - z1)
+                else:
+                    v = A * z1 + a * (z2 - z1) + A * (d - z2)
+                return min(cap, max(0.0, v))
+            return cap * d / H  # straight-sided: scale to the stated capacity
+        if shape == 'horizontal':  # lying cylinder, diameter = height
+            r = H / 2.0
+            h = d
+            seg = r * r * math.acos((r - h) / r) - (r - h) * math.sqrt(max(0.0, 2 * r * h - h * h))
+            return cap * seg / (math.pi * r * r)
+        return cap * d / H  # vertical cylinder / other: linear
+    return f
+
+
+def litres_many(tank, levels):
+    """litres() for a list of distances, working the model out once (same answers, ~25x quicker).
+    Odd settings that stop the model being built go the slow way, so they give exactly what litres() gives."""
+    levels = list(levels)  # (an iterator would be half used up by a failed fast try)
+    try:
+        return _many(tank, levels)
+    except Exception:
+        return [litres(tank, x) for x in levels]
+
+
+def _many(tank, levels):
+    if tank.get('tank_l') in (None, ''):
+        f = _model(tank)
+        return [f(x) for x in levels]
+    f, b = _model(whole(tank)), below(tank)
+    out = []
+    for x in levels:
+        if x is None or x == 16383:
+            out.append(None)
+        elif x == 16382:
+            out.append(0.0)
+        else:
+            v = f(x)
+            out.append(None if v is None else max(0.0, v - b))
+    return out
+
+
 def reading(tank, level_mm):
     v = litres(tank, level_mm)
     if v is None:

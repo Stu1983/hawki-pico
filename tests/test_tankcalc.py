@@ -96,6 +96,38 @@ def test_total():
     assert total({'shape': 'cuboid', 'height_cm': 90, 'capacity_l': 900, 'length_cm': 100, 'width_cm': 100}, 500) is None
 
 
+def test_litres_many_same_as_litres():
+    # the curve's quick path gives exactly what litres() gives, for every kind of tank settings
+    from tankcalc import litres_many
+    live = {"outlet_cm": 9.5, "window_model": "measured", "length_cm": 173.0, "ribs_cm": [31.5, 62.5, 93.5],
+            "win_top_cm": 79.0, "win_bottom_cm": 45.0, "tank_l": 1306.0, "height_cm": 123.0, "rib_h_cm": 12.5,
+            "capacity_l": 1207.3, "windows": 2, "rib_depth_cm": 1.5, "win_outer_w_cm": 39.0,
+            "win_inner_w_cm": 17.0, "win_inner_h_cm": 14.0, "shape": "cuboid", "width_cm": 69.0}
+    tanks = [R1225, dict(R1225, windows=0), dict(R1225, tank_l=1400, outlet_cm=8.5), live,
+             dict(live, tank_l=None), dict(live, tank_l=''), dict(live, outlet_cm=0),
+             {'shape': 'horizontal', 'height_cm': 100, 'capacity_l': 1000},
+             {'shape': 'horizontal', 'height_cm': 100, 'capacity_l': 1000, 'tank_l': 1100, 'outlet_cm': 5},
+             {'shape': 'vertical', 'height_cm': 150, 'capacity_l': 900}]
+    B = dict(height_cm=100, capacity_l=1000, length_cm=100, width_cm=100)
+    odd = [{}, dict(B, height_cm='bad'), dict(height_cm=100, capacity_l=1000), dict(B, width_cm='bad'),
+           dict(B, windows='bad'), dict(B, window_model='measured', windows='bad'),
+           dict(B, height_cm=0, window_model='measured'), dict(B, height_cm=0, capacity_l=-1, windows=2),
+           dict(B, height_cm=-1, window_model='measured'), dict(B, tank_l='bad'), {'height_cm': -1}]
+    levels = [None, 16383, 16382, -5, 0] + list(range(1, 1600, 7)) + [1230, 1300]
+
+    for t in tanks + odd:
+        for lv in [levels] + [[x] for x in (None, 16383, 16382, 0, 500, 1000)] + [[]]:
+            try:
+                want = [litres(t, x) for x in lv]
+            except Exception as ex:
+                want = type(ex)  # the old way's first error
+            try:
+                got = litres_many(t, iter(lv))
+            except Exception as ex:
+                got = type(ex)
+            assert got == want, (t, lv, got, want)
+
+
 if __name__ == '__main__':
-    test_matches_magnus_app(); test_bounds_and_codes(); test_other_shapes(); test_measured_model(); test_whole_tank_capacity(); test_total()
+    test_matches_magnus_app(); test_bounds_and_codes(); test_other_shapes(); test_measured_model(); test_whole_tank_capacity(); test_total(); test_litres_many_same_as_litres()
     print('all ok')
