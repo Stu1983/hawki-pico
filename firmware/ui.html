@@ -431,7 +431,7 @@ async function importBackup(f){$('impf').value='';if(!f)return;let o;
   for(const m of macs)if(recs[m]&&recs[m].length){bst('Importing readings for '+(o.tanks[m].name||m)+'…');const b=new DataView(new ArrayBuffer(recs[m].length*6));
    recs[m].forEach(([ts,mm],i)=>{b.setUint32(i*6,ts,true);b.setUint16(i*6+4,mm,true)});
    r=await authFetch('/api/hist?mac='+m,{method:'POST',body:b.buffer});if(!r.ok)throw new Error(await r.json().catch(()=>r.status))}
-  bst('Imported '+macs.length+' tank(s), '+nD+' deliveries and '+nR+' readings.');AN=null;load()}catch(e){bst('Import failed: '+e.message)}}
+  bst('Imported '+macs.length+' tank(s), '+nD+' deliveries and '+nR+' readings.');anReset();load()}catch(e){bst('Import failed: '+e.message)}}
 
 // ---------- tabs ----------
 function tab(p){if(!['dash','tanks','cfg'].includes(p))p='dash';
@@ -521,24 +521,34 @@ function prSuggest(){const box=$('prs');box.textContent='';const pc=PRNEAR&&PRNE
 async function prSave(){const q=$('prq');try{await api('/api/price',{pc:q.value});delete q.dataset.typed;q.blur();await load()}catch(x){alert(x.message)}}
 async function prOff(){if(!confirm('Stop fetching oil prices? The prices saved so far are kept.'))return;try{await api('/api/price',{off:true});await load()}catch(x){alert(x.message)}}
 async function wxClear(){if(!confirm('Remove the location and its saved temperatures?'))return;try{await api('/api/location',{clear:true});await load()}catch(x){alert(x.message)}}
-async function setPrimary(mac){try{await api('/api/primary',{mac});AN=null;await load();history.replaceState(null,'','#dash');tab('dash')}catch(x){alert(x.message)}}
+async function setPrimary(mac){try{await api('/api/primary',{mac});anReset();await load();history.replaceState(null,'','#dash');tab('dash')}catch(x){alert(x.message)}}
 
 // ---------- dashboard ----------
 let AN=null;  // {mac,t,A,P,cv}: analysis of the primary tank, refreshed every 10 minutes
 const fmtD=t=>new Date(t*1000).toLocaleDateString(undefined,{day:'numeric',month:'short'});
 const L0=v=>Math.round(v).toLocaleString()+' L';
 let DKEY='';
+/* the history download: one at a time (a slow one isn't started again by every 10 s refresh); one that failed is tried again after a minute, and the readings already shown stay meanwhile. ANK: the view (tank + settings) the newest render is for: an older render stops at its next await. ANW: the download asked for last, by number (an older answer arriving later is dropped, even for the same tank) */
+let ANP=null,ANF=null,ANK='',ANW=0,ANN=0;
+async function anLoad(mac,ck,get){const k=mac+'|'+ck;if(AN&&(AN.mac!==mac||AN.ck!==ck))AN=null;
+ if(ANF&&ANF.k===k&&Date.now()/1000-ANF.at<60)return;
+ if(ANP&&ANP.k===k){ANW=ANP.id;return ANP.p}
+ const id=ANW=++ANN;ANP={k,id,p:get().then(a=>{if(ANW===id){AN=a;ANF=null}},e=>{if(ANW===id)ANF={k,at:Date.now()/1000}}).finally(()=>{if(ANP&&ANP.id===id)ANP=null})};
+ return ANP.p}
+function anReset(){AN=ANF=ANP=null;ANW=0}  /* the history changed (backup imported, another tank): forget it all, including a download still on its way */
+const anFailed=(mac,ck)=>!AN&&!!ANF&&ANF.k===mac+'|'+ck;
 async function dash(){if(!S.update)return;await dlvLoad();if(S.primary==='all'&&S.tanks.length>1)return dashAll();const t=S.tanks.find(x=>x.mac===S.primary);
  $('d_name').textContent=t?t.name:'No tanks yet';
  $('d_hist').style.visibility=t?'visible':'hidden';if(t)$('d_hist').href='/history?mac='+okMac(t.mac);
  if(!t){['d_l','d_r','d_w','d_c'].forEach(i=>$(i).textContent='–');$('d_c2').textContent=$('d_c3').textContent=' ';$('d_l2').textContent='Add a tank under Config → Sensors nearby.';$('d_r2').textContent=$('d_r3').textContent=$('d_w2').textContent=' ';DKEY='';drawTank(null);drawRate(null);drawLvl(null);return}
- const ck=JSON.stringify(t.cfg),fresh=AN&&AN.mac===t.mac&&AN.ck===ck&&Date.now()/1000-AN.t<600;
- if(!fresh){try{const[buf,cv]=await Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())]);
-   AN={mac:t.mac,ck,t:Date.now()/1000,cv,base:parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)])}}catch(e){AN=null}}
+ const ck=JSON.stringify(t.cfg),fresh=AN&&AN.mac===t.mac&&AN.ck===ck&&Date.now()/1000-AN.t<600,vk=t.mac+'|'+ck;ANK=vk;if(fresh)ANW=0;
+ if(!fresh)await anLoad(t.mac,ck,()=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])
+   .then(([buf,cv])=>({mac:t.mac,ck,t:Date.now()/1000,cv,base:parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)])})));
+ if(ANK!==vk)return;const HF=anFailed(t.mac,ck);  /* (another tank or setting asked for meanwhile: its render draws) */
  const now=Date.now()/1000;let P=AN?AN.base.slice():[];
  if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383&&AN)P.push([now-t.age,toL(t.level,AN.cv)]);
  if(t.cfg.isolated)P=holdIsolated(P,t.cfg.isolated);  /* valve closed: its readings never count as use */
- const WV=await wxLoad(S),reserve=t.cfg.reserve_l??200,A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
+ const WV=await wxLoad(S);if(ANK!==vk)return;const reserve=t.cfg.reserve_l??200,A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
  // oil left (+ unusable)
  $('d_l').textContent=t.litres==null?'–':L0(t.litres);
  const u=t.unusable;$('d_l2').textContent=(t.percent!=null?t.percent+'% · ':'')+(u?'(+ '+(u[1]==='estimate'?'about ':'')+L0(u[0])+' unusable below the outlet)':'(unusable amount not set: Tanks → Edit)');
@@ -547,7 +557,7 @@ async function dash(){if(!S.update)return;await dlvLoad();if(S.primary==='all'&&
  // shortest first: the 3-day average big (once there are 3 days), then 7-day and 14-day; the forecast uses the 14-day
  const av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;
  $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
- $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average':(P.length?'needs 2 days of readings':'no readings yet');
+ $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average':(P.length?'needs 2 days of readings':HF?'could not load the readings':'no readings yet');
  $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';
  todayCost(A,ok,t?t.mac:null);
  const wt=$('d_wt');wt.className='card tile';
@@ -559,7 +569,7 @@ async function dash(){if(!S.update)return;await dlvLoad();if(S.primary==='all'&&
  drawTank(t);
  const key=t.mac+'|'+ck+'|'+(AN&&AN.t)+'|'+(WV&&WV.heat?WXC.key+WXC.at:'-')+'|'+t.level+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;  // redraw only when something changed (keeps a hover open)
  if(!ok)A.fc=null;  /* no forecast line until the tiles have one too */
- drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap:+t.cfg.capacity_l}:null)}
+ drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap:+t.cfg.capacity_l}:null,HF&&LOADFAIL)}
 
 /* deliveries, for the price (refreshed with the readings, every 10 minutes) */
 let DLV=null;async function dlvLoad(){if(DLV&&Date.now()-DLV.at<6e5)return DLV.d;try{const d=await (await fetch('/api/deliveries')).json();DLV={at:Date.now(),d};return d}catch(e){return DLV?DLV.d:{}}}
@@ -577,17 +587,18 @@ function todayCost(A,ok,mac){
  $('d_c2').textContent=(av(3)!=null?'3-day':(+A.recentDays.toFixed(1))+'-day')+' · '+pr.src;
  $('d_c3').textContent='7d '+(av(7)!=null?c(av(7)):'–')+' · '+(+A.recentDays.toFixed(1))+'d '+c(A.recent)}
 async function dashAll(){const ts=S.tanks;$('d_name').textContent=ts.length>2?'All tanks':'Both tanks';$('d_hist').style.visibility='visible';$('d_hist').href='/history?mac=all';
- const ck=JSON.stringify(ts.map(t=>[t.mac,t.cfg])),fresh=AN&&AN.mac==='all'&&AN.ck===ck&&Date.now()/1000-AN.t<600;
- if(!fresh){try{const got=await Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])));
-   AN={mac:'all',ck,t:Date.now()/1000,cvs:got.map(g=>g[1]),bases:got.map(([buf,cv])=>parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)]))}}catch(e){AN=null}}
+ const ck=JSON.stringify(ts.map(t=>[t.mac,t.cfg])),fresh=AN&&AN.mac==='all'&&AN.ck===ck&&Date.now()/1000-AN.t<600,vk='all|'+ck;ANK=vk;if(fresh)ANW=0;
+ if(!fresh)await anLoad('all',ck,()=>Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])))
+   .then(got=>({mac:'all',ck,t:Date.now()/1000,cvs:got.map(g=>g[1]),bases:got.map(([buf,cv])=>parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)]))})));
+ if(ANK!==vk)return;const HF=anFailed('all',ck);
  const now=Date.now()/1000,series=AN?AN.bases.map((b,k)=>{const s=b.slice(),t=ts[k];if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383)s.push([now-t.age,toL(t.level,AN.cvs[k])]);return s}):[];
- const P=AN?combine(series,ts.map(t=>t.cfg.isolated)):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S),A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
+ const P=AN?combine(series,ts.map(t=>t.cfg.isolated)):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S);if(ANK!==vk)return;const A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
  const sum=f=>ts.reduce((a,t)=>a+(f(t)||0),0),lit=sum(t=>t.litres),cap=sum(t=>+t.cfg.capacity_l),un=sum(t=>t.unusable&&t.unusable[0]),known=ts.every(t=>t.litres!=null);
  $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))+(t.cfg.isolated?' (isolated)':'')).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
  $('d_bar').style.width=(known&&cap?Math.max(0,Math.min(100,lit/cap*100)):0)+'%';
  const ok=A.recent!=null&&A.span>=2,av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;
  $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
- $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average, both tanks':(P.length?'needs 2 days of readings':'no readings yet');
+ $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average, both tanks':(P.length?'needs 2 days of readings':HF?'could not load the readings':'no readings yet');
  $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';
  todayCost(A,ok,null);
  const wt=$('d_wt');wt.className='card tile';
@@ -599,7 +610,7 @@ async function dashAll(){const ts=S.tanks;$('d_name').textContent=ts.length>2?'A
  drawTanks(ts);
  const key='all|'+ck+'|'+(AN&&AN.t)+'|'+(WV&&WV.heat?WXC.key+WXC.at:'-')+'|'+ts.map(t=>t.level).join(',')+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;
  if(!ok)A.fc=null;
- drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap}:null)}
+ drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap}:null,HF&&LOADFAIL)}
 
 // tiny SVG chart kit: one y-axis, recessive grid, hover tooltip
 const NS='http://www.w3.org/2000/svg',CH=190,ML=44,MR=10,MT=10,MB=24;
@@ -664,7 +675,8 @@ function drawRate(A,now){const svg=$('c_rate');if(!A){noData(svg,'Daily use show
  hover(svg,ds.map(([t,v],i)=>[f.X(t)+bw/2,[new Date(t*1000).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}),v.toFixed(1)+' L that day','7-day average '+avg[i][1].toFixed(1)+' L/day']]),
   (g,b)=>{const i=ds.findIndex(([t])=>Math.abs(f.X(t)+bw/2-b[0])<.01);if(i>=0)el('circle',{class:'dot',cx:b[0],cy:f.Y(avg[i][1]),r:4,fill:'var(--acc)'},g)})}
 
-function drawLvl(o){const svg=$('c_lvl');if(!o){noData(svg,'No readings yet');return}
+const LOADFAIL='Could not load the readings: trying again in a minute';
+function drawLvl(o,msg){const svg=$('c_lvl');if(!o){noData(svg,msg||'No readings yet');return}
  const{A,P,reserve,now,cap}=o,t0=now-30*DAY,t1=now+30*DAY,pts=P.filter(p=>p[0]>=t0);
  const fc=A.fc?A.fc.path.filter(p=>p[0]<=t1):[];
  const f=frame(svg,t0,t1,Math.max(reserve,...pts.map(p=>p[1]),...fc.map(p=>p[1]),1)*1.05,'L');
