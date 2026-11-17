@@ -113,22 +113,40 @@ def with_room(fn, *a):
     make_room()
     return fn(*a)
 boot = time.time()
-boot_ms = time.ticks_ms()
+# Seconds since boot that never wrap. ticks_ms wraps every 12.4 days and ticks_diff of two values more than
+# 6.2 days apart comes out negative, so no elapsed time may keep a ticks value for long: this adds up the short
+# steps between calls instead (the Wi-Fi keeper and the scan scheduler call it every few seconds). Whole seconds
+# stay a small int for 34 years (milliseconds would need a long int, so memory, after 12 days).
+_mono = [0, 0, time.ticks_ms()]  # whole seconds, leftover ms, ticks at the last call
+
+
+def mono_s():
+    t = time.ticks_ms()
+    ms = _mono[1] + time.ticks_diff(t, _mono[2])
+    _mono[2] = t
+    if ms > 0:  # (never backwards, even after a stall long enough to wrap)
+        _mono[0] += ms // 1000
+        _mono[1] = ms % 1000
+    return _mono[0]
+
+
+def boot_grace_over():
+    return mono_s() > 60
 
 # A fetch over HTTPS (weather, prices) holds up everything else for 1-3 s while it runs, so a page opened
 # then sat waiting (10+ s after a restart, with several in a row). Background fetches wait until nobody has
 # opened a page for a minute (polls of /api/state don't count: a late refresh isn't noticed).
 LOADS = ('/', '/index.html', '/history', '/common.js', '/api/hist', '/api/curve', '/api/deliveries', '/api/weather', '/api/prices')
-page_ms = [None]  # ticks_ms of the last page / chart data served
+page_s = [None]  # mono_s() of the last page / chart data served
 
 
 async def web_quiet(most=600):
     # wait (at most `most` seconds) until no page has loaded for 60 s
     t0 = time.ticks_ms()
-    while page_ms[0] is not None and time.ticks_diff(time.ticks_ms(), t0) < most * 1000:
-        age = time.ticks_diff(time.ticks_ms(), page_ms[0])
-        if not 0 <= age < 60000:  # quiet (forget it: the tick counter wraps after ~12 days)
-            page_ms[0] = None
+    while page_s[0] is not None and time.ticks_diff(time.ticks_ms(), t0) < most * 1000:
+        age = mono_s() - page_s[0]
+        if not 0 <= age < 60:  # quiet
+            page_s[0] = None
             break
         await asyncio.sleep(2)
 
@@ -262,6 +280,7 @@ async def scan_scheduler():
     discover(180)
     while True:
         try:
+            mono_s()  # (keeps the never-wrapping clock counting even when nothing else asks it)
             tanks = list(cfg['tanks'])
             if discover_until[0] is not None and time.ticks_diff(discover_until[0], time.ticks_ms()) <= 0:
                 discover_until[0] = None  # expired: clear it, so the tick counter wrapping can't revive it
@@ -299,7 +318,7 @@ ap = network.WLAN(network.AP_IF)
 # Applied with wlan.ifconfig((..)) before joining: tested on the Pico 2 W to survive Wi-Fi drops and rejoins.
 # (wifi_keeper is the ONLY thing that calls wlan.connect: a second connect on top of it knocked the Pico offline.)
 net_trial = [netcfg.take_try()]   # settings on trial this boot (with their key 'k'), else None
-net_ok_ms = [None]                # ticks_ms of the last proof the network works: a request served over Wi-Fi (not
+net_ok_s = [None]                 # mono_s() of the last proof the network works: a request served over Wi-Fi (not
                                   # the setup network), the clock set from the internet, or the router answering
 net_kept = [None]                 # key of the trial kept on this boot (so asking twice still says yes)
 net_gen = [0]                     # counts address changes asked for: one that was overtaken while it waited gives way
@@ -365,16 +384,16 @@ async def answers(ip, port, secs=2):
 
 
 def net_proof():
-    net_ok_ms[0] = time.ticks_ms()
+    net_ok_s[0] = mono_s()
 
 
-NET_QUIET_MS = 15 * 60000
-net_asked = [boot_ms]  # when the router was last asked (MicroPython functions can't carry attributes)
+NET_QUIET_S = 15 * 60
+net_asked = [0]  # mono_s() when the router was last asked (MicroPython functions can't carry attributes)
 
 
-def net_quiet_ms():
+def net_quiet_s():
     # how long since anything showed the network works (from boot, if nothing has yet)
-    return time.ticks_diff(time.ticks_ms(), net_ok_ms[0] if net_ok_ms[0] is not None else boot_ms)
+    return mono_s() - (net_ok_s[0] if net_ok_s[0] is not None else 0)
 
 
 async def net_check():
@@ -383,13 +402,13 @@ async def net_check():
     # can be put right from a phone. Returns True while cut off. Asks the router at most every 5 minutes.
     if not cfg.get('net') or net_trial[0]:
         return False
-    if net_quiet_ms() > 5 * 60000 and time.ticks_diff(time.ticks_ms(), net_asked[0]) > 5 * 60000:
-        net_asked[0] = time.ticks_ms()
+    if net_quiet_s() > 5 * 60 and mono_s() - net_asked[0] > 5 * 60:
+        net_asked[0] = mono_s()
         for port in (53, 80, 443):
             if await answers(cfg['net']['gw'], port):
                 net_proof()
                 break
-    return net_quiet_ms() > NET_QUIET_MS
+    return net_quiet_s() > NET_QUIET_S
 
 
 
@@ -431,6 +450,7 @@ async def wifi_keeper():
     wlan.config(pm=0xa11140)  # power-save off: steadier for BLE coexistence + HTTP
     net_apply()
     while True:
+        mono_s()  # (no allocation: can't raise; item 5 guards the rest of this loop)
         if cfg.get('ssid') and not wlan.isconnected():
             try:
                 net_apply()
@@ -454,7 +474,7 @@ async def wifi_keeper():
                 await ntp_sync()  # clock still unset; retry
         else:
             led.value(0)
-            if not cfg.get('ssid') or time.ticks_diff(time.ticks_ms(), boot_ms) > 60000:
+            if not cfg.get('ssid') or boot_grace_over():
                 ap_on()
         await asyncio.sleep(10)
 
@@ -1244,7 +1264,7 @@ async def handle(r, w):
         if peer and not on_ap(peer):
             net_proof()
         if path in LOADS:
-            page_ms[0] = time.ticks_ms()
+            page_s[0] = mono_s()
         maint = bool(cfg.get('maint')) and q.get('t') == TOKEN
         if method == 'PUT' and path == '/file' and maint:
             # stream uploads straight to flash: big files don't fit in one read
@@ -1558,7 +1578,7 @@ async def handle(r, w):
             f, a = q.get('name', '').lower(), q.get('addr', '').lower()
             out = {k: v for k, v in seen.items()
                    if (not f or f in v['name'].lower()) and (not a or k.startswith(a))}
-            return await send(w, 200, json.dumps({'uptime': time.ticks_diff(time.ticks_ms(), boot_ms) // 1000, 'now': time.time(),
+            return await send(w, 200, json.dumps({'uptime': mono_s(), 'now': time.time(),
                                                   'count': len(seen), 'mem': gc.mem_free(), 'devices': out}))
         if maint:
             if path == '/reset':
