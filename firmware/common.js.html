@@ -141,7 +141,7 @@ function analyse(pts,o){
  const rate=t=>{const v=k!=null?own(t):null;return v!=null?v*k:model(t)};
  out.rate=rate;
  // simulate forward from the current level
- const cur=med(L.slice(-4));out.cur=cur;  // actual level now (sm is the delivery-adjusted level)
+ const lf=out.fills.length?out.fills[out.fills.length-1].t:-Infinity,tail=pts.slice(-4).filter(p=>p[0]>=lf).map(p=>p[1]),cur=!tail.length?med(L.slice(-4)):tail.length<3?tail[tail.length-1]:med(tail.slice(-3));out.cur=cur;  // actual level now: the last few readings, none from before the last delivery; with under 3 since it, the newest (one read while the tanker was still pumping would drag a median down) (sm is the delivery-adjusted level)
  const sim=f=>{let l=cur,t=tEnd,ord=null,dry=null;const path=[[t,l]];
   for(let d=0;d<730&&(dry==null);d++){const r=rate(t)*f;l-=r;t+=DAY;path.push([t,Math.max(0,l)]);
    if(ord==null&&l<=reserve)ord=t;if(l<=0)dry=t}

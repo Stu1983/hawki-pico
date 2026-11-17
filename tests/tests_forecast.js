@@ -88,4 +88,13 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  const h2=ctx.holdIsolated(p.concat([[now+H,572.3],[now+2*H,571.8]]),cut);ok(Math.abs(h2[h2.length-1][1]-(572+572.3+571.8)/3)<0.01,'readings from the isolation time on are held: '+h2[h2.length-1][1].toFixed(2));
  const all=ctx.holdIsolated(p,true);ok(all[all.length-1][1]>580,'true (older settings) still holds every reading');
  const C=ctx.analyse(ctx.combine([p],[cut]),{now});ok(C.recent>1.5,'use before the isolation time still counts: '+(C.recent||0).toFixed(2)+' L/day')}
+// 13. right after a delivery the forecast starts from the new level, not the old one (median of the last 4 readings
+//     straddled the delivery for the first 2 readings: 'Order now' straight after a fill)
+{const now=T(2026,10,16),p=[];let L=200;for(let t=now-20*DAY;t<now-2*H;t+=H){L-=8/24;p.push([t,L])}const low=L;
+ for(const k of [1,2,3]){const q=p.slice();for(let j=k;j>=1;j--)q.push([now-(j-1)*H,low+900-(k-j)*8/24]);
+  const A=ctx.analyse(q,{now,reserve:200});
+  ok(A.fills.length===1&&Math.abs(A.cur-(low+900))<5&&A.fc&&A.fc.ord>now+30*DAY,k+' reading(s) after a +900 L delivery: starts from '+Math.round(A.cur)+' L (real '+Math.round(low+900)+'), order '+(A.fc&&A.fc.ord?Math.round((A.fc.ord-now)/DAY)+' days away':'-'))}}
+{const now=T(2026,10,16),p=[];let L=200;for(let t=now-20*DAY;t<now-2*H;t+=H){L-=8/24;p.push([t,L])}const low=L;
+ p.push([now-H,low+400],[now,low+900]);const A=ctx.analyse(p,{now,reserve:200});  /* read once while the tanker was still pumping */
+ ok(Math.abs(A.cur-(low+900))<5,'a delivery read part-way: starts from the full level '+Math.round(A.cur)+' L (real '+Math.round(low+900)+')')}
 process.exit(fails?1:0);
