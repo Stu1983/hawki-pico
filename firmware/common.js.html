@@ -112,6 +112,7 @@ function analyse(pts,o){
  {const f14=fullDays(14);if(f14!=null){out.recent=f14;out.recentDays=14}}  /* 14 full days: their average (else the line, over what there is) */
  // shorter averages for the Using tile (same smoothed level, so 5 mm steps don't swing them)
  out.avgs={};for(const d of[3,7])out.avgs[d]=fullDays(d);
+ {const m0=midnight(tnow),v=tEnd>=m0?at(m0):null;out.today=v!=null?Math.max(0,v-a1):null;out.todaySince=m0}  /* used since midnight */
  if(out.recent==null)return out;
  const recentDays=[];for(let t=tStart;t<tEnd;t+=DAY)recentDays.push(t);
  const avgOver=f=>mean(recentDays.map(f));

@@ -48,6 +48,8 @@ dialog::backdrop{background:#0008}
  <div class="card tile"><div class="tl">Usable oil left</div><div class="big" id="d_l">–</div><div class="mut" id="d_l2">&nbsp;</div><div class="bar"><i id="d_bar" style="width:0"></i></div></div>
  <div class="card tile"><div class="tl">Using</div><div class="big" id="d_r">–</div><div class="mut" id="d_r2">&nbsp;</div><div class="mut" id="d_r3">&nbsp;</div></div>
  <div class="card tile" id="d_wt"><div class="tl">Weeks left</div><div class="big" id="d_w">–</div><div class="mut" id="d_w2">&nbsp;</div></div>
+ <div class="card tile"><div class="tl">Used today</div><div class="big" id="d_t">–</div><div class="mut" id="d_t2">&nbsp;</div></div>
+ <div class="card tile"><div class="tl">Costing</div><div class="big" id="d_c">–</div><div class="mut" id="d_c2">&nbsp;</div><div class="mut" id="d_c3">&nbsp;</div></div>
 </div>
 <div class="card"><div class="row"><b>In the tank now</b><span class="mut" id="d_tank2" style="white-space:nowrap">&nbsp;</span></div><svg id="d_tank" viewBox="0 0 400 230" role="img" aria-label="Front view of the tank with the oil level the sensor reads"></svg><div id="d_dots" class="dots" hidden></div></div>
 <div class="card"><div class="row"><b>Litres a day</b><span class="mut">last 30 days</span></div><svg id="c_rate" class="ch" viewBox="0 0 640 190" role="img" aria-label="Litres used each day over the last 30 days"></svg>
@@ -421,10 +423,10 @@ let AN=null;  // {mac,t,A,P,cv}: analysis of the primary tank, refreshed every 1
 const fmtD=t=>new Date(t*1000).toLocaleDateString(undefined,{day:'numeric',month:'short'});
 const L0=v=>Math.round(v).toLocaleString()+' L';
 let DKEY='';
-async function dash(){if(!S.update)return;if(S.primary==='all'&&S.tanks.length>1)return dashAll();const t=S.tanks.find(x=>x.mac===S.primary);
+async function dash(){if(!S.update)return;await dlvLoad();if(S.primary==='all'&&S.tanks.length>1)return dashAll();const t=S.tanks.find(x=>x.mac===S.primary);
  $('d_name').textContent=t?t.name:'No tanks yet';
  $('d_hist').style.visibility=t?'visible':'hidden';if(t)$('d_hist').href='/history?mac='+okMac(t.mac);
- if(!t){['d_l','d_r','d_w'].forEach(i=>$(i).textContent='–');$('d_l2').textContent='Add a tank under Config → Sensors nearby.';$('d_r2').textContent=$('d_r3').textContent=$('d_w2').textContent=' ';DKEY='';drawTank(null);drawRate(null);drawLvl(null);return}
+ if(!t){['d_l','d_r','d_w','d_t','d_c'].forEach(i=>$(i).textContent='–');$('d_t2').textContent=$('d_c2').textContent=$('d_c3').textContent=' ';$('d_l2').textContent='Add a tank under Config → Sensors nearby.';$('d_r2').textContent=$('d_r3').textContent=$('d_w2').textContent=' ';DKEY='';drawTank(null);drawRate(null);drawLvl(null);return}
  const ck=JSON.stringify(t.cfg),fresh=AN&&AN.mac===t.mac&&AN.ck===ck&&Date.now()/1000-AN.t<600;
  if(!fresh){try{const[buf,cv]=await Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())]);
    AN={mac:t.mac,ck,t:Date.now()/1000,cv,base:parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)])}}catch(e){AN=null}}
@@ -442,6 +444,7 @@ async function dash(){if(!S.update)return;if(S.primary==='all'&&S.tanks.length>1
  $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
  $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average':(P.length?'needs 2 days of readings':'no readings yet');
  $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';
+ todayCost(A,ok,t?t.mac:null);
  const wt=$('d_wt');wt.className='card tile';
  if(ok){const c=A.fc,wk=x=>(x-now)/(7*DAY);
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
@@ -453,6 +456,23 @@ async function dash(){if(!S.update)return;if(S.primary==='all'&&S.tanks.length>1
  if(!ok)A.fc=null;  /* no forecast line until the tiles have one too */
  drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap:+t.cfg.capacity_l}:null)}
 
+/* deliveries, for the price (refreshed with the readings, every 10 minutes) */
+let DLV=null;async function dlvLoad(){if(DLV&&Date.now()-DLV.at<6e5)return DLV.d;try{const d=await (await fetch('/api/deliveries')).json();DLV={at:Date.now(),d};return d}catch(e){return DLV?DLV.d:{}}}
+/* pence a litre for the oil in the tank: the newest receipt with a price (see below), else today's quote */
+function oilPrice(mac){const D=DLV?DLV.d:{},pp=r=>r.litres===0?null:r.ppl!=null?r.ppl:r.total!=null&&r.litres>0?r.total/r.litres*100:null;
+ const newest=l=>l.filter(r=>pp(r)!=null).sort((a,b)=>b.t-a.t)[0];
+ /* this tank's own receipts; for all tanks together, those of the tanks in use (not isolated); then any current tank's */
+ const use=S.tanks.filter(t=>mac?t.mac===mac:!t.cfg.isolated).flatMap(t=>D[t.mac]||[]),cur=S.tanks.flatMap(t=>D[t.mac]||[]);const r=newest(use)||newest(cur);
+ if(r)return{p:pp(r),src:'at '+Math.round(pp(r))+'p/L paid'};
+ const q=S.price&&S.price.now;return q&&q[2]!=null?{p:q[2],src:'at '+Math.round(q[2])+'p/L quoted'}:null}
+function todayCost(A,ok,mac){
+ const td=A&&A.today;$('d_t').textContent=td==null?'–':td.toFixed(1)+' L';
+ const pr=oilPrice(mac);$('d_t2').textContent=td==null?(A&&A.n?'no reading yet today':' '):'since midnight'+(pr?' · £'+(td*pr.p/100).toFixed(2):'');
+ const av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d]:null,c=v=>'£'+(v*pr.p/100).toFixed(2);
+ if(!pr||!ok){$('d_c').textContent='–';$('d_c2').textContent=!pr?'add a price to a delivery':'needs 2 days of readings';$('d_c3').textContent=' ';return}
+ const a3=av(3)!=null?av(3):A.recent;$('d_c').textContent=c(a3)+'/day';
+ $('d_c2').textContent=(av(3)!=null?'3-day':(+A.recentDays.toFixed(1))+'-day')+' · '+pr.src;
+ $('d_c3').textContent='7d '+(av(7)!=null?c(av(7)):'–')+' · '+(+A.recentDays.toFixed(1))+'d '+c(A.recent)}
 async function dashAll(){const ts=S.tanks;$('d_name').textContent=ts.length>2?'All tanks':'Both tanks';$('d_hist').style.visibility='visible';$('d_hist').href='/history?mac=all';
  const ck=JSON.stringify(ts.map(t=>[t.mac,t.cfg])),fresh=AN&&AN.mac==='all'&&AN.ck===ck&&Date.now()/1000-AN.t<600;
  if(!fresh){try{const got=await Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])));
@@ -466,6 +486,7 @@ async function dashAll(){const ts=S.tanks;$('d_name').textContent=ts.length>2?'A
  $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
  $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average, both tanks':(P.length?'needs 2 days of readings':'no readings yet');
  $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';
+ todayCost(A,ok,null);
  const wt=$('d_wt');wt.className='card tile';
  if(ok){const c=A.fc,wk=x=>(x-now)/(7*DAY);
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
