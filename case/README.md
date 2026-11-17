@@ -8,6 +8,8 @@ A wall- or beam-mounted case for the Pico 2 W, with or without headers. ![previe
 | `hawki_lid_2colour.3mf` | Lid, already **face down**, with "Oil Monitor", the oil drop and "HAWKi" as a second object: give it the second filament (H2D: assign the other nozzle). The text is inlaid flush, 0.6 mm deep. |
 | `hawki_lid.stl` + `hawki_lid_text.stl` | The same lid as two STLs, the right way up (flip them face down in the slicer). |
 
+**Printed and fitted (17 Nov 2026):** `OilMonitorPico_final.3mf` is the Bambu Studio project that was actually printed: base and lid on one plate with the print settings saved (H2D, 0.16 mm). Open it to reprint as-is.
+
 **Settings:** PETG, 0.2 mm layers, 3 walls, 20% infill. Use the default inner-then-outer wall order. Outside: 57.5 × 26.2 × 18.5 mm, 48 mm wide across the screw ears, plus the 32 mm strain-relief tab at the USB end. Use about 4 mm countersunk wood screws.
 
 **Fitting:**
