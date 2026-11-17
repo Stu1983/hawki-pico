@@ -88,6 +88,12 @@ dialog::backdrop{background:#0008}
 <div class="acts" style="justify-content:flex-start"><button class="pri" onclick="saveNotify()">Save</button><button onclick="testNotify()">Send a test</button></div>
 <div class="mut" id="n_st" style="min-height:18px;margin-top:6px"></div></div>
 
+<h2>Weather</h2>
+<div class="card"><div class="row"><div><div id="wx1">…</div><div class="mut" id="wx2">&nbsp;</div></div><button id="wxRm" onclick="wxClear()" style="visibility:hidden">Remove</button></div>
+<div class="mut" style="margin:10px 0 6px">Daily lowest and highest outside temperature from Open-Meteo (free, no account), to compare your oil use with the weather on the history page. Only the town you pick is sent to it.</div>
+<div class="row" style="gap:8px;justify-content:flex-start"><input id="wxq" placeholder="Town, e.g. Coleraine" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')wxFind()"><button onclick="wxFind()">Find</button></div>
+<div id="wxr" style="min-height:4px;margin-top:6px"></div></div>
+
 <h2>Software</h2>
 <div class="card"><div class="row"><div><div id="ver">Version …</div><div class="mut" id="ver2">&nbsp;</div></div><button id="updBtn" onclick="updClick()">Check for updates</button></div>
 <div class="mut" id="updBox" style="white-space:pre-wrap;min-height:18px;margin-top:6px"></div></div>
@@ -189,7 +195,7 @@ function render(){
  $('status').textContent=S.ap?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
  if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
   $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
- secRender();netRender();notifyRender();if(!$('p_dash').hidden)dash();
+ secRender();netRender();notifyRender();wxRender();if(!$('p_dash').hidden)dash();
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
  $('tanks').innerHTML=(S.tanks.length>1?`<div class="card"><div class="row" style="min-height:34px"><div><b>Both tanks together</b><div class="mut">Oil, use and forecast for the tanks combined</div></div>${S.primary==='all'?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('all')">Show on dashboard</button>`}</div></div>`:'')+(S.tanks.length?S.tanks.map(t=>{const p=t.percent??0;return `<div class="card"><div class="row"><b>${esc(t.name)}</b><button onclick="edit('${okMac(t.mac)}')">Edit</button></div>
   <div class="row" style="margin-top:8px;min-height:34px"><a class="lnk" href="/history?mac=${okMac(t.mac)}">History &amp; forecast</a>${S.tanks.length>1?(t.mac===S.primary?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('${okMac(t.mac)}')">Show on dashboard</button>`):'<span></span>'}</div>
@@ -375,6 +381,15 @@ function netRender(){$('hn').textContent=S.hostname||'hawki-pico';$('hn2').textC
  $('ipnote').textContent=S.ip?'To keep '+S.ip+' for good, reserve it for this Pico in your router (often called "fixed IP" or "DHCP reservation"). The Pico\'s Wi-Fi address (MAC) is '+(S.mac||'?')+'.':' '}
 async function changeHost(){const v=prompt('Name on the network (letters, digits and hyphens). The Pico restarts to use it.',S.hostname||'hawki-pico');if(v==null||v.trim()===''||v.trim()===S.hostname)return;
  try{await api('/api/hostname',{hostname:v.trim()});$('status').textContent='Restarting as '+v.trim()+'…';setTimeout(load,15000)}catch(x){alert(x.message.replace(/^"|"$/g,''))}}
+function wxRender(){const w=S.wx||{};$('wx1').textContent=w.name?'Location: '+w.name:'No location set';
+ $('wx2').textContent=w.name?(w.err?'Could not fetch the weather: '+w.err:'Temperatures are fetched once a day, back to your first reading.'):'Pick your town below.';$('wxRm').style.visibility=w.name?'visible':'hidden'}
+async function wxFind(){const q=$('wxq').value.trim(),box=$('wxr');if(q.length<2)return;box.textContent='Searching…';
+ try{const r=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=en&name='+encodeURIComponent(q))).json(),l=r.results||[];box.textContent='';
+  if(!l.length){box.textContent='No places found.';return}
+  for(const p of l){const name=[p.name,p.admin1,p.country].filter(Boolean).join(', '),b=document.createElement('button');b.type='button';b.style.cssText='display:block;width:100%;text-align:left;margin-top:6px';
+   b.textContent=name;b.onclick=async()=>{try{await api('/api/location',{lat:p.latitude,lon:p.longitude,name});box.textContent='';$('wxq').value='';await load()}catch(x){alert(x.message)}};box.appendChild(b)}}
+ catch(e){box.textContent='Could not reach Open-Meteo from this browser.'}}
+async function wxClear(){if(!confirm('Remove the location and its saved temperatures?'))return;try{await api('/api/location',{clear:true});await load()}catch(x){alert(x.message)}}
 async function setPrimary(mac){try{await api('/api/primary',{mac});AN=null;await load();history.replaceState(null,'','#dash');tab('dash')}catch(x){alert(x.message)}}
 
 // ---------- dashboard ----------

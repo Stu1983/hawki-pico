@@ -68,6 +68,17 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
  <details><summary>Show as a table</summary><div style="overflow-x:auto"><table id="tbl"></table></div></details>
 </div>
 
+<h2>Use and the weather</h2>
+<div class="card">
+ <div class="mut" style="margin-bottom:4px">Litres a day, last 60 days</div>
+ <svg id="c4" viewBox="0 0 640 150" role="img" aria-label="Litres used each day over the last 60 days"></svg>
+ <div class="mut" style="margin:8px 0 4px">Outside temperature, lowest to highest each day</div>
+ <svg id="c5" viewBox="0 0 640 150" role="img" aria-label="Daily lowest and highest outside temperature over the last 60 days"></svg>
+ <div class="mut" style="margin:12px 0 4px">Each day's use against its average temperature</div>
+ <svg id="c6" viewBox="0 0 640 220" role="img" aria-label="Litres used each day plotted against that day's average outside temperature"></svg>
+ <div class="mut" id="wxNote" style="min-height:36px;margin-top:6px">&nbsp;</div>
+</div>
+
 <h2>Use by hour of day</h2>
 <div class="card">
  <svg id="c3" viewBox="0 0 640 200" role="img" aria-label="Average litres used in each hour of the day, last 30 days"></svg>
@@ -154,7 +165,49 @@ function niceStep(max,n){const raw=max/n,p=Math.pow(10,Math.floor(Math.log10(raw
 // ---------- chart 1: litres over time ----------
 // charts are drawn at the size they're shown, so the text stays readable on a phone
 function fit(svg,Hh){const W=Math.max(300,Math.round(svg.getBoundingClientRect().width)||640);svg.setAttribute('viewBox','0 0 '+W+' '+Hh);return W}
-let rsT=null,rsW=innerWidth;addEventListener('resize',()=>{if(innerWidth===rsW)return;rsW=innerWidth;clearTimeout(rsT);rsT=setTimeout(()=>{if(typeof A!=='undefined'&&A){drawLevel();drawMonths();drawHours()}},200)});
+let rsT=null,rsW=innerWidth;addEventListener('resize',()=>{if(innerWidth===rsW)return;rsW=innerWidth;clearTimeout(rsT);rsT=setTimeout(()=>{if(typeof A!=='undefined'&&A){drawLevel();drawMonths();drawHours();drawWeather()}},200)});
+// ---------- use and the weather ----------
+let WX=null;  /* 'YYYY-MM-DD' -> [min, max] in C, from /api/weather (Open-Meteo, for the location set in Config) */
+const ymdL=t=>{const d=new Date(t*1000);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+async function loadWx(){try{const b=await (await fetch('/api/weather')).arrayBuffer(),v=new DataView(b),m={};
+ for(let i=0;i+6<=b.byteLength;i+=6){const d=new Date((946684800+v.getUint16(i,true)*86400)*1000),k=d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate());if(v.getInt16(i+2,true)!==-32768)m[k]=[v.getInt16(i+2,true)/10,v.getInt16(i+4,true)/10]}
+ WX=m}catch(e){WX={}}drawWeather()}
+function drawWeather(){const c4=$('c4'),c5=$('c5'),c6=$('c6');[c4,c5,c6].forEach(x=>x.textContent='');
+ const has=WX&&Object.keys(WX).length,note=$('wxNote');
+ const H4=150,W=fit(c4,H4);fit(c5,H4);const H6=220,W6=fit(c6,H6),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr;
+ if(!has){[c4,c5,c6].forEach(x=>el('text',{x:W/2,y:60,'text-anchor':'middle'},x,WX?'No temperatures yet':'Loading…'));
+  note.textContent=S&&S.wx&&S.wx.name?(S.wx.err?'Could not fetch the weather: '+S.wx.err:'Fetching the weather for '+S.wx.name+'…'):'Set your location under Config → Weather to compare your use with the outside temperature.';return}
+ const t1=midnight(now),t0=addDays(t1,-60),days=[];for(let t=t0;t<t1;t=addDays(t,1))days.push(t);
+ const x=t=>ml+(t-t0)/(t1-t0)*pw,bw=Math.max(1,pw/60-2);
+ const use=t=>A&&A.days&&A.days[t]!=null?Math.max(0,A.days[t]):null,wx=t=>WX[ymdL(t)]||null;
+ const xlab=(svg,Hh)=>{let lastX=-1e9;for(let t=t0;t<t1;t=addDays(t,7)){const xx=x(t);if(xx-lastX<54)continue;lastX=xx;el('text',{x:xx,y:Hh-6,'text-anchor':'middle'},svg,fmtD(t))}};
+ // litres a day
+ {const ph=H4-mt-mb,um=Math.max(1,...days.map(t=>use(t)||0)),st=niceStep(um,3),top=Math.ceil(um/st)*st,y=v=>mt+ph-v/top*ph;
+  for(let v=0;v<=top+1e-9;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},c4);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},c4,v+(v+st>top+1e-9?' L':''))}
+  for(const t of days){const u=use(t);if(u==null)continue;const h=Math.max(1,mt+ph-y(u)),r=el('path',{d:bar(x(t)+1,mt+ph-h,bw,h),fill:'var(--s1)',class:'bar',tabindex:0},c4),w=wx(t);
+   const lines=[u.toFixed(1)+' L',fmtD(t)+(w?' · '+w[0].toFixed(1)+' to '+w[1].toFixed(1)+' °C':'')];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}
+  el('line',{x1:ml,x2:W-mr,y1:mt+ph,y2:mt+ph,class:'ax'},c4);xlab(c4,H4)}
+ // temperatures: a band from the day's lowest to its highest
+ {const ph=H4-mt-mb,ws=days.map(wx).filter(Boolean),lo=Math.floor(Math.min(0,...ws.map(w=>w[0]))/5)*5,hi=Math.ceil(Math.max(10,...ws.map(w=>w[1]))/5)*5,y=v=>mt+ph-(v-lo)/(hi-lo)*ph;
+  for(let v=lo;v<=hi;v+=5){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:v===0?'ax':'gl'},c5);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},c5,v+(v+5>hi?' °C':''))}
+  for(const t of days){const w=wx(t);if(!w)continue;const r=el('path',{d:bar(x(t)+1,y(w[1]),bw,Math.max(1,y(w[0])-y(w[1]))),fill:'var(--s2)',class:'bar',tabindex:0},c5);
+   const lines=[w[0].toFixed(1)+' to '+w[1].toFixed(1)+' °C',fmtD(t)+(use(t)!=null?' · '+use(t).toFixed(1)+' L':'')];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}
+  xlab(c5,H4)}
+ // scatter: every day with both figures (all of the history, not just 60 days)
+ const pts=[];if(A&&A.days)for(const k in A.days){const t=+k,w=wx(t),u=A.days[k];if(w&&u!=null&&u>=0&&!(A.gap&&A.gap[k]))pts.push([(w[0]+w[1])/2,u,t])}
+ const pw6=W6-ml-mr,ph6=H6-mt-mb;
+ if(pts.length<5){el('text',{x:W6/2,y:H6/2,'text-anchor':'middle'},c6,'Needs a few more days with both figures');note.textContent='Weather for '+(S.wx&&S.wx.name||'your location')+' from Open-Meteo.';return}
+ const xl=Math.floor(Math.min(...pts.map(p=>p[0]))/5)*5,xh0=Math.ceil(Math.max(...pts.map(p=>p[0]))/5)*5,xh=xh0>xl?xh0:xl+5,ym=Math.max(1,...pts.map(p=>p[1])),st=niceStep(ym,4),yt=Math.ceil(ym/st)*st;
+ const X=v=>ml+(v-xl)/Math.max(1,xh-xl)*pw6,Y=v=>mt+ph6-v/yt*ph6;
+ for(let v=0;v<=yt+1e-9;v+=st){el('line',{x1:ml,x2:W6-mr,y1:Y(v),y2:Y(v),class:'gl'},c6);el('text',{x:ml-6,y:Y(v)+4,'text-anchor':'end'},c6,v+(v+st>yt+1e-9?' L':''))}
+ for(let v=xl;v<=xh;v+=5)el('text',{x:X(v),y:H6-6,'text-anchor':'middle'},c6,v+' °C');
+ el('line',{x1:ml,x2:W6-mr,y1:mt+ph6,y2:mt+ph6,class:'ax'},c6);
+ // straight-line fit: litres a day against temperature
+ const n=pts.length,mx=pts.reduce((a,p)=>a+p[0],0)/n,my=pts.reduce((a,p)=>a+p[1],0)/n,sxx=pts.reduce((a,p)=>a+(p[0]-mx)**2,0),sxy=pts.reduce((a,p)=>a+(p[0]-mx)*(p[1]-my),0),b=sxx>0?sxy/sxx:0,a=my-b*mx;
+ const syy=pts.reduce((a2,p)=>a2+(p[1]-my)**2,0),r2=sxx>0&&syy>0?sxy*sxy/(sxx*syy):0;
+ for(const p of pts){const c=el('circle',{cx:X(p[0]),cy:Y(p[1]),r:4,fill:'var(--s1)','fill-opacity':.55,stroke:'var(--card)','stroke-width':1,tabindex:0},c6),lines=[p[1].toFixed(1)+' L',fmtD(p[2])+' · average '+p[0].toFixed(1)+' °C'];c.addEventListener('pointermove',e=>showTip(e,lines));c.addEventListener('pointerleave',hideTip)}
+ if(n>=14&&sxx>0){const ya=Math.max(0,Math.min(yt,a+b*xl)),yb=Math.max(0,Math.min(yt,a+b*xh));el('line',{x1:X(xl),y1:Y(ya),x2:X(xh),y2:Y(yb),stroke:'var(--s2)','stroke-width':2,'stroke-dasharray':'6 4'},c6)}
+ note.textContent=(n>=14&&b<0?'About '+(-b).toFixed(2)+' L a day more for each degree colder (from '+n+' days; the line explains '+Math.round(r2*100)+'% of the day-to-day change). ':n<14?'The trend line appears once there are 14 days with both figures. ':'')+'Weather for '+(S.wx&&S.wx.name||'your location')+' from Open-Meteo.'}
 function drawLevel(){
  const svg=$('c1');svg.textContent='';const Hh=240,W=fit(svg,Hh),ml=46,mr=12,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
  const cap=+T.cfg.capacity_l,reserve=T.cfg.reserve_l??200;
@@ -366,7 +419,7 @@ async function load(){
  if(!(A.recent!=null&&A.span>=2))A.fc=null;  /* no forecast line until there's a forecast */
  $('sub').textContent=P.length?'Readings since '+fmtDY(P[0][0])+' · '+(A.span<1?Math.round(A.span*24)+' hours':Math.round(A.span)+' days'):'No readings saved yet';
  const rg=$('rng');rg.textContent='';[['7','7 days'],['30','30 days'],['365','1 year'],['all','All']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',k===R);b.onclick=()=>{R=k;try{localStorage.hawkiRange=k}catch(e){}[...rg.children].forEach(c=>c.setAttribute('aria-pressed',c===b));drawLevel()};rg.appendChild(b)});
- tiles();drawLevel();drawMonths();drawHours()}
+ tiles();drawLevel();drawMonths();drawHours();loadWx()}
 try{R=localStorage.hawkiRange||'30'}catch(e){}
 load().catch(e=>{$('sub').textContent='Could not load: '+e});
 </script></body></html>

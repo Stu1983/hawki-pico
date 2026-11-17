@@ -39,6 +39,7 @@ import histstore
 from version import VERSION
 from listen import Listener
 import notify
+import weather
 import drops
 
 # HAWKi service UUID 00001923-1322-ffdd-3533-886fdadce133, as it appears in the advert (LE)
@@ -491,7 +492,7 @@ def rm(name):
 
 
 MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
-            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test')
+            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location')
 
 
 # ---------- views ----------
@@ -803,7 +804,7 @@ def state():
             'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint')),
             'primary': cfg.get('primary') if cfg.get('primary') in cfg['tanks'] or cfg.get('primary') == 'all' and len(tanks) > 1
                        else (tanks[0]['mac'] if tanks else None),
-            'hostname': HOSTNAME, 'scan': scan_mode[0], 'notify': notify_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
+            'hostname': HOSTNAME, 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
 
 
 def num(v, lo, hi):
@@ -1131,6 +1132,17 @@ async def handle(r, w):
                 return await send(w, 200, json.dumps(res))
             except Exception as ex:
                 return await send(w, 400, json.dumps(str(ex)))
+        if path == '/api/location' and method == 'POST':
+            try:
+                set_location(json.loads(body or '{}'))
+                return await send(w, 200, json.dumps(wx_view()))
+            except Exception as ex:
+                return await send(w, 400, json.dumps(str(ex)))
+        if path == '/api/weather':
+            try:
+                return await send_file(w, weather.FILE, 'application/octet-stream')
+            except OSError:
+                return await send(w, 200, b'', 'application/octet-stream')
         if path == '/api/primary' and method == 'POST':
             mac = str(json.loads(body or '{}').get('mac', '')).lower()
             if mac not in cfg['tanks'] and not (mac == 'all' and len(cfg['tanks']) > 1):  # 'all' = both tanks together
@@ -1274,11 +1286,79 @@ async def handle(r, w):
         gc.collect()
 
 
+# ---------- outside temperature (Open-Meteo), to compare use with the weather ----------
+wx_state = {'done': None, 'err': None}  # day the history was last brought up to date; last error
+
+
+def wx_view():
+    w = cfg.get('wx') or {}
+    return {'name': w.get('name'), 'lat': w.get('lat'), 'lon': w.get('lon'), 'err': wx_state['err']}
+
+
+def set_location(b):
+    if b.get('clear'):
+        cfg.pop('wx', None)
+    else:
+        name = ''.join(c for c in str(b.get('name') or '') if ' ' <= c and c != '\x7f')[:60]
+        cfg['wx'] = {'lat': num(b.get('lat'), -90, 90), 'lon': num(b.get('lon'), -180, 180), 'name': name}
+    rm(weather.FILE)  # a new place (or none): its history is fetched afresh
+    wx_state['done'] = None
+    wx_state['err'] = None
+    save_cfg(cfg)
+
+
+def first_reading():
+    # the oldest saved reading across the tanks (the weather is filled in back to here)
+    best = None
+    for mac in cfg['tanks']:
+        try:
+            with open(hist_name(mac), 'rb') as f:
+                b = f.read(6)
+            if len(b) == 6:
+                t = struct.unpack('<IH', b)[0]
+                best = t if best is None or t < best else best
+        except OSError:
+            pass
+    return best
+
+
+async def weather_task():
+    # once a day (and soon after a location is set): fill in any missing days back to the first
+    # reading, and refresh the last 10 (recent figures settle). Small: ~9 KB a year per request.
+    await asyncio.sleep(90)
+    while True:
+        try:
+            w = cfg.get('wx')
+            now = time.time()
+            today = weather.day_of(now)
+            if w and now > 1.7e9 and wlan.isconnected() and wx_state['done'] != today:
+                have = weather.load()
+                first = first_reading()
+                d0 = weather.day_of(first) if first else today - 30
+                todo = weather.plan(have, max(d0, today - 3650), today)
+                for a, b in todo[:6]:  # at most 6 requests a go; the rest 10 minutes later
+                    got = with_room(weather.fetch, w['lat'], w['lon'], a, b)
+                    if cfg.get('wx') is not w:
+                        break  # the location changed meanwhile: drop this
+                    weather.fill(have, got, a, b)
+                    weather.save(have)  # keep each batch, so an error later loses nothing
+                    await asyncio.sleep(1)
+                if cfg.get('wx') is w and len(todo) <= 6:
+                    wx_state['done'] = today
+                    wx_state['err'] = None
+                gc.collect()
+        except Exception as ex:
+            wx_state['err'] = str(ex) or repr(ex)
+            print('weather err', ex)
+        await asyncio.sleep(600)
+
+
 async def main():
     asyncio.create_task(wifi_keeper())
     asyncio.create_task(recorder())
     asyncio.create_task(scan_scheduler())
     asyncio.create_task(alerts())
+    asyncio.create_task(weather_task())
     asyncio.create_task(update_guard())
     asyncio.create_task(bootsel_reset())
     asyncio.create_task(close_first_pin_window())
