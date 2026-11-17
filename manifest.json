@@ -1,7 +1,7 @@
 {
- "version": "1.2.51",
- "ref": "v1.2.51",
- "notes": "Tank form tidied into tabs (Details, Measurements, Windows, Ribs) with the drawing on every tab; heights are from the base of the tank",
+ "version": "1.2.52",
+ "ref": "v1.2.52",
+ "notes": "Clearer wording on the Windows tab for tanks with ribs",
  "files": {
   "app.py": [
    "dfc156dcb2aceb9f64d3e4df5cf0d34522871a8a9e17b1e2a5c1a93e3eec70b2",
@@ -52,15 +52,15 @@
    14355
   ],
   "ui.html": [
-   "ab54a3437e24e40264ea023980be4ec1c81d7332d07849311863b2a1da8e1956",
-   84184
+   "df06522bd20a6980f6561bf774ecf48556a0373a7d9b5029f373cc43ec62e38e",
+   84245
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "f4b3f25aec58fa1f4ac77dceb54b9d38ed4c37844574db2f3cac2d960adbfeb1",
+   "8e2aa5ba58352f8ecdbc580301192565f876bffd1614e7363435dd17cac0a9f4",
    19
   ],
   "weather.py": [
@@ -69,7 +69,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"dfc156dcb2aceb9f64d3e4df5cf0d34522871a8a9e17b1e2a5c1a93e3eec70b2\", 77981], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"300f31690b60d9c8efde422e51e6f40a82990bf0b74cf4b12468b1c4381fba9e\", 57653], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"e8af3090fc1d602af784e360bc364793c8c9995a519e4ff403e03e8bae094967\", 14355], \"ui.html\": [\"ab54a3437e24e40264ea023980be4ec1c81d7332d07849311863b2a1da8e1956\", 84184], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"f4b3f25aec58fa1f4ac77dceb54b9d38ed4c37844574db2f3cac2d960adbfeb1\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Tank form tidied into tabs (Details, Measurements, Windows, Ribs) with the drawing on every tab; heights are from the base of the tank\", \"ref\": \"v1.2.51\", \"version\": \"1.2.51\"}",
-  "sig": "5df51d53f8dc5a17373cf49f1539eb140fd9f4993891ab651e5146da00ca9d06de7a7fe21c0a4cd0720e66006e3d0073e52ad58d7a2ee35cfd5a003b454ca9f7863bf0b785d0ba4e9d5c340bb01652f1a1e520bc2951031c07c635dba5ba3055f2dbfe2d50436453ac2432f765c3801624e41d3433aa541b3ab1a64892701d68e6ca6b1861f9494923440254d175351ad6d9a68d5a4ab469c32c6872e157aa773383e6c4918d5c8dd0d2546a184c6d11f51e518b48d05518a033e7f7127702d23dfdb066287577592b871c5176905e6f8396732e00009ee0a17494ea64cffb80b9a44f8b7eaa56dbe366155920554ea83a2dbced2e8ada80f9dfa288ef4ced28"
+  "body": "{\"files\": {\"app.py\": [\"dfc156dcb2aceb9f64d3e4df5cf0d34522871a8a9e17b1e2a5c1a93e3eec70b2\", 77981], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"300f31690b60d9c8efde422e51e6f40a82990bf0b74cf4b12468b1c4381fba9e\", 57653], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"e8af3090fc1d602af784e360bc364793c8c9995a519e4ff403e03e8bae094967\", 14355], \"ui.html\": [\"df06522bd20a6980f6561bf774ecf48556a0373a7d9b5029f373cc43ec62e38e\", 84245], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"8e2aa5ba58352f8ecdbc580301192565f876bffd1614e7363435dd17cac0a9f4\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Clearer wording on the Windows tab for tanks with ribs\", \"ref\": \"v1.2.52\", \"version\": \"1.2.52\"}",
+  "sig": "26ce90a8dd7872d8a80dd276fa32a6a805d9f8289682ab570916268a7a3765e9ec8f0445d3a1b54f20277d17a5b6fef3e6721a8dd084760500c397819f87a5e0f8d677c06b62afcf4aceddcf5d51465e113d2ef5b80b4d6d5b44c4263a0e2242bc93a78ad421b2130cb1175a3c25b7ccd849bfef9ab09775ebdd2a1a25c44c6c0a5be67784333a0d7b3c27f60581800b335bf1d94c09ba6deaaf09fe006854343bfcaf47efecc40964b686015f7b35868822334f00867ad35407fda82b1c3474d1d0fd59a72a651b2f7991af008b22778b07aa3777f7805e151b2de20188d926117f89604208e9a8b6a5578f9f2ee62ba933b0af55697a540b0d7488c84e250e"
  }
 }
