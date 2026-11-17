@@ -1,7 +1,7 @@
 {
- "version": "1.2.45",
- "ref": "v1.2.45",
- "notes": "History \u2192 Deliveries on All tanks: the tank-capacity check now runs for each tank (with its Use button), not just on the tank's own tab.",
+ "version": "1.2.46",
+ "ref": "v1.2.46",
+ "notes": "Titan R1225 preset: whole-tank capacity 1306 L (refitted to the metered delivery with the measured 173 x 69 cm).",
  "files": {
   "app.py": [
    "4726b9bb9b03fb5a6d871da3331a63ac841e4d3117bb13d81e3cfea74204ff69",
@@ -52,7 +52,7 @@
    9040
   ],
   "ui.html": [
-   "b8ed6075f36a85ccdce0a6973ab9f216ed79b6296e3a9af86c8f346512575fd7",
+   "551584458e5f55bfcc71d5571cbe93d5630166d7a59d10c5ca32bd1acc1f1c93",
    76462
   ],
   "updater.py": [
@@ -60,7 +60,7 @@
    9943
   ],
   "version.py": [
-   "7e4e6da846f7d9ebbe8458fe71f03a888ac0400af4ec53197a6d996e183d688e",
+   "ff05d96a7b9d3dcf8000ea1f6ffc2091ed40af4ebc9d7ee7a5e16cd10fe0042f",
    19
   ],
   "weather.py": [
@@ -69,7 +69,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"4726b9bb9b03fb5a6d871da3331a63ac841e4d3117bb13d81e3cfea74204ff69\", 74714], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"a2986d72078cde07f36390d69caed5ceb41d45bdd6aab872f6f6f57e15f90149\", 18073], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"7794b79f7a5343bd0ee6fef1cd4838bf33973c5e1660ccea2a2d7b92dc9a16f4\", 57496], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"b8ed6075f36a85ccdce0a6973ab9f216ed79b6296e3a9af86c8f346512575fd7\", 76462], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"7e4e6da846f7d9ebbe8458fe71f03a888ac0400af4ec53197a6d996e183d688e\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"History \\u2192 Deliveries on All tanks: the tank-capacity check now runs for each tank (with its Use button), not just on the tank's own tab.\", \"ref\": \"v1.2.45\", \"version\": \"1.2.45\"}",
-  "sig": "697b143ba82cf727e6fae18ef37a63e728110bba54cefd7e097f9b1bf403e2405170984ec36d2dfc0dd3b250bfdfe16999623d442315443dca13cf40df90c191dfd27eaf5b1c5487a17b26575b34461d87b50dbcc2890f94aa33489745ca32713d40689e74360720d79e909aa7281249f5f717e99eae4d3e690603c8986476fdf83998e8f33cf00e763e80a0a8f61e355c52f880b6ff98a64a85fb7dedbe16a1598c886246540f21284b805c287ec8d06b036b3afcaff1e8cfa0be846cf8afab68e066bb8a5a4aeccc3dd1cf1a543d9b23fe915bbabeba25b07d5ebb542972f17bc181217f7a0b367a5c13f0f15a9684f09009cf600c765846384d5ac018c0fc"
+  "body": "{\"files\": {\"app.py\": [\"4726b9bb9b03fb5a6d871da3331a63ac841e4d3117bb13d81e3cfea74204ff69\", 74714], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"a2986d72078cde07f36390d69caed5ceb41d45bdd6aab872f6f6f57e15f90149\", 18073], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"7794b79f7a5343bd0ee6fef1cd4838bf33973c5e1660ccea2a2d7b92dc9a16f4\", 57496], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"551584458e5f55bfcc71d5571cbe93d5630166d7a59d10c5ca32bd1acc1f1c93\", 76462], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"ff05d96a7b9d3dcf8000ea1f6ffc2091ed40af4ebc9d7ee7a5e16cd10fe0042f\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Titan R1225 preset: whole-tank capacity 1306 L (refitted to the metered delivery with the measured 173 x 69 cm).\", \"ref\": \"v1.2.46\", \"version\": \"1.2.46\"}",
+  "sig": "7ae30de683ded94e5fbfa414e8d515d304338abb744859c1432ec12e399f5d90439f0a0150a92b2715fc862dfd5d4d79b0a8d38d085fae8ccb1eb825eb3eba7946d1f49b5821d253a2b8a0a54d0da3838de54cac38f621f450ff76120d95684a34f7ec3a9b522fa3a60ba8d4cca55a07e5a6f84d91e9f6f7fa8a92698361847722871cb037c2fc78c4607e36182dcb3ce8946223d7d7e34f393dd96f823c9078c47d4d8422325d5517196e8fe2843e2298c8088e852ba3902900ba14c86c93aa52afed635032b08f55daa6fec70c7356d0bc6fe6d9a672eab6d4b126d5ec5a3c379971df3425d388046991aaf4455cf8b237f4a44aaf806f28da757c9b8010f1"
  }
 }
