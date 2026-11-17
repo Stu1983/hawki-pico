@@ -12,7 +12,7 @@ h1{font-size:20px;margin:8px 0 2px}h2{font-size:15px;margin:22px 0 8px;color:var
 .sub,.mut{color:var(--mut);font-size:13px}.sub{min-height:18px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 10px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.tabs,.seg{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.tabs,.seg{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.pg[hidden]{display:none}#pgs{gap:0;border-bottom:1px solid var(--line);margin:14px 0 4px}#pgs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mut);padding:8px 16px;font-weight:600}#pgs button[aria-pressed=true]{color:var(--fg);border-bottom-color:var(--acc);background:none}
 button{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 11px;cursor:pointer}
 button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff}
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
@@ -46,7 +46,9 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <a href="/">&larr; Tanks</a>
 <h1 id="ttl">History</h1><div class="sub" id="sub">Loading…</div>
 <div class="tabs" id="tabs"></div>
+<div class="seg" id="pgs"><button type="button" data-pg="use" onclick="page('use')">Usage</button><button type="button" data-pg="cost" onclick="page('cost')">Costs</button></div>
 
+<div class="pg pg_use">
 <div class="tiles">
  <div class="card tile"><div class="k">In the tank now</div><div class="v" id="t_now">–</div><div class="n" id="t_now2"></div></div>
  <div class="card tile"><div class="k">Using lately</div><div class="v" id="t_rate">–</div><div class="n" id="t_rate2"></div></div>
@@ -85,6 +87,8 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
  <div class="mut" id="hrNote" style="min-height:36px;margin-top:6px">&nbsp;</div>
 </div>
 
+</div>
+<div class="pg pg_cost">
 <h2>Deliveries</h2>
 <div class="card"><div id="fills"><div class="empty">Loading…</div></div><div class="mut" id="fit" style="margin-top:8px;min-height:18px"></div><div class="acts" style="justify-content:flex-start;margin-top:8px"><button onclick="editDel(null)">Add a delivery</button></div></div>
 
@@ -103,6 +107,8 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
  <div class="mut" id="prNote" style="min-height:18px"></div></div>
 <div class="card" style="margin-top:8px"><b>Spend by year</b> <span class="mut">(every tank, from the delivery details saved)</span><div style="overflow-x:auto"><table id="yrs" style="white-space:nowrap"><tr><td class="mut">Loading…</td></tr></table></div></div>
 
+</div>
+
 <dialog id="ddlg"><form method="dialog" onsubmit="return saveDel(event)">
 <div class="row"><b id="ddT">Delivery</b><span class="mut" id="ddM"></span></div>
 <div class="grid">
@@ -117,8 +123,10 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <div class="acts"><button type="button" class="del" id="d_del" onclick="delDel()">Delete</button><span style="flex:1"></span><button type="button" onclick="$('ddlg').close()">Cancel</button><button class="pri">Save</button></div>
 </form></dialog>
 
+<div class="pg pg_use">
 <h2>How the forecast works</h2>
 <div class="card mut" id="how"></div>
+</div>
 <div id="tip" hidden></div>
 </main>
 <dialog id="pdlg"><form method="dialog" onsubmit="return pinSubmit(event)">
@@ -347,12 +355,12 @@ function renderDeliveries(){const f=$('fills');f.textContent='';const list=deliv
   // line 3: receipt, price ... Edit
   const mk=(cls,txt)=>{const d=document.createElement('div');if(cls)d.className=cls;if(txt!=null)d.textContent=txt;return d};
   const top=mk('row'),b=document.createElement('b'),l=litresOf(x);b.textContent=l==null?'–':'+'+L0(l);
-  const tn=T.all?(S.tanks.find(t=>t.mac===x.mac)||{}).name:null;top.append(mk('',fmtDY(x.t)+(r&&r.supplier?' · '+r.supplier:'')+(tn?' · '+tn:'')),b);row.append(top);
+  const tn=T.all?(S.tanks.find(t=>t.mac===x.mac)||{}).name:null;top.append(mk('',fmtDY(x.t)+(r&&r.supplier?' · '+r.supplier:'')),b);row.append(top);if(tn)row.append(mk('mut',tn));
   if(x.f){const fr=Math.round(x.f.from),to=Math.round(x.f.to);const s1=mk('mut sum','sensor saw '+fr+' L → '+to+' L = ('+to+' − '+fr+') = '+(to-fr)+' L');row.append(s1)}
   const bits=[];if(r&&r.litres!=null&&x.f)bits.push(L0(r.litres)+' on the receipt');
   const p=pplOf(x),tot=totalOf(x);if(tot!=null)bits.push(gbp(tot));if(p!=null)bits.push(p.toFixed(1)+'p/L');
   if(r&&r.note)bits.push(r.note);if(tot==null)bits.push('add the price with Edit');
-  const bot=mk('row'),e=document.createElement('button');e.textContent='Edit';e.onclick=()=>editDel(x);bot.append(mk('mut',bits.join(' · ')),e);row.append(bot);
+  const bot=mk('row'),e=document.createElement('button'),bt=mk('mut',bits.join(' · '));bot.style.flexWrap='nowrap';bot.style.alignItems='center';bt.style.flex='1';bt.style.minWidth='0';e.style.flexShrink='0';e.textContent='Edit';e.onclick=()=>editDel(x);bot.append(bt,e);row.append(bot);
   f.appendChild(row)}
  fitCap()}
 // Best-fit tank capacity: with the heights right, the capacity only scales the litres, so each delivery's
@@ -485,5 +493,11 @@ async function load(){
  const rg=$('rng');rg.textContent='';[['7','7 days'],['30','30 days'],['365','1 year'],['all','All']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',k===R);b.onclick=()=>{R=k;try{localStorage.hawkiRange=k}catch(e){}[...rg.children].forEach(c=>c.setAttribute('aria-pressed',c===b));drawLevel()};rg.appendChild(b)});
  tiles();drawLevel();drawMonths();drawHours();loadWx();loadPrices()}
 try{R=localStorage.hawkiRange||'30'}catch(e){}
+/* Usage | Costs: two sub-pages, the choice remembered; charts are drawn when their page shows */
+let PG='use';try{PG=localStorage.hawkiPage==='cost'?'cost':'use'}catch(e){}if(location.hash==='#costs')PG='cost';
+function page(k,quiet){PG=k;try{localStorage.hawkiPage=k}catch(e){}history.replaceState(null,'',location.pathname+location.search+(k==='cost'?'#costs':''));document.querySelectorAll('.pg').forEach(d=>d.hidden=!d.classList.contains('pg_'+k));
+ document.querySelectorAll('#pgs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.pg===k));
+ if(quiet||typeof A==='undefined'||!A)return;if(k==='use'){drawLevel();drawMonths();drawHours();drawWeather()}else drawPrices()}
+page(PG,true);
 load().catch(e=>{$('sub').textContent='Could not load: '+e});
 </script></body></html>
