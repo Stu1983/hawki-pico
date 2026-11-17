@@ -452,6 +452,22 @@ async def net_trial_guard():
 AP_NAME = 'HAWKi-Setup-' + hx(machine.unique_id())[-4:].upper()
 
 
+# Each NTP try looks up a host name, which blocks everything else (for seconds when DNS is down). So while the
+# clock can't be set, tries back off (10 s, 1 min, 5 min, then every 15 min) and skip while a page is loading;
+# a success or a fresh Wi-Fi join starts again from 10 s.
+NTP_BACKOFF = (10, 60, 300, 900)
+ntp_wait = [0, 0]  # mono_s() of the next try, step in NTP_BACKOFF
+
+
+def web_busy():
+    return page_s[0] is not None and 0 <= mono_s() - page_s[0] < 60
+
+
+def ntp_due():
+    late = mono_s() - ntp_wait[0]
+    return late >= 0 and (not web_busy() or late >= 300)  # (a page open for good can't put it off for ever)
+
+
 async def ntp_sync():
     import ntptime
     for host in ('pool.ntp.org', 'time.google.com'):
@@ -459,10 +475,13 @@ async def ntp_sync():
             ntptime.host = host
             ntptime.settime()
             net_proof()
+            ntp_wait[1] = 0
             return True
         except Exception as ex:
             print('ntp err', host, ex)
         await asyncio.sleep(0)
+    ntp_wait[0] = mono_s() + NTP_BACKOFF[ntp_wait[1]]
+    ntp_wait[1] = min(ntp_wait[1] + 1, len(NTP_BACKOFF) - 1)
     return False
 
 
@@ -488,6 +507,7 @@ async def wifi_keeper():
             for _ in range(20):
                 if wlan.isconnected():
                     print('wifi ok', wlan.ifconfig())
+                    ntp_wait[0] = ntp_wait[1] = 0  # (a fresh join: try straight away)
                     await ntp_sync()
                     break
                 led.toggle()
@@ -498,8 +518,8 @@ async def wifi_keeper():
                 ap_on()
             elif ap.active():
                 ap.active(False)
-            if time.time() < 1700000000:
-                await ntp_sync()  # clock still unset; retry
+            if time.time() < 1700000000 and ntp_due():
+                await ntp_sync()  # clock still unset; retry (backing off)
         else:
             led.value(0)
             if not cfg.get('ssid') or boot_grace_over():
