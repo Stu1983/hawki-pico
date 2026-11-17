@@ -40,6 +40,7 @@ from version import VERSION
 from listen import Listener
 import notify
 import weather
+import price
 import drops
 
 # HAWKi service UUID 00001923-1322-ffdd-3533-886fdadce133, as it appears in the advert (LE)
@@ -492,7 +493,7 @@ def rm(name):
 
 
 MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
-            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location')
+            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location', '/api/price')
 
 
 # ---------- views ----------
@@ -804,7 +805,7 @@ def state():
             'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint')),
             'primary': cfg.get('primary') if cfg.get('primary') in cfg['tanks'] or cfg.get('primary') == 'all' and len(tanks) > 1
                        else (tanks[0]['mac'] if tanks else None),
-            'hostname': HOSTNAME, 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
+            'hostname': HOSTNAME, 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'price': price_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
 
 
 def num(v, lo, hi):
@@ -1138,6 +1139,17 @@ async def handle(r, w):
                 return await send(w, 200, json.dumps(wx_view()))
             except Exception as ex:
                 return await send(w, 400, json.dumps(str(ex)))
+        if path == '/api/price' and method == 'POST':
+            try:
+                set_price(json.loads(body or '{}'))
+                return await send(w, 200, json.dumps(price_view()))
+            except Exception as ex:
+                return await send(w, 400, json.dumps(str(ex)))
+        if path == '/api/prices':
+            try:
+                return await send_file(w, price.FILE, 'application/octet-stream')
+            except OSError:
+                return await send(w, 200, b'', 'application/octet-stream')
         if path == '/api/weather':
             try:
                 return await send_file(w, weather.FFILE if q.get('f') == '1' else weather.FILE, 'application/octet-stream')
@@ -1409,12 +1421,73 @@ async def weather_task():
         await asyncio.sleep(600)
 
 
+# ---------- oil prices (cheapestoil.co.uk, Northern Ireland) ----------
+price_state = {'day': None, 'tried': 0, 'err': None, 'now': None, 'pc': None}  # day last fetched; when last tried;
+# last error; the newest saved [day, cheapest, average]
+
+
+def price_view():
+    p = cfg.get('price')
+    return {'on': p is not None, 'pc': p and p.get('pc'), 'now': price_state['now'], 'err': price_state['err']}
+
+
+def set_price(b):
+    if b.get('off'):
+        cfg.pop('price', None)
+    else:
+        pc = price.ok_pc(b.get('pc'))
+        cfg['price'] = {'pc': pc}
+        if pc != price_state['pc']:  # a different area: fetch it (the saved history is kept); the same one
+            price_state['day'] = None  # again keeps today's fetch, so saving never breaks the once-a-day limit
+            price_state['tried'] = 0
+    price_state['err'] = None
+    save_cfg(cfg)
+
+
+async def price_task():
+    # once a day, after 09:00 UTC (their figures update early morning); a failure is retried after 30 minutes
+    await asyncio.sleep(120)
+    while True:
+        try:
+            now = time.time()
+            today = weather.day_of(now)
+            if price_state['now'] is None:
+                d = price.load()
+                if d:
+                    last = max(d)
+                    price_state['now'] = [last] + list(d[last] or (None, None))
+                    if last == today:
+                        price_state['day'] = today  # already fetched today (before a restart)
+                        price_state['pc'] = (cfg.get('price') or {}).get('pc')
+                d = None
+            p = cfg.get('price')
+            if (p is not None and now > 1.7e9 and wlan.isconnected() and price_state['day'] != today
+                    and now - price_state['tried'] > 1800 and time.gmtime(now)[3] >= 9):
+                price_state['tried'] = now
+                try:
+                    got = with_room(price.fetch, p['pc'])
+                    if cfg.get('price') is p:
+                        price.add(today, got)
+                        price_state['day'] = today
+                        price_state['now'] = [today, got[0], got[1]]
+                        price_state['pc'] = p['pc']
+                        price_state['err'] = None
+                except Exception as ex:
+                    price_state['err'] = str(ex) or repr(ex)
+                    print('price err', ex)
+                gc.collect()
+        except Exception as ex:
+            print('price task', ex)
+        await asyncio.sleep(600)
+
+
 async def main():
     asyncio.create_task(wifi_keeper())
     asyncio.create_task(recorder())
     asyncio.create_task(scan_scheduler())
     asyncio.create_task(alerts())
     asyncio.create_task(weather_task())
+    asyncio.create_task(price_task())
     asyncio.create_task(update_guard())
     asyncio.create_task(bootsel_reset())
     asyncio.create_task(close_first_pin_window())
