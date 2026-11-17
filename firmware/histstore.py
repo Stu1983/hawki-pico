@@ -24,6 +24,7 @@ def _records(f):
 
 def compact(name, cutoff):
     """Shrink records older than `cutoff` (epoch) to one per day. Returns (records in, out)."""
+    cutoff -= cutoff % DAY  # whole UTC days only: a day cut part-way would be merged ahead of its own later readings
     try:
         f = open(name, 'rb')
     except OSError:
