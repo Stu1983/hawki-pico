@@ -502,7 +502,7 @@ async def net_trial_guard():
     if net_trial[0]:
         print('fixed address not confirmed: going back')
         await asyncio.sleep(1)
-        machine.reset()
+        restart()
 AP_NAME = 'HAWKi-Setup-' + hx(machine.unique_id())[-4:].upper()
 
 
@@ -640,6 +640,34 @@ async def recorder():
         if now >= 1700000000 and (now // 3600) % 24 >= 3 and done_day != now // 86400:
             done_day = now // 86400
             await compact_all(now)
+
+
+def save_pending():
+    # write queued readings now, a planned restart is coming (the recorder only gets to them every 10 s, and after
+    # the restart the same reading is only a baseline: that hour would be missing)
+    while pending:
+        mac, t, lvl = pending.pop(0)
+        if t >= 1700000000 and mac in cfg['tanks']:
+            try:
+                with open(hist_name(mac), 'ab') as f:
+                    f.write(struct.pack('<IH', t, lvl))
+            except Exception as ex:
+                print('hist err', ex)
+    while pending_unset:
+        mac, tk, sts, mm = pending_unset.pop(0)
+        try:
+            unset.add(mac, mono_s() - time.ticks_diff(time.ticks_ms(), tk) // 1000, sts, mm, BOOT)
+        except Exception as ex:
+            print('unset err', ex)
+
+
+def restart():
+    # every planned restart (not the watchdog's: the loop is stuck then)
+    try:
+        save_pending()
+    except Exception as ex:
+        print('save err', ex)
+    machine.reset()
 
 
 def note_clock(now):
@@ -795,7 +823,7 @@ async def bootsel_reset():
                 led.toggle()
                 await asyncio.sleep(0.1)
             if was_fixed:  # and back to an automatic address (needs a restart)
-                machine.reset()
+                restart()
 
 
 def free_bytes():
@@ -1468,7 +1496,7 @@ async def update_guard():
             why = 'the web page of the new version is not working'
     import rollback
     if rollback.undo(why):  # (not finished: the journal stays and the next boot tries again;
-        machine.reset()     # restarting now would only loop)
+        restart()     # restarting now would only loop)
 
 
 manifest = [None]
@@ -1963,7 +1991,7 @@ async def handle(r, w):
                 await send(w, 200, json.dumps(out))
                 await asyncio.sleep(1)
             finally:
-                machine.reset()  # decided: restart even if the browser has gone away
+                restart()  # decided: restart even if the browser has gone away
         if path == '/api/net/keep' and method == 'POST':
             # the browser reached the Pico at the address on trial: keep it. (No PIN: the one-time key from the
             # signed-in request that started the trial is the proof, and a new address is a new site to the browser.)
@@ -1987,7 +2015,7 @@ async def handle(r, w):
             save_cfg(cfg)
             await send(w, 200, '"ok"')
             await asyncio.sleep(1)
-            machine.reset()
+            restart()
         if path in ('/api/notify', '/api/notify/test') and method == 'POST':
             try:
                 b = json.loads(body or '{}')
@@ -2074,7 +2102,7 @@ async def handle(r, w):
             except Exception:
                 pass  # the browser went away: restart onto the new version anyway
             await asyncio.sleep(1)
-            machine.reset()
+            restart()
         if path == '/api/deliveries':
             try:
                 return await send_file(w, 'deliv.json', 'application/json')
@@ -2118,7 +2146,7 @@ async def handle(r, w):
             save_cfg(cfg)
             await send(w, 200, '"ok"')
             await asyncio.sleep(1)
-            machine.reset()
+            restart()
         if path == '/api/discover':  # the Sensors nearby list is open: listen actively for a while
             discover(120)
             return await send(w, 200, '"ok"')
@@ -2179,7 +2207,7 @@ async def handle(r, w):
             if path == '/reboot':
                 await send(w, 200, '"rebooting"')
                 await asyncio.sleep(0.5)
-                machine.reset()
+                restart()
             if path == '/run':
                 g = {'ble': ble, 'seen': seen, 'start_scan': start_scan, 'scan_on': scan_on,
                      'hook': hook, 'asyncio': asyncio}

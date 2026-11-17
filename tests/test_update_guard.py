@@ -37,7 +37,7 @@ def run(handle, wifi=True):
          'mono_s': lambda: clock[0],
          'update_info': lambda: {'pending': True}, 'wlan': types.SimpleNamespace(isconnected=lambda: wifi),
          'cfg': {'ssid': 'home'}, 'machine': types.SimpleNamespace(reset=lambda: (_ for _ in ()).throw(Reset())),
-         'handle': handle}
+         'handle': handle, 'restart': lambda: (_ for _ in ()).throw(Reset())}
     exec(compile(ast.Module([n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n.name in names], []),
                  'app.py', 'exec'), g)
     try:
