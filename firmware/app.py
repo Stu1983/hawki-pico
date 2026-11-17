@@ -1140,7 +1140,7 @@ async def handle(r, w):
                 return await send(w, 400, json.dumps(str(ex)))
         if path == '/api/weather':
             try:
-                return await send_file(w, weather.FILE, 'application/octet-stream')
+                return await send_file(w, weather.FFILE if q.get('f') == '1' else weather.FILE, 'application/octet-stream')
             except OSError:
                 return await send(w, 200, b'', 'application/octet-stream')
         if path == '/api/primary' and method == 'POST':
@@ -1287,12 +1287,24 @@ async def handle(r, w):
 
 
 # ---------- outside temperature (Open-Meteo), to compare use with the weather ----------
-wx_state = {'done': None, 'err': None}  # day the history was last brought up to date; last error
+wx_state = {'done': None, 'errs': {}, 'fat': 0, 'norm': None, 'norm_y': None}  # day the history was last
+# brought up to date; the last error of each part; when the forecast was last fetched; the usual degree days
+# for each month and the year they were worked out for (norm_y set once all 10 years are in)
+
+
+def wx_err(part, ex):
+    if ex is None:
+        wx_state['errs'].pop(part, None)
+    else:
+        wx_state['errs'][part] = str(ex) or repr(ex)
+        print('weather', part, ex)
 
 
 def wx_view():
     w = cfg.get('wx') or {}
-    return {'name': w.get('name'), 'lat': w.get('lat'), 'lon': w.get('lon'), 'err': wx_state['err']}
+    e = wx_state['errs']
+    return {'name': w.get('name'), 'lat': w.get('lat'), 'lon': w.get('lon'),
+            'err': '; '.join('%s: %s' % (k, e[k]) for k in sorted(e)) or None, 'norm': wx_state['norm']}
 
 
 def set_location(b):
@@ -1301,9 +1313,13 @@ def set_location(b):
     else:
         name = ''.join(c for c in str(b.get('name') or '') if ' ' <= c and c != '\x7f')[:60]
         cfg['wx'] = {'lat': num(b.get('lat'), -90, 90), 'lon': num(b.get('lon'), -180, 180), 'name': name}
-    rm(weather.FILE)  # a new place (or none): its history is fetched afresh
+    for f in (weather.FILE, weather.FFILE, weather.NFILE):
+        rm(f)  # a new place (or none): its history, forecast and usual weather are fetched afresh
     wx_state['done'] = None
-    wx_state['err'] = None
+    wx_state['errs'] = {}
+    wx_state['fat'] = 0
+    wx_state['norm'] = None
+    wx_state['norm_y'] = None
     save_cfg(cfg)
 
 
@@ -1323,15 +1339,21 @@ def first_reading():
 
 
 async def weather_task():
-    # once a day (and soon after a location is set): fill in any missing days back to the first
-    # reading, and refresh the last 10 (recent figures settle). Small: ~9 KB a year per request.
+    # Three parts, each with its own error so one failing can't hold up the others:
+    #  archive: once a day (and soon after a location is set), fill in any missing days back to the first
+    #           reading and refresh the last 10 (recent figures settle). ~9 KB a year per request.
+    #  forecast: every 6 hours, the next 16 days (they drive the start of the oil forecast).
+    #  normals: the usual weather for each month, one full year a request, the last 10 years, once per place.
     await asyncio.sleep(90)
     while True:
-        try:
-            w = cfg.get('wx')
-            now = time.time()
-            today = weather.day_of(now)
-            if w and now > 1.7e9 and wlan.isconnected() and wx_state['done'] != today:
+        w = cfg.get('wx')
+        now = time.time()
+        today = weather.day_of(now)
+        yr = time.gmtime(now)[0]
+        ready = w and now > 1.7e9 and wlan.isconnected()
+        if ready and wx_state['done'] != today:
+            have = None
+            try:
                 have = weather.load()
                 first = first_reading()
                 d0 = weather.day_of(first) if first else today - 30
@@ -1345,11 +1367,45 @@ async def weather_task():
                     await asyncio.sleep(1)
                 if cfg.get('wx') is w and len(todo) <= 6:
                     wx_state['done'] = today
-                    wx_state['err'] = None
-                gc.collect()
-        except Exception as ex:
-            wx_state['err'] = str(ex) or repr(ex)
-            print('weather err', ex)
+                wx_err('archive', None)
+            except Exception as ex:
+                wx_err('archive', ex)
+            have = got = None
+            gc.collect()
+        if ready and cfg.get('wx') is w and time.time() - wx_state['fat'] > 6 * 3600:
+            try:
+                got = with_room(weather.forecast, w['lat'], w['lon'])
+                if cfg.get('wx') is w and got:
+                    weather.save(got, weather.FFILE)
+                    wx_state['fat'] = time.time()
+                wx_err('forecast', None)
+            except Exception as ex:
+                wx_err('forecast', ex)
+            got = None
+            gc.collect()
+        if ready and cfg.get('wx') is w and (wx_state['norm_y'] != yr or wx_state['norm'] is None):
+            nm = None
+            try:
+                nm = weather.norm_load(w['lat'], w['lon'])
+                wx_state['norm'] = weather.norm_view(nm, yr)  # what's saved counts now, even if a fetch fails
+                for _ in range(2):
+                    y = weather.norm_next(nm, yr)
+                    if y is None:
+                        break
+                    got = with_room(weather.fetch, w['lat'], w['lon'], weather._day('%d-01-01' % y), weather._day('%d-12-31' % y))
+                    if cfg.get('wx') is not w:
+                        break
+                    weather.norm_save(weather.norm_add(nm, y, got, yr))
+                    await asyncio.sleep(1)
+                if cfg.get('wx') is w:
+                    wx_state['norm'] = weather.norm_view(nm, yr)  # re-worked each year, so old years drop out
+                    if weather.norm_next(nm, yr) is None:
+                        wx_state['norm_y'] = yr  # all 10 years in: nothing more until next year
+                wx_err('normals', None)
+            except Exception as ex:
+                wx_err('normals', ex)
+            nm = got = None
+            gc.collect()
         await asyncio.sleep(600)
 
 

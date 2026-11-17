@@ -8,7 +8,13 @@ int16 max x10>, one per day (~2 KB a year). Days are the location's own calendar
 import json, socket, ssl, struct, time
 
 HOST = 'archive-api.open-meteo.com'
+FHOST = 'api.open-meteo.com'  # the forecast (next 16 days, plus the last week the archive hasn't caught up on)
 FILE = 'wx.bin'
+FFILE = 'wxf.bin'  # the forecast, same format as wx.bin
+NFILE = 'wxn.json'  # the usual weather for each month: average degree days over the last NYEARS full years
+NYEARS = 10
+BASE = 13.5  # degree days below this daily mean (C): heating needed. 15.5 is the usual base, less the mild days
+             # when heating stays off (the same as the built-in UK shape in common.js)
 NONE = -32768  # stored for a day Open-Meteo had no figure for, so it isn't asked for again and again
 D2000 = 946684800  # 2000-01-01 00:00 UTC
 
@@ -73,9 +79,20 @@ def url(lat, lon, d0, d1):
 
 
 def fetch(lat, lon, d0, d1, deadline=25):
-    """HTTPS GET, checked against ca.pem (Open-Meteo is Let's Encrypt -> ISRG)."""
+    """Recorded days d0..d1 (archive)."""
+    return parse(get(HOST, url(lat, lon, d0, d1), deadline))
+
+
+def forecast(lat, lon, deadline=25):
+    """The next 16 days, and the last 7 (which the archive only has a few days later)."""
+    return parse(get(FHOST, '/v1/forecast?latitude=%.4f&longitude=%.4f&daily=temperature_2m_max,temperature_2m_min'
+                            '&timezone=auto&past_days=7&forecast_days=16' % (lat, lon), deadline))
+
+
+def get(host, path, deadline=25):
+    """HTTPS GET, checked against ca.pem (Open-Meteo is Let's Encrypt -> ISRG). Returns the body."""
     t0 = time.time()
-    ai = socket.getaddrinfo(HOST, 443, 0, socket.SOCK_STREAM)[0]
+    ai = socket.getaddrinfo(host, 443, 0, socket.SOCK_STREAM)[0]
     s = socket.socket(ai[0], socket.SOCK_STREAM, ai[2])
     s.settimeout(15)
     try:
@@ -88,8 +105,8 @@ def fetch(lat, lon, d0, d1, deadline=25):
             ctx.load_verify_locations(cadata=ca)
         except Exception:
             ctx.load_verify_locations(cadata=ca.decode())
-        s = ctx.wrap_socket(s, server_hostname=HOST)
-        req = 'GET %s HTTP/1.0\r\nHost: %s\r\nUser-Agent: hawki-pico\r\nConnection: close\r\n\r\n' % (url(lat, lon, d0, d1), HOST)
+        s = ctx.wrap_socket(s, server_hostname=host)
+        req = 'GET %s HTTP/1.0\r\nHost: %s\r\nUser-Agent: hawki-pico\r\nConnection: close\r\n\r\n' % (path, host)
         (s.write if hasattr(s, 'write') else s.sendall)(req.encode())
         rd = s.read if hasattr(s, 'read') else s.recv
         parts, n = [], 0
@@ -110,10 +127,10 @@ def fetch(lat, lon, d0, d1, deadline=25):
     try:
         status = int(head.split(b' ', 2)[1])
     except (IndexError, ValueError):
-        raise OSError('no reply from ' + HOST)
+        raise OSError('no reply from ' + host)
     if status != 200:
-        raise OSError('%s said %d' % (HOST, status))
-    return parse(body)
+        raise OSError('%s said %d' % (host, status))
+    return body
 
 
 def fill(have, got, d0, d1):
@@ -143,3 +160,69 @@ def plan(have, first_day, today, chunk=180):
         else:
             d += 1
     return want[::-1]
+
+
+# ---------- the usual weather for each month (for forecasting beyond the 16-day forecast) ----------
+def dd(v):
+    """Degree days for one day's (min, max)."""
+    return max(0.0, BASE - (v[0] + v[1]) / 2)
+
+
+def norm_load(lat, lon, name=NFILE):
+    """{'at': [lat, lon], 'y': {'2025': [[12 sums of daily degree days], [12 day counts]], ...}}"""
+    try:
+        with open(name) as f:
+            n = json.load(f)
+        if n.get('at') == [lat, lon] and isinstance(n.get('y'), dict):
+            return n
+    except (OSError, ValueError):
+        pass
+    return {'at': [lat, lon], 'y': {}}
+
+
+def _window(this_year):
+    return range(this_year - 1, this_year - 1 - NYEARS, -1)  # the last NYEARS full years, newest first
+
+
+def norm_add(n, year, got, this_year):
+    """Add one full year's recorded days; years that have dropped out of the window are let go."""
+    s, c = [0.0] * 12, [0] * 12
+    for d, v in got.items():
+        m = time.gmtime(D2000 + d * 86400)[1] - 1
+        s[m] += dd(v)
+        c[m] += 1
+    n['y'][str(year)] = [s, c]
+    keep = set(str(y) for y in _window(this_year))
+    for k in list(n['y']):
+        if k not in keep:
+            del n['y'][k]
+    return n
+
+
+def norm_save(n, name=NFILE):
+    with open(name + '.tmp', 'w') as f:
+        json.dump(n, f)
+    import os
+    os.rename(name + '.tmp', name)
+
+
+def norm_next(n, this_year):
+    """The next full year to fetch (newest first), or None when all NYEARS are in."""
+    for y in _window(this_year):
+        if str(y) not in n['y']:
+            return y
+    return None
+
+
+def norm_view(n, this_year):
+    """Average degree days a day for each month over the years in the window, once 3+ are in (else None)."""
+    ys = [n['y'][str(y)] for y in _window(this_year) if str(y) in n['y']]
+    if len(ys) < 3:
+        return None
+    out = []
+    for m in range(12):
+        c = sum(y[1][m] for y in ys)
+        if c < 28 * 3:
+            return None
+        out.append(round(sum(y[0][m] for y in ys) / c, 2))
+    return out

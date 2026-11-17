@@ -383,7 +383,7 @@ function netRender(){$('hn').textContent=S.hostname||'hawki-pico';$('hn2').textC
 async function changeHost(){const v=prompt('Name on the network (letters, digits and hyphens). The Pico restarts to use it.',S.hostname||'hawki-pico');if(v==null||v.trim()===''||v.trim()===S.hostname)return;
  try{await api('/api/hostname',{hostname:v.trim()});$('status').textContent='Restarting as '+v.trim()+'…';setTimeout(load,15000)}catch(x){alert(x.message.replace(/^"|"$/g,''))}}
 function wxRender(){const w=S.wx||{};$('wx1').textContent=w.name?'Location: '+w.name:'No location set';
- $('wx2').textContent=w.name?(w.err?'Could not fetch the weather: '+w.err:'Temperatures are fetched once a day, back to your first reading.'):'Pick your town below.';$('wxRm').style.visibility=w.name?'visible':'hidden'}
+ $('wx2').textContent=w.name?(w.err?'Could not fetch the weather: '+w.err:'Temperatures are fetched once a day, back to your first reading, with a 16-day forecast and 10-year averages for the oil forecast.'):'Pick your town below.';$('wxRm').style.visibility=w.name?'visible':'hidden'}
 async function wxFind(){const q=$('wxq').value.trim(),box=$('wxr');if(q.length<2)return;box.textContent='Searching…';
  try{const r=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=en&name='+encodeURIComponent(q))).json(),l=r.results||[];box.textContent='';
   if(!l.length){box.textContent='No places found.';return}
@@ -407,7 +407,7 @@ async function dash(){if(!S.update)return;if(S.primary==='all'&&S.tanks.length>1
    AN={mac:t.mac,ck,t:Date.now()/1000,cv,base:parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)])}}catch(e){AN=null}}
  const now=Date.now()/1000,P=AN?AN.base.slice():[];
  if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383&&AN)P.push([now-t.age,toL(t.level,AN.cv)]);
- const reserve=t.cfg.reserve_l??200,A=analyse(P,{now,reserve});
+ const WV=await wxLoad(S),reserve=t.cfg.reserve_l??200,A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
  // oil left (+ unusable)
  $('d_l').textContent=t.litres==null?'–':L0(t.litres);
  const u=t.unusable;$('d_l2').textContent=(t.percent!=null?t.percent+'% · ':'')+(u?'(+ '+(u[1]==='estimate'?'about ':'')+L0(u[0])+' unusable below the outlet)':'(unusable amount not set: Tanks → Edit)');
@@ -425,7 +425,7 @@ async function dash(){if(!S.update)return;if(S.primary==='all'&&S.tanks.length>1
   if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
  else{$('d_w').textContent='–';$('d_w2').textContent=' '}
  drawTank(t);
- const key=t.mac+'|'+ck+'|'+(AN&&AN.t)+'|'+t.level+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;  // redraw only when something changed (keeps a hover open)
+ const key=t.mac+'|'+ck+'|'+(AN&&AN.t)+'|'+(WV&&WV.heat?WXC.key+WXC.at:'-')+'|'+t.level+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;  // redraw only when something changed (keeps a hover open)
  if(!ok)A.fc=null;  /* no forecast line until the tiles have one too */
  drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap:+t.cfg.capacity_l}:null)}
 
@@ -436,7 +436,7 @@ async function dashAll(){const ts=S.tanks;$('d_name').textContent='Both tanks';$
  const now=Date.now()/1000,series=AN?AN.bases.map((b,k)=>{const s=b.slice(),t=ts[k];if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383)s.push([now-t.age,toL(t.level,AN.cvs[k])]);return s}):[];
  /* only while every tank has readings: before a tank's history starts, its use isn't known */
  const from=series.every(x=>x.length)?Math.max(...series.map(x=>x[0][0])):Infinity,till=series.every(x=>x.length)?Math.min(...series.map(x=>x[x.length-1][0]))+3*H:-Infinity;  /* and only up to where every tank still has readings */
- const P=AN?combine(series).filter(p=>p[0]>=from&&p[0]<=till):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),A=analyse(P,{now,reserve});
+ const P=AN?combine(series).filter(p=>p[0]>=from&&p[0]<=till):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S),A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
  const sum=f=>ts.reduce((a,t)=>a+(f(t)||0),0),lit=sum(t=>t.litres),cap=sum(t=>+t.cfg.capacity_l),un=sum(t=>t.unusable&&t.unusable[0]),known=ts.every(t=>t.litres!=null);
  $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
  $('d_bar').style.width=(known&&cap?Math.max(0,Math.min(100,lit/cap*100)):0)+'%';
@@ -451,7 +451,7 @@ async function dashAll(){const ts=S.tanks;$('d_name').textContent='Both tanks';$
   if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
  else{$('d_w').textContent='–';$('d_w2').textContent=' '}
  drawTanks(ts);
- const key='all|'+ck+'|'+(AN&&AN.t)+'|'+ts.map(t=>t.level).join(',')+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;
+ const key='all|'+ck+'|'+(AN&&AN.t)+'|'+(WV&&WV.heat?WXC.key+WXC.at:'-')+'|'+ts.map(t=>t.level).join(',')+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;
  if(!ok)A.fc=null;
  drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap}:null)}
 

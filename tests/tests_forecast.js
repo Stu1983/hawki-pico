@@ -1,7 +1,7 @@
 // node tests/tests_forecast.js  - the seasonal model in firmware/common.js.html, without a browser
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const ctx={};vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;',ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;this.wxHeat=wxHeat;this.wxKey=wxKey;this.WX_BASE=WX_BASE;this.howText=howText;',ctx);
 let fails=0;const ok=(c,m)=>{console.log((c?'ok   ':'FAIL ')+m);if(!c)fails++};
 const DAY=86400,H=3600,T=(y,m,d)=>new Date(y,m,d,12).getTime()/1000;
 // a household: hot water 0.85 L/day in August (+25 % in Feb), heating only Sep-May
@@ -42,4 +42,27 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  const tt=T(2026,3,15),want=1.1*(0.85/ctx.hwShape(T(2026,7,15))*ctx.hwShape(tt)+6*ctx.heatShape(tt));
  ok(Math.abs(A.rate(tt)/want-1)<0.08,'April forecast '+A.rate(tt).toFixed(2)+' vs this year\'s rate '+want.toFixed(2)+' L/day');
  ok(A.fc&&A.fc.dry>t1,'one forecast, no extra margin added')}
+// 8. heating follows the real weather: a fortnight 6 C colder than usual just before 'now'
+{const norm=[9,8.5,7.5,5.5,3,1,0.3,0.4,1.5,4,6.5,8.5],now=T(2026,10,16);  /* usual degree days a day, by month */
+ const rec={},fc={};const usualT=t=>{const m=new Date(t*1000).getMonth();return WX(norm[m])};function WX(dd){return ctx.WX_BASE-dd}
+ for(let t=T(2026,5,1);t<now;t+=DAY){const tm=usualT(t)-(t>now-14*DAY?6:0);rec[ctx.wxKey(t)]=[tm-3,tm+3]}
+ for(let t=now;t<now+16*DAY;t+=DAY){const tm=usualT(t);fc[ctx.wxKey(t)]=[tm-3,tm+3]}  /* the forecast: back to normal */
+ const h=ctx.wxHeat(rec,fc,norm);ok(typeof h==='function','wxHeat builds from 12 monthly averages');
+ ok(ctx.wxHeat(rec,fc,[1,2])===null&&ctx.wxHeat(rec,fc,null)===null,'no usable averages: no weather model (built-in UK shape instead)');
+ /* true use: 0.85 L/day hot water + 0.5 L per degree day */
+ const per=0.5,p=[];let L=1200;for(let t=T(2026,5,1);t<now;t+=H){const v=rec[ctx.wxKey(t)],dd=Math.max(0,ctx.WX_BASE-(v[0]+v[1])/2);
+  const m=new Date(t*1000).getMonth();L-=(0.85/ctx.hwShape(T(2026,7,15))*ctx.hwShape(t)+(m<5||m>7?per*dd:0))/24;p.push([t,L])}
+ const A=ctx.analyse(p,{now,heat:h,wxName:'Coleraine'}),B=ctx.analyse(p,{now});
+ const tj=T(2027,0,15),want=0.85/ctx.hwShape(T(2026,7,15))*ctx.hwShape(tj)+per*norm[0];
+ ok(Math.abs(A.rate(tj)/want-1)<0.12,'after a cold snap, January with the weather: '+A.rate(tj).toFixed(2)+' vs true '+want.toFixed(2)+' (built-in UK shape says '+B.rate(tj).toFixed(2)+')');
+ ok(A.rate(tj)<B.rate(tj),'the cold fortnight is not taken as the new normal');
+ const t5=now+5*DAY,w5=0.85/ctx.hwShape(T(2026,7,15))*ctx.hwShape(t5)+per*norm[10];
+ ok(Math.abs(A.rate(t5)/w5-1)<0.15,'next week follows the forecast: '+A.rate(t5).toFixed(2)+' vs '+w5.toFixed(2));
+ ok(/Coleraine's weather: the next 16 days/.test(ctx.howText(A))&&/typical UK year/.test(ctx.howText(B)),'the words name the source: '+ctx.howText(A).slice(0,160))}
+// 9. recent days missing their weather: the fit would be skewed, so the built-in shape is used instead
+{const norm=[9,8.5,7.5,5.5,3,1,0.3,0.4,1.5,4,6.5,8.5],now=T(2026,10,16),rec={},fc={};
+ for(let t=T(2026,5,1);t<now-7*DAY;t+=DAY)rec[ctx.wxKey(t)]=[2,8];
+ const p=[];let L=900;for(let t=T(2026,5,1);t<now;t+=H){L-=3/24;p.push([t,L])}
+ const A=ctx.analyse(p,{now,heat:ctx.wxHeat(rec,fc,norm),wxName:'Coleraine'});
+ ok(A.wx===null&&/typical UK year/.test(ctx.howText(A)),'a week of missing weather: built-in shape, and the words say so')}
 process.exit(fails?1:0);

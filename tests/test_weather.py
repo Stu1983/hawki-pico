@@ -33,4 +33,29 @@ ok(h == {t - 31: None, t - 30: (1, 2), t - 29: None}, 'days with no figure are m
 ok(w.plan({**h, **{d: (1, 2) for d in range(t - 28, t + 1)}}, t - 31, t) == [(t - 10, t)], 'missing old days are not asked for again')
 w.save(h, f)
 ok(w.load(f) == {t - 31: None, t - 30: (1.0, 2.0), t - 29: None}, 'missing days survive a save')
+# the usual weather for each month (normals), one full year at a time
+import os as _os, tempfile as _tf
+weather = w
+nm = weather.norm_load(55.1, -6.6, name=_os.path.join(_tf.mkdtemp(), 'none.json'))
+ok(nm['y'] == {} and weather.norm_next(nm, 2026) == 2025, 'normals start with last year')
+ok(weather.norm_view(nm, 2026) is None, 'no averages until 3 years are in')
+def year(y, jan=(2.0, 8.0)):
+    d0, d1 = weather._day('%d-01-01' % y), weather._day('%d-12-31' % y)
+    return {d: jan if weather.ymd(d)[5:7] == '01' else (10.0, 20.0) for d in range(d0, d1 + 1)}
+for y in (2025, 2024, 2023):
+    weather.norm_add(nm, y, year(y), 2026)
+v = weather.norm_view(nm, 2026)
+ok(v and abs(v[0] - (weather.BASE - 5)) < 1e-9 and v[6] == 0, 'January %.1f degree days a day (base %.1f, mean 5 C), July 0' % (v[0], weather.BASE))
+ok(weather.norm_next(nm, 2026) == 2022, 'then the year before')
+for y in range(2016, 2023):
+    weather.norm_add(nm, y, year(y), 2026)
+ok(weather.norm_next(nm, 2026) is None and len(nm['y']) == 10, 'done after %d years' % weather.NYEARS)
+# a new year: 2026 comes in, 2016 drops out, so it stays the last 10 years
+ok(weather.norm_next(nm, 2027) == 2026, 'in 2027, 2026 is fetched')
+weather.norm_add(nm, 2026, year(2026, jan=(12.0, 14.0)), 2027)
+ok(len(nm['y']) == 10 and '2016' not in nm['y'], 'and 2016 dropped: still 10 years')
+v = weather.norm_view(nm, 2027)
+ok(abs(v[0] - ((weather.BASE - 5) * 9 + 0.5) / 10) < 1e-6, 'January averaged over the 10 years: %.2f' % v[0])
+p2 = _os.path.join(_tf.mkdtemp(), 'n.json'); weather.norm_save(nm, p2)
+ok(weather.norm_load(55.1, -6.6, p2)['y'] == nm['y'] and weather.norm_load(55.2, -6.6, p2)['y'] == {}, 'saved per place: another place starts again')
 sys.exit(1 if fails else 0)
