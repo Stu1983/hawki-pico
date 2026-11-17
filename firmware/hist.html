@@ -37,7 +37,7 @@ table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}th,td{te
 details summary{cursor:pointer;color:var(--acc);font-size:14px;margin-top:8px}
 .fd{padding:8px 0;border-bottom:1px solid var(--line)}.fd:last-child{border:0}.fd .mut{margin-top:2px;overflow-wrap:anywhere}.fd .sum{white-space:nowrap}@media (max-width:340px){.fd .sum{white-space:normal}}.fd .row>div{overflow-wrap:anywhere;min-width:0}.fd .row{display:flex;justify-content:space-between;align-items:center;gap:10px}.fd button{flex:none}
 .fl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.fl:last-child{border:0}.fl .mut{margin-top:2px}.fl .r{text-align:right;white-space:nowrap}.fl .r button{margin-top:4px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.full{grid-column:1/-1}label{display:block;font-size:13px;color:var(--mut)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.full{grid-column:1/-1}label{display:block;font-size:13px;color:var(--mut)}label[hidden]{display:none}
 input{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);margin-top:3px}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);width:min(480px,calc(100vw - 32px));padding:16px}dialog::backdrop{background:#0008}
 .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.del{color:var(--bad)}.hint{font-size:12px;color:var(--mut);margin-top:3px;min-height:15px}
@@ -106,6 +106,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <dialog id="ddlg"><form method="dialog" onsubmit="return saveDel(event)">
 <div class="row"><b id="ddT">Delivery</b><span class="mut" id="ddM"></span></div>
 <div class="grid">
+<label class="full" id="d_tkL" hidden>Tank<select id="d_tk"></select></label>
 <label class="full">Date and time<input id="d_t" type="datetime-local" required></label>
 <label>Litres delivered<input id="d_l" type="number" step="1" min="0" oninput="price('l')"><div class="hint" id="d_lh"></div></label>
 <label>Supplier<input id="d_s" list="d_sl" maxlength="40" autocomplete="off"><datalist id="d_sl"></datalist></label>
@@ -323,12 +324,15 @@ function tiles(){
  p(howText(A));}
 
 // ---------- deliveries & costs ----------
-let D={},EDIT=null;
+let D={},EDIT=null,TF={};  /* TF: each tank's own deliveries, for the all-tanks view */
 // detected deliveries (from the readings) matched to saved records (supplier/price) within 36 h
-function deliveries(){const recs=((T&&D[T.mac])||[]).slice(),out=[];
- for(const f of (A&&A.fills)||[]){let bi=-1,bd=36*H;recs.forEach((r,i)=>{const d=Math.abs(r.t-f.t);if(d<=bd){bd=d;bi=i}});
-  out.push({t:bi>=0?recs[bi].t:f.t,f,r:bi>=0?recs.splice(bi,1)[0]:null})}
- for(const r of recs)out.push({t:r.t,f:null,r});
+function match(recs,fills,mac){const out=[];recs=recs.slice();
+ for(const f of fills||[]){let bi=-1,bd=36*H;recs.forEach((r,i)=>{const d=Math.abs(r.t-f.t);if(d<=bd){bd=d;bi=i}});
+  out.push({t:bi>=0?recs[bi].t:f.t,f,mac,r:bi>=0?recs.splice(bi,1)[0]:null})}
+ for(const r of recs)out.push({t:r.t,f:null,mac,r});return out}
+/* all tanks: each tank's records matched to that tank's own deliveries (two tanks filled together are two deliveries) */
+function deliveries(){const tag=m=>(D[m]||[]).map(r=>Object.assign({mac:m},r));
+ const out=T&&T.all?S.tanks.flatMap(t=>match(tag(t.mac),TF[t.mac],t.mac)):T?match(tag(T.mac),A&&A.fills,T.mac):[];
  return out.sort((a,b)=>b.t-a.t)}
 const litresOf=x=>x.r&&x.r.litres!=null?x.r.litres:x.f?x.f.add:null;
 const pplOf=x=>{const r=x.r;if(!r)return null;if(r.ppl!=null)return r.ppl;const l=litresOf(x);return r.total!=null&&l>0?r.total/l*100:null};
@@ -343,7 +347,7 @@ function renderDeliveries(){const f=$('fills');f.textContent='';const list=deliv
   // line 3: receipt, price ... Edit
   const mk=(cls,txt)=>{const d=document.createElement('div');if(cls)d.className=cls;if(txt!=null)d.textContent=txt;return d};
   const top=mk('row'),b=document.createElement('b'),l=litresOf(x);b.textContent=l==null?'–':'+'+L0(l);
-  top.append(mk('',fmtDY(x.t)+(r&&r.supplier?' · '+r.supplier:'')),b);row.append(top);
+  const tn=T.all?(S.tanks.find(t=>t.mac===x.mac)||{}).name:null;top.append(mk('',fmtDY(x.t)+(r&&r.supplier?' · '+r.supplier:'')+(tn?' · '+tn:'')),b);row.append(top);
   if(x.f){const fr=Math.round(x.f.from),to=Math.round(x.f.to);const s1=mk('mut sum','sensor saw '+fr+' L → '+to+' L = ('+to+' − '+fr+') = '+(to-fr)+' L');row.append(s1)}
   const bits=[];if(r&&r.litres!=null&&x.f)bits.push(L0(r.litres)+' on the receipt');
   const p=pplOf(x),tot=totalOf(x);if(tot!=null)bits.push(gbp(tot));if(p!=null)bits.push(p.toFixed(1)+'p/L');
@@ -356,7 +360,7 @@ function renderDeliveries(){const f=$('fills');f.textContent='';const list=deliv
 let FIT=null;
 let FITGEN=0;
 async function fitCap(){const gen=++FITGEN,box=$('fit');FIT=null;box.textContent='Working out the tank capacity that fits your deliveries…';const mac=T&&T.mac;
- const c=T&&T.cfg,base=c&&(c.tank_l??c.tank_l_equiv);if(!base||!CV){box.textContent='';return}
+ const c=T&&T.cfg,base=c&&(c.tank_l??c.tank_l_equiv);if(!base||!CV||T.all){box.textContent='';return}  /* per tank: open a tank's tab */
  const xs=deliveries().filter(x=>x.f&&x.r&&x.r.litres>0);if(!xs.length){box.textContent='';if(deliveries().some(x=>x.f))box.textContent='Add the litres from the receipt to a delivery (Edit) and this will suggest a tank capacity that fits.';return}
  const inv=L=>{const l=CV.l;for(let i=1;i<l.length;i++)if(l[i]<=L){const a=l[i-1],b=l[i];return (i-1+(a===b?0:(a-L)/(a-b)))*CV.step}return CV.h};  // litres -> distance on the current curve
  const ms=xs.map(x=>[inv(x.f.from),inv(x.f.to),x.r.litres]);
@@ -435,7 +439,8 @@ function drawPrices(){const c7=$('c7');c7.textContent='';const Hh=200,W=fit(c7,H
 const pad=v=>String(v).padStart(2,'0');
 const toLocalInput=t=>{const d=new Date(t*1000);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())};
 function editDel(x){EDIT=x;const r=x&&x.r;
- $('ddT').textContent=x?(x.f&&!r?'Delivery seen by the sensor':'Edit delivery'):'Add a delivery';$('ddM').textContent=T.name;
+ $('ddT').textContent=x?(x.f&&!r?'Delivery seen by the sensor':'Edit delivery'):'Add a delivery';$('ddM').textContent=T.all?'':T.name;const tk=$('d_tk');tk.textContent='';S.tanks.forEach(t=>{const o=document.createElement('option');o.value=t.mac;o.textContent=t.name;tk.appendChild(o)});
+ $('d_tkL').hidden=!T.all;tk.value=x&&x.mac?x.mac:S.primary&&S.primary!=='all'?S.primary:S.tanks[0].mac;tk.disabled=!!x;  /* a delivery the sensor saw belongs to that tank */  /* a saved record stays with its tank */
  $('d_t').value=toLocalInput(x?x.t:Math.floor(now));$('d_l').value=r&&r.litres!=null?r.litres:(x&&x.f?Math.round(x.f.add):'');
  $('d_lh').textContent=x&&x.f?'The sensor saw about +'+L0(x.f.add)+'. Use the receipt figure if you have it.':'';
  $('d_s').value=r?r.supplier||'':'';$('d_n').value=r?r.note||'':'';
@@ -451,25 +456,32 @@ async function postDel(b){const r=await authFetch('/api/delivery',{method:'POST'
  D=await (await fetch('/api/deliveries')).json();renderDeliveries();costs();drawMonths();return true}
 async function saveDel(e){e.preventDefault();const t=Math.floor(new Date($('d_t').value).getTime()/1000);if(!(t>0))return false;
  const num=id=>$(id).value===''?null:+$(id).value;
- const b={mac:T.mac,t,old_t:EDIT&&EDIT.r?EDIT.r.t:null,litres:num('d_l'),supplier:$('d_s').value.trim(),ppl:num('d_p'),total:num('d_c'),note:$('d_n').value.trim()};
+ const b={mac:EDIT&&EDIT.r?EDIT.r.mac:T.all?$('d_tk').value:T.mac,t,old_t:EDIT&&EDIT.r?EDIT.r.t:null,litres:num('d_l'),supplier:$('d_s').value.trim(),ppl:num('d_p'),total:num('d_c'),note:$('d_n').value.trim()};
  if(await postDel(b))$('ddlg').close();return false}
 async function delDel(){if(!EDIT||!EDIT.r||!confirm('Delete the saved details for this delivery?'+(EDIT.f?' (It will still show, because the sensor saw it.)':'')))return;
- if(await postDel({mac:T.mac,old_t:EDIT.r.t,delete:true}))$('ddlg').close()}
+ if(await postDel({mac:EDIT.r.mac||T.mac,old_t:EDIT.r.t,delete:true}))$('ddlg').close()}
 
 // ---------- load ----------
 async function load(){
  S=await (await fetch('/api/state')).json();
- const q=new URLSearchParams(location.search);let mac=q.get('mac');if(!S.tanks.find(t=>t.mac===mac))mac=S.tanks[0]&&S.tanks[0].mac;
- const tb=$('tabs');tb.textContent='';if(S.tanks.length>1)S.tanks.forEach(t=>{const b=document.createElement('button');b.textContent=t.name;b.setAttribute('aria-pressed',t.mac===mac);b.onclick=()=>{history.replaceState(null,'','?mac='+t.mac);load()};tb.appendChild(b)});
+ const q=new URLSearchParams(location.search),multi=S.tanks.length>1;let mac=q.get('mac');
+ if(!(mac==='all'&&multi)&&!S.tanks.find(t=>t.mac===mac))mac=multi?'all':S.tanks[0]&&S.tanks[0].mac;  /* with 2+ tanks: all of them together first */
+ const tb=$('tabs');tb.textContent='';if(multi)[{mac:'all',name:'All tanks'}].concat(S.tanks).forEach(t=>{const b=document.createElement('button');b.textContent=t.name;b.setAttribute('aria-pressed',t.mac===mac);b.onclick=()=>{history.replaceState(null,'','?mac='+t.mac);load()};tb.appendChild(b)});
  if(!mac){$('sub').textContent='No tanks set up yet.';return}
- T=S.tanks.find(t=>t.mac===mac);$('ttl').textContent=T.name;
- const [buf,cv,dl]=await Promise.all([fetch('/api/hist?mac='+mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+mac).then(r=>r.json()),fetch('/api/deliveries').then(r=>r.json()).catch(()=>({}))]);D=dl||{};
- CV=cv;now=Date.now()/1000;
- P=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);
- if(T.level!=null&&T.age!=null&&T.age<1800&&T.level!==16383)P.push([now-T.age,toL(T.level,cv),T.level]);
+ now=Date.now()/1000;const live=(t,cv)=>t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383?[now-t.age,toL(t.level,cv),t.level]:null;
+ const dlP=fetch('/api/deliveries').then(r=>r.json()).catch(()=>({}));let late=[];
+ if(mac==='all'){const ts=S.tanks,got=await Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+t.mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+t.mac).then(r=>r.json())])));
+  const series=got.map(([buf,cv],k)=>{const s=parse(buf).map(([t,mm])=>[t,toL(mm,cv)]),l=live(ts[k],cv);if(l)s.push(l.slice(0,2));return s});
+  const sum=f=>ts.reduce((a,t)=>a+(+f(t)||0),0),known=ts.every(t=>t.litres!=null),cap=sum(t=>t.cfg.capacity_l);
+  T={mac:'all',all:true,name:ts.length>2?'All tanks':'Both tanks',cfg:{capacity_l:cap,reserve_l:Math.max(...ts.map(t=>t.cfg.reserve_l??200))},litres:known?sum(t=>t.litres):null,percent:known&&cap?Math.round(sum(t=>t.litres)/cap*1000)/10:null};
+  CV=null;P=combine(series).map(p=>[p[0],p[1],null]);TF={};ts.forEach((t,k)=>{TF[t.mac]=analyse(series[k],{now}).fills});
+  const t0=P.length?P[0][0]:0;late=series.map((s,k)=>s.length&&s[0][0]>t0+DAY?ts[k].name+' from '+fmtDY(s[0][0]):null).filter(Boolean)}  /* tanks whose readings start later: held level before then */
+ else{T=S.tanks.find(t=>t.mac===mac);const[buf,cv]=await Promise.all([fetch('/api/hist?mac='+mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+mac).then(r=>r.json())]);
+  CV=cv;P=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);const l=live(T,cv);if(l)P.push(l)}
+ $('ttl').textContent=T.name;D=(await dlP)||{};
  const WV=await wxLoad(S);A=analyse(P,{now,reserve:T.cfg.reserve_l??200,heat:WV&&WV.heat,wxName:WV&&WV.name});
  if(!(A.recent!=null&&A.span>=2))A.fc=null;  /* no forecast line until there's a forecast */
- $('sub').textContent=P.length?'Readings since '+fmtDY(P[0][0])+' · '+(A.span<1?Math.round(A.span*24)+' hours':Math.round(A.span)+' days'):'No readings saved yet';
+ $('sub').textContent=(P.length?'Readings since '+fmtDY(P[0][0])+' · '+(A.span<1?Math.round(A.span*24)+' hours':Math.round(A.span)+' days'):'No readings saved yet')+(late.length?' · readings for '+late.join(', ')+' (held level before then)':'');
  const rg=$('rng');rg.textContent='';[['7','7 days'],['30','30 days'],['365','1 year'],['all','All']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',k===R);b.onclick=()=>{R=k;try{localStorage.hawkiRange=k}catch(e){}[...rg.children].forEach(c=>c.setAttribute('aria-pressed',c===b));drawLevel()};rg.appendChild(b)});
  tiles();drawLevel();drawMonths();drawHours();loadWx();loadPrices()}
 try{R=localStorage.hawkiRange||'30'}catch(e){}

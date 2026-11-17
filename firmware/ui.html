@@ -450,20 +450,18 @@ async function dash(){if(!S.update)return;if(S.primary==='all'&&S.tanks.length>1
  if(!ok)A.fc=null;  /* no forecast line until the tiles have one too */
  drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap:+t.cfg.capacity_l}:null)}
 
-async function dashAll(){const ts=S.tanks;$('d_name').textContent='Both tanks';$('d_hist').style.visibility='hidden';
+async function dashAll(){const ts=S.tanks;$('d_name').textContent=ts.length>2?'All tanks':'Both tanks';$('d_hist').style.visibility='visible';$('d_hist').href='/history?mac=all';
  const ck=JSON.stringify(ts.map(t=>[t.mac,t.cfg])),fresh=AN&&AN.mac==='all'&&AN.ck===ck&&Date.now()/1000-AN.t<600;
  if(!fresh){try{const got=await Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])));
    AN={mac:'all',ck,t:Date.now()/1000,cvs:got.map(g=>g[1]),bases:got.map(([buf,cv])=>parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)]))}}catch(e){AN=null}}
  const now=Date.now()/1000,series=AN?AN.bases.map((b,k)=>{const s=b.slice(),t=ts[k];if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383)s.push([now-t.age,toL(t.level,AN.cvs[k])]);return s}):[];
- /* only while every tank has readings: before a tank's history starts, its use isn't known */
- const from=series.every(x=>x.length)?Math.max(...series.map(x=>x[0][0])):Infinity,till=series.every(x=>x.length)?Math.min(...series.map(x=>x[x.length-1][0]))+3*H:-Infinity;  /* and only up to where every tank still has readings */
- const P=AN?combine(series).filter(p=>p[0]>=from&&p[0]<=till):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S),A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
+ const P=AN?combine(series):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S),A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
  const sum=f=>ts.reduce((a,t)=>a+(f(t)||0),0),lit=sum(t=>t.litres),cap=sum(t=>+t.cfg.capacity_l),un=sum(t=>t.unusable&&t.unusable[0]),known=ts.every(t=>t.litres!=null);
  $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
  $('d_bar').style.width=(known&&cap?Math.max(0,Math.min(100,lit/cap*100)):0)+'%';
  const ok=A.recent!=null&&A.span>=2,av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;
  $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
- $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average, both tanks':(P.length?'needs 2 days with readings from both tanks':'no readings from both tanks yet');
+ $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average, both tanks':(P.length?'needs 2 days of readings':'no readings yet');
  $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';
  const wt=$('d_wt');wt.className='card tile';
  if(ok){const c=A.fc,wk=x=>(x-now)/(7*DAY);
@@ -528,8 +526,6 @@ function drawTanks(ts){const sv=$('d_tank'),dots=$('d_dots');TI=TMAC?ts.findInde
 function showTank(i){const ts=S.tanks;if(ts.length<2||S.primary!=='all')return;TI=(i+ts.length)%ts.length;TMAC=ts[TI].mac;try{localStorage.hawkiTankView=TMAC}catch(e){}drawTanks(ts)}
 // Both tanks as one: oil left = the two added; the level series is their sum, so daily use is the
 // combined drop (a tank you didn't draw from adds nothing, rather than dragging the average down)
-function combine(series){const ts=[...new Set(series.flatMap(s=>s.map(p=>p[0])))].sort((a,b)=>a-b),idx=series.map(()=>0);
- return ts.map(t=>[t,series.reduce((sum,s,k)=>{if(!s.length)return sum;while(idx[k]+1<s.length&&s[idx[k]+1][0]<=t)idx[k]++;return sum+s[idx[k]][1]},0)  /* last reading at or before t (before a tank's first reading: that first one) */])}
 function drawRate(A,now){const svg=$('c_rate');if(!A){noData(svg,'Daily use shows after 2 days of readings');return}
  const t1=midnight(now),t0=addDays(t1,-30),ds=[];for(let t=t0;t<t1;t=addDays(t,1))if(A.days[t]!=null)ds.push([t,Math.max(0,A.days[t])]);
  if(!ds.length){noData(svg,'No full days in the last 30 yet');return}
