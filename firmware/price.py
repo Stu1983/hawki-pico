@@ -10,6 +10,7 @@ import weather
 
 HOST = 'www.cheapestoil.co.uk'
 FILE = 'price.bin'
+HFILE = 'priceh.bin'  # older days, same format: Northern Ireland figures imported once from cheapestoil.co.uk's price chart
 
 
 def ok_pc(s):

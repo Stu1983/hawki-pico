@@ -1,11 +1,11 @@
 {
- "version": "1.2.31",
- "ref": "v1.2.31",
- "notes": "Oil prices (Northern Ireland): set your postcode district under Config \u2192 Oil prices (a nearby one is suggested from your weather town) and the Pico saves the cheapest and average quote from cheapestoil.co.uk once a day; the History page charts them against what you paid.",
+ "version": "1.2.32",
+ "ref": "v1.2.32",
+ "notes": "History: Oil a year is now a 2-year average in litres (cost underneath); oil-price chart shows Northern Ireland prices back to 2021 with 1 year / 3 years / All.",
  "files": {
   "app.py": [
-   "74b1fe2374ace8492da3e9b7e6a287a3b96a7e8986ed3b8b215d2f37c5c6a5e2",
-   61643
+   "08f04070181e00bdd7468d214a154f8aecb9302d85b25fa17f5a0e4a7b6307bc",
+   61681
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -24,8 +24,8 @@
    2120
   ],
   "hist.html": [
-   "0582e5060ac686baa5805ec7941219df69d99694f18534f7c3043749c71375f4",
-   50611
+   "4a31b8d9c6397397f28d34c382bf360301e91e39f98c3a298db82d07b579580a",
+   52265
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
@@ -40,8 +40,8 @@
    4530
   ],
   "price.py": [
-   "2300146b5219826df16f80100a484f854cdfd7eea61e9d4fe621d18d81b02d41",
-   1726
+   "fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377",
+   1851
   ],
   "tankcalc.py": [
    "0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6",
@@ -56,7 +56,7 @@
    9943
   ],
   "version.py": [
-   "d80e4f5cd080e22d1dadfada42c70737335adcc4503b5a070235a2e84a12b400",
+   "302dc6e9d8da141183d003ce55630fe084ed70aa74d5887891bfb9b93a64bd32",
    19
   ],
   "weather.py": [
@@ -65,7 +65,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"74b1fe2374ace8492da3e9b7e6a287a3b96a7e8986ed3b8b215d2f37c5c6a5e2\", 61643], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"5fdc3989d6cf67a4c69850c9dcd30b1c3af9105a60d9b4611d6e4b9250709f6d\", 13701], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"0582e5060ac686baa5805ec7941219df69d99694f18534f7c3043749c71375f4\", 50611], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"2300146b5219826df16f80100a484f854cdfd7eea61e9d4fe621d18d81b02d41\", 1726], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"6fdddbc41fc56ebccc0f56b1f724e0aa88bcbad994f714a9a1f8a11c6953d606\", 68632], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"d80e4f5cd080e22d1dadfada42c70737335adcc4503b5a070235a2e84a12b400\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Oil prices (Northern Ireland): set your postcode district under Config \\u2192 Oil prices (a nearby one is suggested from your weather town) and the Pico saves the cheapest and average quote from cheapestoil.co.uk once a day; the History page charts them against what you paid.\", \"ref\": \"v1.2.31\", \"version\": \"1.2.31\"}",
-  "sig": "1c29348dba0f622ffbaa3a410dba43654ae4e4bc5740d267164a6e83898620ed1c6f8ab005ed7a702c19854b794faf261240aab545e768157df9c1a912dd1f9ca56078a494066923fc1527392ca6bd496a1df815f298af6f89466ea81eb16067f241a2e2581e49ad42d72f2ce1dd532b426075367949888a99e70c83a4f5dabf58633ebf0727fd6e177441ce154ffe632833e6ebe478ed44a297c22155ce70675f13c2bc99359d02cb9f32fb483b054cdf23d25b4b63b026087371de61d86e3cfc526c7c616719395ce4394a06e16da4bd68f1f7cbe77f03cf7f6976676fb33e410ed5a00a6ec811c84d48388f75e41ea2d418d6b7736fef810a690768d02370"
+  "body": "{\"files\": {\"app.py\": [\"08f04070181e00bdd7468d214a154f8aecb9302d85b25fa17f5a0e4a7b6307bc\", 61681], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"5fdc3989d6cf67a4c69850c9dcd30b1c3af9105a60d9b4611d6e4b9250709f6d\", 13701], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"4a31b8d9c6397397f28d34c382bf360301e91e39f98c3a298db82d07b579580a\", 52265], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"6fdddbc41fc56ebccc0f56b1f724e0aa88bcbad994f714a9a1f8a11c6953d606\", 68632], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"302dc6e9d8da141183d003ce55630fe084ed70aa74d5887891bfb9b93a64bd32\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"History: Oil a year is now a 2-year average in litres (cost underneath); oil-price chart shows Northern Ireland prices back to 2021 with 1 year / 3 years / All.\", \"ref\": \"v1.2.32\", \"version\": \"1.2.32\"}",
+  "sig": "89461ed6181d7ef68829f4f3b57fd4b30c2335bf47f7e38b013c6148123e3a72272a32441392c1580b6a22adee3ef73afd11aeaca2ac528ed2d7d9e9982e75cd4cdaa011750d0e422e8b5337be0d85a6a81dfe1f516c78f3cc2a2171d26089a61e286bf2d064f5e605e734dc9604ef292ae6b74c34bde4172ced60bd722cd187410ec2715f6506e3c384ec6a6c7ab663f3ca9b18f07dad8e7af5e71a45b4a82f67d01ad407853498b4faacdf34fca6e4fa31094b497219868c1b65ea9dfe80326e99cb16b759d0d9b1c19b2034a28112915c825835737768c87938092cd1429fc476121e6090b2c711d74450e91a6ba7b0c90b99def96c1a3aa5ff66c506f54a"
  }
 }

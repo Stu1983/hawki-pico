@@ -1147,7 +1147,7 @@ async def handle(r, w):
                 return await send(w, 400, json.dumps(str(ex)))
         if path == '/api/prices':
             try:
-                return await send_file(w, price.FILE, 'application/octet-stream')
+                return await send_file(w, price.HFILE if q.get('h') == '1' else price.FILE, 'application/octet-stream')
             except OSError:
                 return await send(w, 200, b'', 'application/octet-stream')
         if path == '/api/weather':

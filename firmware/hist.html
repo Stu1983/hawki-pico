@@ -92,11 +92,12 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <div class="tiles">
  <div class="card tile"><div class="k">Last price paid</div><div class="v" id="c_last">–</div><div class="n" id="c_last2"></div></div>
  <div class="card tile"><div class="k">Average price</div><div class="v" id="c_avg">–</div><div class="n" id="c_avg2"></div></div>
- <div class="card tile"><div class="k">Spend a year</div><div class="v" id="c_spent">–</div><div class="n" id="c_spent2"></div></div>
+ <div class="card tile"><div class="k">Oil a year</div><div class="v" id="c_spent">–</div><div class="n" id="c_spent2"></div></div>
  <div class="card tile"><div class="k">Heating costs lately</div><div class="v" id="c_run">–</div><div class="n" id="c_run2"></div></div>
 </div>
 <div class="mut" id="c_hint" style="min-height:18px"></div>
 <div class="card" style="margin-top:8px"><b>Oil prices</b> <span class="mut" id="prHead"></span>
+ <div class="seg" id="prRng" style="margin-top:6px;min-height:34px"></div>
  <svg id="c7" viewBox="0 0 640 200" role="img" aria-label="Quoted oil prices over time, with the prices you paid"></svg>
  <div class="legend"><span><i class="l" style="border-color:var(--s1)"></i>Average quote</span><span><i class="d" style="border-color:var(--s1)"></i>Cheapest quote</span><span><i style="background:var(--card);border:2px solid var(--s3);border-radius:50%;width:10px"></i>You paid</span></div>
  <div class="mut" id="prNote" style="min-height:18px"></div></div>
@@ -377,7 +378,7 @@ async function useFit(){if(!FIT||!T||FIT.mac!==T.mac||!confirm('Set the tank cap
  const b=Object.assign({},T.cfg,{mac:T.mac,name:T.name,tank_l:FIT.v});delete b.tank_l_equiv;
  const r=await authFetch('/api/tank',{method:'POST',body:JSON.stringify(b)});if(!r.ok){alert(await r.json().catch(()=>'Could not save'));return}location.reload()}
 function costs(){const ids=['c_last','c_avg','c_spent','c_run'];ids.forEach(i=>{$(i).textContent='–';$(i+'2').textContent=''});spendByYear();
- const rc=receipts().filter(x=>x.t>now-730*DAY);if(rc.length){$('c_spent').textContent=gbp0(rc.reduce((a,x)=>a+(x.c||0),0)/2);$('c_spent2').textContent=L0(rc.reduce((a,x)=>a+(x.l||0),0)/2)+' a year · 2-year average'}
+ const rc=receipts().filter(x=>x.t>now-730*DAY);if(rc.length){const okL=rc.every(x=>x.l!=null),okC=rc.every(x=>x.c!=null);$('c_spent').textContent=okL?L0(rc.reduce((a,x)=>a+x.l,0)/2):'–';$('c_spent2').textContent=(okC?'≈ '+gbp0(rc.reduce((a,x)=>a+x.c,0)/2)+' a year · ':'')+'2-year average'+(okL&&okC?'':' (a receipt is missing its litres or cost)')}
  const pr=deliveries().filter(x=>pplOf(x)!=null&&litresOf(x)!=null);
  $('c_hint').textContent=pr.length?'Prices include VAT. Running costs use the last price paid.':'Add the price to a delivery (Edit) to track costs.';
  if(!pr.length)return;const last=pr[0];
@@ -391,24 +392,28 @@ function costs(){const ids=['c_last','c_avg','c_spent','c_run'];ids.forEach(i=>{
    next, so the fair figure is a rolling 2-year average: each year shown with the average of it and the year before. */
 function receipts(){const out=[];for(const mac in D)for(const r of D[mac]||[]){const l=r.litres!=null&&r.litres>0?r.litres:null,c=r.total!=null?r.total:r.ppl!=null&&l!=null?r.ppl*l/100:null;if(l!=null||c!=null)out.push({t:r.t,l,c})}return out}
 function spendByYear(){const tb=$('yrs'),Y={};tb.textContent='';
- for(const r of receipts()){const y=new Date(r.t*1000).getFullYear(),o=Y[y]||(Y[y]={l:0,c:0,pc:0,pl:0,ts:{}});o.ts[r.t]=1;if(r.l!=null)o.l+=r.l;if(r.c!=null)o.c+=r.c;if(r.c!=null&&r.l!=null){o.pc+=r.c;o.pl+=r.l}}
- const ys=Object.keys(Y).sort((a,b)=>b-a),row=(cells,h)=>{const tr=document.createElement('tr');cells.forEach(v=>{const c=document.createElement(h?'th':'td');c.textContent=v;tr.appendChild(c)});tb.appendChild(tr)};
+ for(const r of receipts()){const y=new Date(r.t*1000).getFullYear(),o=Y[y]||(Y[y]={l:0,c:0,pc:0,pl:0,nl:0,nc:0,ts:{}});o.ts[r.t]=1;if(r.l!=null)o.l+=r.l;else o.nl++;if(r.c!=null)o.c+=r.c;else o.nc++;if(r.c!=null&&r.l!=null){o.pc+=r.c;o.pl+=r.l}}
+ const ys=Object.keys(Y).sort((a,b)=>b-a),row=(cells,h)=>{const tr=document.createElement('tr');cells.forEach(v=>{const c=document.createElement(h?'th':'td');c.textContent=v;tr.appendChild(c)});tb.appendChild(tr);return tr};
  if(!ys.length){row(['No delivery details saved yet.']);return}
  const first=+ys[ys.length-1];
  row(['Year','Bought','Spent','Price','2-yr avg'],1);
- for(const y of ys){const o=Y[y],p=Y[y-1]||{l:0,c:0},two=+y>first?gbp0((o.c+p.c)/2):'–';
-  row([y,L0(o.l),o.c?gbp0(o.c):'–',o.pl?(o.pc/o.pl*100).toFixed(1)+'p':'–',two])}
- row([' ']);tb.lastChild.firstChild.colSpan=5;tb.lastChild.firstChild.className='mut';tb.lastChild.firstChild.style.textAlign='left';tb.lastChild.firstChild.style.whiteSpace='normal';tb.lastChild.firstChild.textContent='2-yr avg: the year and the one before, halved (oil bought one year is often burnt the next).'}
+ for(const y of ys){const o=Y[y],p=Y[y-1]||{l:0,c:0,nl:0,nc:0};
+  const tr=row([y,L0(o.l),o.c?gbp0(o.c):'–',o.pl?(o.pc/o.pl*100).toFixed(1)+'p':'–','']),td=tr.lastChild;if(+y>first){td.textContent=o.nl||p.nl?'–':L0((o.l+p.l)/2);const sm=document.createElement('div');sm.className='mut';sm.textContent=o.nc||p.nc?'–':gbp0((o.c+p.c)/2);td.appendChild(sm)}else td.textContent='–'}  /* a receipt missing its litres or cost: that average isn't known */
+ row([' ']);tb.lastChild.firstChild.colSpan=5;tb.lastChild.firstChild.className='mut';tb.lastChild.firstChild.style.textAlign='left';tb.lastChild.firstChild.style.whiteSpace='normal';tb.lastChild.firstChild.textContent='2-yr avg: litres (and cost) for the year and the one before, halved. Oil bought one year is often burnt the next.'}
 /* quoted prices (cheapestoil.co.uk, once a day): [[time, cheapest, average]] in pence a litre */
-let PR=null;
-async function loadPrices(){try{const b=await (await fetch('/api/prices')).arrayBuffer(),v=new DataView(b),o=[];
- for(let i=0;i+6<=b.byteLength;i+=6){const c=v.getInt16(i+2,true);if(c!==-32768)o.push([946684800+v.getUint16(i,true)*86400+43200,c/10,v.getInt16(i+4,true)/10])}PR=o}catch(e){PR=[]}drawPrices()}
+let PR=null,PRH0=null,PRR='3';try{PRR=localStorage.hawkiPrRange||'3'}catch(e){}
+const prRead=b=>{const v=new DataView(b),o=[];for(let i=0;i+6<=b.byteLength;i+=6){const c=v.getInt16(i+2,true);if(c!==-32768)o.push([946684800+v.getUint16(i,true)*86400+43200,c/10,v.getInt16(i+4,true)/10])}return o};
+/* the Pico's own daily quotes, and before them the imported Northern Ireland history (PRH0: where that ends) */
+async function loadPrices(){try{const[a,b]=await Promise.all(['/api/prices','/api/prices?h=1'].map(u=>fetch(u).then(r=>r.ok?r.arrayBuffer():new ArrayBuffer(0))));
+ const own=prRead(a),first=own.length?own[0][0]:Infinity,old=prRead(b).filter(r=>r[0]<first);PRH0=old.length?old[old.length-1][0]:null;PR=old.concat(own)}catch(e){PR=[]}drawPrices()}
 function drawPrices(){const c7=$('c7');c7.textContent='';const Hh=200,W=fit(c7,Hh),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb,pr=S&&S.price||{};
  $('prHead').textContent=pr.on?'· '+(pr.pc||'Northern Ireland'):'';
- const paid=receipts().filter(r=>r.c!=null&&r.l).map(r=>[r.t,r.c/r.l*100]),q=PR||[];
+ const paid=receipts().filter(r=>r.c!=null&&r.l).map(r=>[r.t,r.c/r.l*100]);let q=PR||[];
  if(!q.length&&!paid.length){el('text',{x:W/2,y:Hh/2,'text-anchor':'middle'},c7,PR?'No prices yet':'Loading…');
   $('prNote').textContent=pr.on?'Quotes are saved once a day from now on, so this fills in over time.':'Turn on oil prices under Config → Oil prices (Northern Ireland).';return}
- const t1=now,t0=Math.min(now-90*DAY,q.length?q[0][0]:now),pts=paid.filter(p=>p[0]>=t0);
+ const rg=$('prRng');rg.textContent='';const span0=q.length?(now-q[0][0])/DAY:0;
+ if(span0>400)[['1','1 year'],['3','3 years'],['all','All']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',k===PRR);b.onclick=()=>{PRR=k;try{localStorage.hawkiPrRange=k}catch(e){}drawPrices()};rg.appendChild(b)});
+ const t1=now,t0=span0>400&&PRR!=='all'?now-(+PRR)*365*DAY:Math.min(now-90*DAY,q.length?q[0][0]:now),qa=q,pts=paid.filter(p=>p[0]>=t0);q=q.filter(r=>r[0]>=t0);
  const vs=[...q.map(r=>r[1]),...q.map(r=>r[2]),...pts.map(p=>p[1])],lo0=vs.length?Math.min(...vs):50,hi0=vs.length?Math.max(...vs):100;
  const st=niceStep(Math.max(10,hi0-lo0),4),lo=Math.floor(lo0/st)*st-(lo0%st===0?st:0),hi=Math.ceil(hi0/st)*st+(hi0%st===0?st:0);
  const x=t=>ml+(t-t0)/(t1-t0)*pw,y=v=>mt+ph-(v-lo)/(hi-lo)*ph;
@@ -426,7 +431,7 @@ function drawPrices(){const c7=$('c7');c7.textContent='';const Hh=200,W=fit(c7,H
  /* hover anywhere on the quotes: that day's figures */
  if(q.length){const hit=el('rect',{x:ml,y:mt,width:pw,height:ph,fill:'transparent'},c7),near=e=>{const b=c7.getBoundingClientRect(),xx=(e.clientX-b.left)*W/b.width,t=t0+(xx-ml)/pw*(t1-t0);let best=q[0];for(const r of q)if(Math.abs(r[0]-t)<Math.abs(best[0]-t))best=r;return best};
   const mv=e=>{const r=near(e);showTip(e,[r[2].toFixed(1)+'p/L average',r[1].toFixed(1)+'p/L cheapest · '+fmtDY(r[0])])};hit.addEventListener('pointermove',mv);hit.addEventListener('pointerdown',mv);hit.addEventListener('pointerleave',hideTip);c7.insertBefore(hit,c7.firstChild.nextSibling)}
- const last=q[q.length-1];$('prNote').textContent=(last?'Latest quote '+fmtD(last[0])+': '+last[1].toFixed(1)+'p cheapest, '+last[2].toFixed(1)+'p average for 900 L (cheapestoil.co.uk). ':'')+(q.length<14&&pr.on?'Saved once a day, so the lines build up over time.':'')}
+ const last=qa[qa.length-1];$('prNote').textContent=(last?'Latest quote '+fmtD(last[0])+': '+last[1].toFixed(1)+'p cheapest, '+last[2].toFixed(1)+'p average for 900 L (cheapestoil.co.uk, '+(PRH0&&last[0]<=PRH0?'Northern Ireland':pr.pc||'Northern Ireland')+'). ':'')+(PRH0?'Up to '+fmtDY(PRH0)+': Northern Ireland figures imported from cheapestoil.co.uk\'s price chart; after that, the Pico\'s own daily quotes for your area.':q.length<14&&pr.on?'Saved once a day, so the lines build up over time.':'')}
 const pad=v=>String(v).padStart(2,'0');
 const toLocalInput=t=>{const d=new Date(t*1000);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())};
 function editDel(x){EDIT=x;const r=x&&x.r;
