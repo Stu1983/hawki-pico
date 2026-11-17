@@ -1,7 +1,7 @@
 {
- "version": "1.2.29",
- "ref": "v1.2.29",
- "notes": "Forecast follows your own weather: once a location is set, heating is sized on the real temperatures of the last 14 days, then forecast from the next 16 days' forecast and the usual weather for the time of year (10-year averages for your location), instead of a typical UK year.",
+ "version": "1.2.30",
+ "ref": "v1.2.30",
+ "notes": "History: Spend by year for every tank, with a rolling 2-year average (oil bought one year is often burnt the next); the Spend a year tile is that 2-year average.",
  "files": {
   "app.py": [
    "43dd08d6054090da507fc5263599773961a6eff9abcdf144fadb0a6e8efaec1a",
@@ -24,8 +24,8 @@
    2120
   ],
   "hist.html": [
-   "b909fd006c6605f5823e992f7aaf03b08e03313df24e40fca3d50c1deddbd772",
-   44280
+   "147ae74b17631348203cdf127693f43bf29bcb2bf1c5b8c3d5ba311c4f504650",
+   46204
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
@@ -52,7 +52,7 @@
    9943
   ],
   "version.py": [
-   "fbeb145079450ce3823d035538d9060f78c3d3ecc2923d7be53297a0770c262f",
+   "33468aa43a216fcca6de5e4494ebfdf6c66a578827e2f982dac14ceea2d43534",
    19
   ],
   "weather.py": [
@@ -61,7 +61,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"43dd08d6054090da507fc5263599773961a6eff9abcdf144fadb0a6e8efaec1a\", 58520], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"5fdc3989d6cf67a4c69850c9dcd30b1c3af9105a60d9b4611d6e4b9250709f6d\", 13701], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"b909fd006c6605f5823e992f7aaf03b08e03313df24e40fca3d50c1deddbd772\", 44280], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"71b0b6aed55826fcf9133a33d7540d493aab0560ef98dcd96d843194deea62a5\", 65738], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"fbeb145079450ce3823d035538d9060f78c3d3ecc2923d7be53297a0770c262f\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Forecast follows your own weather: once a location is set, heating is sized on the real temperatures of the last 14 days, then forecast from the next 16 days' forecast and the usual weather for the time of year (10-year averages for your location), instead of a typical UK year.\", \"ref\": \"v1.2.29\", \"version\": \"1.2.29\"}",
-  "sig": "6bb05623cfebad609f8e8dd5e963e8b92a98fd76972f3e8df5d671f73d33c50fa72df452ceb2da199838730cc4c2762d8d01a4b4d2a1aa22c14d31150da4f372b438f1dc29503e43c8ec5d4ae441323874a3ac0b8058de3e16fc1262d41c014cf39df6cec1117282586b3875842963a37ad9c436dbcdb953b7204f9646e646ac09b364b4227d84ceb16bf8c57437eacb015647f62327627979f95a9b953ee1387f1891057e04ebd26f0cbc50087ccff4a364a470093badc2e5e7f13bc9a2b37958a01a5fdac99698e474a9bec0a87f1964ad7464323d8f18563e857cdcfbacfec7a2d9cbc70ff1ba5687fdb11d89f45ea33c55f9d4f57a5dbd5210e20fbf5031"
+  "body": "{\"files\": {\"app.py\": [\"43dd08d6054090da507fc5263599773961a6eff9abcdf144fadb0a6e8efaec1a\", 58520], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"5fdc3989d6cf67a4c69850c9dcd30b1c3af9105a60d9b4611d6e4b9250709f6d\", 13701], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"147ae74b17631348203cdf127693f43bf29bcb2bf1c5b8c3d5ba311c4f504650\", 46204], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"71b0b6aed55826fcf9133a33d7540d493aab0560ef98dcd96d843194deea62a5\", 65738], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"33468aa43a216fcca6de5e4494ebfdf6c66a578827e2f982dac14ceea2d43534\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"History: Spend by year for every tank, with a rolling 2-year average (oil bought one year is often burnt the next); the Spend a year tile is that 2-year average.\", \"ref\": \"v1.2.30\", \"version\": \"1.2.30\"}",
+  "sig": "5f813dddfc417286e29dd3baa8cd34f1d3b9d454728eb4eeb2e847440bcdeb3ecf15da9dbcdd43aea9f616782318bab37ea90c23e301b320ee0095d6b2ca59d69ad0d9802e29c616d26655c50c999b207c6b35bfd11f8e83b573fcf775b74b19d7e4e56835cbdb35780d78104d329ed37b40bb96d6d1396e5f4cc9db07f9a2b9f69a8498692fd373391db14e694894fa3620daadd40b56f6c77986f28fd4cba4398d45b50c9f65ed5eb47cc541764ccb62d7a400da3bb373876203abc786d9c5aab0c3f3ac3ce9a52847ab3185d9915e8ba7c36facadf29538aaf94f532ed5249a31e6f6ae15f7653e855f912287e5446aaaca0c8367da6db0f25c99e4c58734"
  }
 }
