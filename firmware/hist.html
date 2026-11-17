@@ -46,7 +46,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <a href="/">&larr; Tanks</a>
 <h1 id="ttl">History</h1><div class="sub" id="sub">Loading…</div>
 <div class="tabs" id="tabs"></div>
-<div class="seg" id="pgs"><button type="button" data-pg="use" onclick="page('use')">Usage</button><button type="button" data-pg="cost" onclick="page('cost')">Costs</button></div>
+<div class="seg" id="pgs"><button type="button" data-pg="use" onclick="page('use')">Usage</button><button type="button" data-pg="cost" onclick="page('cost')">Costs</button><button type="button" data-pg="del" onclick="page('del')">Deliveries</button></div>
 
 <div class="pg pg_use">
 <div class="tiles">
@@ -88,16 +88,18 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 </div>
 
 </div>
-<div class="pg pg_cost">
+<div class="pg pg_del">
 <h2>Deliveries</h2>
 <div class="card"><div id="fills"><div class="empty">Loading…</div></div><div class="mut" id="fit" style="margin-top:8px;min-height:18px"></div><div class="acts" style="justify-content:flex-start;margin-top:8px"><button onclick="editDel(null)">Add a delivery</button></div></div>
 
+</div>
+<div class="pg pg_cost">
 <h2>Costs</h2>
 <div class="tiles">
  <div class="card tile"><div class="k">Last price paid</div><div class="v" id="c_last">–</div><div class="n" id="c_last2"></div></div>
  <div class="card tile"><div class="k">Average price</div><div class="v" id="c_avg">–</div><div class="n" id="c_avg2"></div></div>
  <div class="card tile"><div class="k">Oil a year</div><div class="v" id="c_spent">–</div><div class="n" id="c_spent2"></div></div>
- <div class="card tile"><div class="k">Heating costs lately</div><div class="v" id="c_run">–</div><div class="n" id="c_run2"></div></div>
+ <div class="card tile"><div class="k">Costing</div><div class="v" id="c_run">–</div><div class="n" id="c_run2"></div><div class="n" id="c_run3"></div><div class="n" id="c_run4"></div></div>
 </div>
 <div class="mut" id="c_hint" style="min-height:18px"></div>
 <div class="card" style="margin-top:8px"><b>Oil prices</b> <span class="mut" id="prHead"></span>
@@ -389,7 +391,7 @@ async function fitCap(){const gen=++FITGEN,box=$('fit');FIT=null;box.textContent
 async function useFit(){if(!FIT||!T||FIT.mac!==T.mac||!confirm('Set the tank capacity to '+FIT.v+' L? Every reading and the history will be re-worked with it.'))return;
  const b=Object.assign({},T.cfg,{mac:T.mac,name:T.name,tank_l:FIT.v});delete b.tank_l_equiv;
  const r=await authFetch('/api/tank',{method:'POST',body:JSON.stringify(b)});if(!r.ok){alert(await r.json().catch(()=>'Could not save'));return}location.reload()}
-function costs(){const ids=['c_last','c_avg','c_spent','c_run'];ids.forEach(i=>{$(i).textContent='–';$(i+'2').textContent=''});spendByYear();
+function costs(){const ids=['c_last','c_avg','c_spent','c_run'];ids.forEach(i=>{$(i).textContent='–';$(i+'2').textContent=''});$('c_run3').textContent=$('c_run4').textContent='';spendByYear();
  const rc=receipts().filter(x=>x.t>now-730*DAY);if(rc.length){const okL=rc.every(x=>x.l!=null),okC=rc.every(x=>x.c!=null);$('c_spent').textContent=okL?L0(rc.reduce((a,x)=>a+x.l,0)/2):'–';$('c_spent2').textContent=(okC?'≈ '+gbp0(rc.reduce((a,x)=>a+x.c,0)/2)+' a year · ':'')+'2-year average'+(okL&&okC?'':' (a receipt is missing its litres or cost)')}
  const pr=deliveries().filter(x=>pplOf(x)!=null&&litresOf(x)!=null);
  $('c_hint').textContent=pr.length?'Prices include VAT. Running costs use the last price paid.':'Add the price to a delivery (Edit) to track costs.';
@@ -398,8 +400,10 @@ function costs(){const ids=['c_last','c_avg','c_spent','c_run'];ids.forEach(i=>{
  const sl=pr.reduce((a,x)=>a+litresOf(x),0),sc=pr.reduce((a,x)=>a+totalOf(x),0);
  $('c_avg').textContent=(sc/sl*100).toFixed(1)+'p/L';$('c_avg2').textContent=pr.length+' deliver'+(pr.length>1?'ies':'y')+' · '+L0(sl);
  
- if(A&&A.recent!=null&&A.span>=2){const p=pplOf(last)/100;$('c_run').textContent=gbp(A.recent*p)+'/day';
-  let s30=0;for(let d=0,t=A.fc.path[0][0];d<30;d++,t+=DAY)s30+=A.rate(t);$('c_run2').textContent='next 30 days ≈ '+gbp0(s30*p)}}
+ if(A&&A.recent!=null&&A.span>=2){const p=pplOf(last)/100,av=d=>A.avgs&&A.avgs[d]!=null?A.avgs[d]:null,a3=av(3);  /* same figures as the dashboard's Costing tile */
+  $('c_run').textContent=gbp((a3!=null?a3:A.recent)*p)+'/day';$('c_run2').textContent=(a3!=null?'3-day':Math.round(A.recentDays)+'-day')+' · at '+Math.round(pplOf(last))+'p/L paid';
+  $('c_run3').textContent='7d '+(av(7)!=null?gbp(av(7)*p):'–')+' · '+Math.round(A.recentDays)+'d '+gbp(A.recent*p);
+  let s30=0;for(let d=0,t=A.fc.path[0][0];d<30;d++,t+=DAY)s30+=A.rate(t);$('c_run4').textContent='next 30 days ≈ '+gbp0(s30*p)}}
 /* every tank's saved receipts (a delivery split across tanks counts once). Oil bought one year is often burnt the
    next, so the fair figure is a rolling 2-year average: each year shown with the average of it and the year before. */
 function receipts(){const out=[];for(const mac in D)for(const r of D[mac]||[]){const l=r.litres!=null&&r.litres>0?r.litres:null,c=r.total!=null?r.total:r.ppl!=null&&l!=null?r.ppl*l/100:null;if(l!=null||c!=null)out.push({t:r.t,l,c})}return out}
@@ -493,11 +497,11 @@ async function load(){
  const rg=$('rng');rg.textContent='';[['7','7 days'],['30','30 days'],['365','1 year'],['all','All']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',k===R);b.onclick=()=>{R=k;try{localStorage.hawkiRange=k}catch(e){}[...rg.children].forEach(c=>c.setAttribute('aria-pressed',c===b));drawLevel()};rg.appendChild(b)});
  tiles();drawLevel();drawMonths();drawHours();loadWx();loadPrices()}
 try{R=localStorage.hawkiRange||'30'}catch(e){}
-/* Usage | Costs: two sub-pages, the choice remembered; charts are drawn when their page shows */
-let PG='use';try{PG=localStorage.hawkiPage==='cost'?'cost':'use'}catch(e){}if(location.hash==='#costs')PG='cost';
-function page(k,quiet){PG=k;try{localStorage.hawkiPage=k}catch(e){}history.replaceState(null,'',location.pathname+location.search+(k==='cost'?'#costs':''));document.querySelectorAll('.pg').forEach(d=>d.hidden=!d.classList.contains('pg_'+k));
+/* Usage | Costs | Deliveries: sub-pages, the choice remembered; charts are drawn when their page shows */
+const PGS={use:'',cost:'#costs',del:'#deliveries'};let PG='use';try{const v=localStorage.hawkiPage;if(Object.prototype.hasOwnProperty.call(PGS,v))PG=v}catch(e){}for(const k in PGS)if(PGS[k]&&location.hash===PGS[k])PG=k;
+function page(k,quiet){PG=k;try{localStorage.hawkiPage=k}catch(e){}history.replaceState(null,'',location.pathname+location.search+PGS[k]);document.querySelectorAll('.pg').forEach(d=>d.hidden=!d.classList.contains('pg_'+k));
  document.querySelectorAll('#pgs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.pg===k));
- if(quiet||typeof A==='undefined'||!A)return;if(k==='use'){drawLevel();drawMonths();drawHours();drawWeather()}else drawPrices()}
+ if(quiet||typeof A==='undefined'||!A)return;if(k==='use'){drawLevel();drawMonths();drawHours();drawWeather()}else if(k==='cost')drawPrices()}
 page(PG,true);
 load().catch(e=>{$('sub').textContent='Could not load: '+e});
 </script></body></html>

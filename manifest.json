@@ -1,7 +1,7 @@
 {
- "version": "1.2.41",
- "ref": "v1.2.41",
- "notes": "Dashboard: a Used today tile (litres since midnight, and its cost) and a Costing tile (3-day \u00a3/day big, 7 and 14-day under it, at the last price paid).",
+ "version": "1.2.42",
+ "ref": "v1.2.42",
+ "notes": "History: Deliveries get their own tab (Usage | Costs | Deliveries); the Costs page's cost tile matches the dashboard (3-day \u00a3/day, then 7 and 14-day, and the next 30 days).",
  "files": {
   "app.py": [
    "96459bdab0e415bd090acd4db48622a0b767b1f10b4e992b3832c2383fb9cf42",
@@ -24,8 +24,8 @@
    2120
   ],
   "hist.html": [
-   "993861e8df63c0ce712439a76496f7178833f2e58ac93d1d2b9f1e586d05d8ab",
-   56183
+   "4d1a13074b83864421e94fc727863b4cd12e89f44d6835734d16dbbe830c2811",
+   56868
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
@@ -56,7 +56,7 @@
    9943
   ],
   "version.py": [
-   "3fc1d9651dc32d00f304f96587b15e33ca070dfab5190eed49fb2420eb72c175",
+   "a8bfabbf11bd729fbf35a504cfb72d26302922c24134121d2a443aabc8311770",
    19
   ],
   "weather.py": [
@@ -65,7 +65,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"96459bdab0e415bd090acd4db48622a0b767b1f10b4e992b3832c2383fb9cf42\", 65577], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"a2986d72078cde07f36390d69caed5ceb41d45bdd6aab872f6f6f57e15f90149\", 18073], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"993861e8df63c0ce712439a76496f7178833f2e58ac93d1d2b9f1e586d05d8ab\", 56183], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"6f8bda4fa4dd62939bfacfc3eda23bac2687b76aa23e814daeb2b80f669e3464\", 71849], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"3fc1d9651dc32d00f304f96587b15e33ca070dfab5190eed49fb2420eb72c175\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Dashboard: a Used today tile (litres since midnight, and its cost) and a Costing tile (3-day \\u00a3/day big, 7 and 14-day under it, at the last price paid).\", \"ref\": \"v1.2.41\", \"version\": \"1.2.41\"}",
-  "sig": "1a84783cc97fb0fda572d5e938f47f6b7652cdac8010b6b26be88156a5121350001a47335c1a8aae49bd4789eae5e0f1f8d38bd3e902ea4eb68817d1945813cf26344f685bf4a1b34fd4dceae68daf4dcc73e35eb9731ddbae4efc890498002a81208f34b564813f92abb8a3cae76b865c47ed05d9df0a37206b45160ae49a122b79674d1e11a6ca62e7a619db5c9c501de24d8addced6c1046d12b2845a43b4696b4e7988bc408431e256cd2acb45fe991e1632e36ff9933595bfebdd031439c1e0e4fb6030db255a12fa504734e63723a17a1a603a4db515c1dc85d295056b9a7dab7ba006680367cbfebe229222485ec00fed94e92e25858975354bd6b797"
+  "body": "{\"files\": {\"app.py\": [\"96459bdab0e415bd090acd4db48622a0b767b1f10b4e992b3832c2383fb9cf42\", 65577], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"a2986d72078cde07f36390d69caed5ceb41d45bdd6aab872f6f6f57e15f90149\", 18073], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"4d1a13074b83864421e94fc727863b4cd12e89f44d6835734d16dbbe830c2811\", 56868], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"6f8bda4fa4dd62939bfacfc3eda23bac2687b76aa23e814daeb2b80f669e3464\", 71849], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"a8bfabbf11bd729fbf35a504cfb72d26302922c24134121d2a443aabc8311770\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"History: Deliveries get their own tab (Usage | Costs | Deliveries); the Costs page's cost tile matches the dashboard (3-day \\u00a3/day, then 7 and 14-day, and the next 30 days).\", \"ref\": \"v1.2.42\", \"version\": \"1.2.42\"}",
+  "sig": "42811589553f6612974b6aec4b2f18d9fbb3d7a86959fe7824d44a8502994e5f1fb1726b6b99d870ff36060d267c482048197fef11a52dbcafd3bdc63ff90504778ca69ae88b1e97d5e8c206c6444a9f737c2a0d0be37df0ddac9976cbd9dfb6a89d0f532e9b38e04df2beacd27560dd6b8372d0ee9d98f1414be944f7fbe70176d2f8ad24e77609361aa301756715170cca0280eeecec9ceac50fc00e0dc2aca1f11f060e4bf9cd73c816d3068eb9437c47d22c3e0799ef5429163007f637fdd31ad64967e115e4fd3313f883ff0c5b67d5f3e4ed9c99231bfe9b0bf58667ef83d8e45f3e49367c0d4a00bbc83d58ff4c048bd6f52c467a4baa3a2ba0814a57"
  }
 }
