@@ -1,7 +1,7 @@
 {
- "version": "1.2.27",
- "ref": "v1.2.27",
- "notes": "Charts: holding a finger on a chart no longer brings up the phone's text-selection menu, and holding still on a bar or dot now shows its value.",
+ "version": "1.2.28",
+ "ref": "v1.2.28",
+ "notes": "Dashboard: the first tile now reads 'Usable oil left'.",
  "files": {
   "app.py": [
    "c3fdf9ebfa2609041827b5e939d592baa26067f8b10ffd4a399a0d4558d21e99",
@@ -44,15 +44,15 @@
    8588
   ],
   "ui.html": [
-   "3f89eb9ae8c0efb194a9f1fa8d00f60d0e68ba3b60a7d37a66c3e38a0715e5ec",
-   65481
+   "e7b91b59afc23de0da357b18a7130a3703c5897ffa9ad780fac1660822b17cf3",
+   65488
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "1f3666f02ad3a9847d61faea2786eb1e486d51743c34df34b2ea20f840850a3b",
+   "c396aa79713e063432f9f721e38d11d84cb9e2f59430b88085894a721c7a0abc",
    19
   ],
   "weather.py": [
@@ -61,7 +61,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"c3fdf9ebfa2609041827b5e939d592baa26067f8b10ffd4a399a0d4558d21e99\", 55736], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"55df1935462611e18fe76cac107ca9a8a75b8f22669ae00325f05bb85ac5a37f\", 11046], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"501f7c019e16a803eff50b14deacaf8b56176d2373734281681ae6e0a6f7cda2\", 44219], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"3f89eb9ae8c0efb194a9f1fa8d00f60d0e68ba3b60a7d37a66c3e38a0715e5ec\", 65481], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"1f3666f02ad3a9847d61faea2786eb1e486d51743c34df34b2ea20f840850a3b\", 19], \"weather.py\": [\"ac5f4f866233c79d42ddd689902a80453b40e2b2a59ea52a79ae8e57cc549c0e\", 5210]}, \"notes\": \"Charts: holding a finger on a chart no longer brings up the phone's text-selection menu, and holding still on a bar or dot now shows its value.\", \"ref\": \"v1.2.27\", \"version\": \"1.2.27\"}",
-  "sig": "290c59a9d853be76c7f0f17a4b935413189706b76e31128cfe39f52f61f2d2cc4879cf9e10448328ad966202f2cb576be3935b3b19e4b9c3bbca561a43a19536be81aa9e6324b0afd6119f896cc1ac4295cb3793f09f813ebfc078805d7ee76608a72ba1167cf4d38586d80db6d8eea60dc2eca69c97e16f20a8a68f3833952cdb0ae89e278ac93d3d32ac2caabf184c3f4bebe843d2346da3c6630653593e92c171c31f8d928d49ac0e7b84ad907bba04c0f3fc089d4e0e68dc99b6314e49b1c9a208331c0ae748edd0d421ed6c8af2a58aa6be1283fc4c0057df1bdd3fc19d2b3da8ebfebbe6fc40d354cfcb81567771fbb19d6b013c50709196666399b6d0"
+  "body": "{\"files\": {\"app.py\": [\"c3fdf9ebfa2609041827b5e939d592baa26067f8b10ffd4a399a0d4558d21e99\", 55736], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"55df1935462611e18fe76cac107ca9a8a75b8f22669ae00325f05bb85ac5a37f\", 11046], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"501f7c019e16a803eff50b14deacaf8b56176d2373734281681ae6e0a6f7cda2\", 44219], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"e7b91b59afc23de0da357b18a7130a3703c5897ffa9ad780fac1660822b17cf3\", 65488], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"c396aa79713e063432f9f721e38d11d84cb9e2f59430b88085894a721c7a0abc\", 19], \"weather.py\": [\"ac5f4f866233c79d42ddd689902a80453b40e2b2a59ea52a79ae8e57cc549c0e\", 5210]}, \"notes\": \"Dashboard: the first tile now reads 'Usable oil left'.\", \"ref\": \"v1.2.28\", \"version\": \"1.2.28\"}",
+  "sig": "72ea6de74260abdf0b9002d7e4393841d7bae0e790e6073b71f6eafafd00cbfd0fdc632a3eadfcf24768b77f8476f6aa4d402327ab8fe6db8f29868f437727ce7c68b44263e6018ec4623a0d8e68d036cd84a478359fb0d8439c5b5cfa560c19be1c7d0be24593bdcc9714e8a52cbfe39f0d03a4a3d0192b5724e752fa0e85f0d5f77474a8214481f86fb7c4b4c66b6342ce93e16cf7df08e23af4c03140ec17c59be5801eb9e949cb03d68d73bfd6d95bcbd727c258a1576c24f4e2349de0498c100ad2c923d53ba56c8e1eb3a32fb286ec56c252f05eb748d450a1027827ed03edff08622390c625c4113045204afce310d60d4429c8e63eb3b993c3ca253a"
  }
 }
