@@ -492,10 +492,10 @@ async function load(){
   CVS={};got.forEach(([buf,cv],k)=>{CVS[ts[k].mac]=cv});const series=got.map(([buf,cv],k)=>{const s=parse(buf).map(([t,mm])=>[t,toL(mm,cv)]),l=live(ts[k],cv);if(l)s.push(l.slice(0,2));return s});
   const sum=f=>ts.reduce((a,t)=>a+(+f(t)||0),0),known=ts.every(t=>t.litres!=null),cap=sum(t=>t.cfg.capacity_l);
   T={mac:'all',all:true,name:ts.length>2?'All tanks':'Both tanks',cfg:{capacity_l:cap,reserve_l:Math.max(...ts.map(t=>t.cfg.reserve_l??200))},litres:known?sum(t=>t.litres):null,percent:known&&cap?Math.round(sum(t=>t.litres)/cap*1000)/10:null};
-  CV=null;P=combine(series,ts.map(t=>!!t.cfg.isolated)).map(p=>[p[0],p[1],null]);TF={};ts.forEach((t,k)=>{TF[t.mac]=analyse(series[k],{now}).fills});
+  CV=null;P=combine(series,ts.map(t=>t.cfg.isolated)).map(p=>[p[0],p[1],null]);TF={};ts.forEach((t,k)=>{TF[t.mac]=analyse(series[k],{now}).fills});
   const t0=P.length?P[0][0]:0;late=series.map((s,k)=>s.length&&s[0][0]>t0+DAY?ts[k].name+' from '+fmtDY(s[0][0]):null).filter(Boolean)}  /* tanks whose readings start later: held level before then */
  else{T=S.tanks.find(t=>t.mac===mac);const[buf,cv]=await Promise.all([fetch('/api/hist?mac='+mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+mac).then(r=>r.json())]);
-  CV=cv;P=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);const l=live(T,cv);if(l)P.push(l);if(T.cfg.isolated)P=holdIsolated(P)}  /* valve closed: its readings never count as use */
+  CV=cv;P=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);const l=live(T,cv);if(l)P.push(l);if(T.cfg.isolated)P=holdIsolated(P,T.cfg.isolated)}  /* valve closed: its readings never count as use */
  $('ttl').textContent=T.name;D=(await dlP)||{};
  const WV=await wxLoad(S);A=analyse(P,{now,reserve:T.cfg.reserve_l??200,heat:WV&&WV.heat,wxName:WV&&WV.name});
  if(!(A.recent!=null&&A.span>=2))A.fc=null;  /* no forecast line until there's a forecast */

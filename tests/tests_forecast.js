@@ -1,7 +1,7 @@
 // node tests/tests_forecast.js  - the seasonal model in firmware/common.js.html, without a browser
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const ctx={};vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;this.wxHeat=wxHeat;this.wxKey=wxKey;this.WX_BASE=WX_BASE;this.howText=howText;this.combine=combine;this.flatten=flatten;',ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;this.wxHeat=wxHeat;this.wxKey=wxKey;this.WX_BASE=WX_BASE;this.howText=howText;this.combine=combine;this.holdIsolated=holdIsolated;this.flatten=flatten;',ctx);
 let fails=0;const ok=(c,m)=>{console.log((c?'ok   ':'FAIL ')+m);if(!c)fails++};
 const DAY=86400,H=3600,T=(y,m,d)=>new Date(y,m,d,12).getTime()/1000;
 // a household: hot water 0.85 L/day in August (+25 % in Feb), heating only Sep-May
@@ -82,4 +82,10 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  const C=ctx.analyse(ctx.combine([a,b],[false,true]),{now});
  ok(Math.abs(C.avgs[3]-A.avgs[3])<0.2,'isolated tank jitter not counted: '+C.avgs[3].toFixed(2)+' vs '+A.avgs[3].toFixed(2));
  ok(C.fills.length===1&&Math.abs(C.fills[0].add-500)<10,'a delivery into the isolated tank still shows: '+(C.fills[0]&&Math.round(C.fills[0].add))+' L')}
+// 12. isolated since a time: readings before it are left alone (marking it today must not rewrite past use)
+{const now=T(2026,10,15),p=[];for(let i=0;i<=336;i++)p.push([now-14*DAY+i*H,600-2*i/24]);const cut=now;
+ const h=ctx.holdIsolated(p,cut);ok(h.every((x,i)=>x[1]===p[i][1]),'isolated from now: none of the 14 days of use before it is changed');
+ const h2=ctx.holdIsolated(p.concat([[now+H,572.3],[now+2*H,571.8]]),cut);ok(Math.abs(h2[h2.length-1][1]-(572+572.3+571.8)/3)<0.01,'readings from the isolation time on are held: '+h2[h2.length-1][1].toFixed(2));
+ const all=ctx.holdIsolated(p,true);ok(all[all.length-1][1]>580,'true (older settings) still holds every reading');
+ const C=ctx.analyse(ctx.combine([p],[cut]),{now});ok(C.recent>1.5,'use before the isolation time still counts: '+(C.recent||0).toFixed(2)+' L/day')}
 process.exit(fails?1:0);

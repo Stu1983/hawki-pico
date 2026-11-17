@@ -52,7 +52,7 @@ AP_PASSWORD = 'oiltanks'
 MEASURED_KEYS = ('outlet_cm', 'win_bottom_cm', 'win_top_cm', 'win_outer_w_cm', 'win_inner_w_cm',
                  'win_inner_h_cm', 'rib_h_cm', 'rib_depth_cm')
 CFG_KEYS = ('shape', 'height_cm', 'length_cm', 'width_cm', 'capacity_l', 'tank_l', 'windows', 'window_model',
-            'ribs_cm', 'reserve_l', 'unusable_l', 'group') + MEASURED_KEYS
+            'ribs_cm', 'reserve_l', 'unusable_l', 'group', 'isolated') + MEASURED_KEYS
 
 
 def load_cfg():
@@ -1003,6 +1003,18 @@ def num(v, lo, hi):
     return v
 
 
+def isolated_since(new, old):
+    # When the valve was closed (epoch), so only readings after it are held: marking a tank isolated today must
+    # not rewrite the use it had before. The form sends true; a backup sends the time. True = since ever (older
+    # settings, or the clock not set yet).
+    now = time.time()
+    clock = now >= 1700000000  # (not set yet just after boot: then it can't say a time is in the future)
+    for v in (new, old):
+        if type(v) is int and 1500000000 <= v and (not clock or v <= now + 86400):
+            return v
+    return int(now) if clock else True
+
+
 def set_tank(b, restore=False):
     mac = str(b.get('mac', '')).lower()
     if len(mac) != 17 or not restore and mac not in hawki and mac not in cfg['tanks']:
@@ -1016,8 +1028,8 @@ def set_tank(b, restore=False):
     for k in ('reserve_l', 'unusable_l'):
         if b.get(k) not in (None, ''):
             t[k] = num(b[k], 0, 100000)
-    if b.get('isolated'):
-        t['isolated'] = True  # valve closed: its oil counts in the total, its readings never count as use
+    if b.get('isolated'):  # valve closed: its oil counts in the total, its readings from then on never count as use
+        t['isolated'] = isolated_since(b.get('isolated'), (cfg['tanks'].get(mac) or {}).get('isolated'))
     if b.get('outlet_cm') not in (None, ''):  # ground to the top of the outlet (any shape)
         t['outlet_cm'] = num(b['outlet_cm'], 0, 1000)
     if shape == 'cuboid':
