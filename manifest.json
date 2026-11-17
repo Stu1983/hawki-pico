@@ -1,11 +1,11 @@
 {
- "version": "1.2.25",
- "ref": "v1.2.25",
- "notes": "Clearer wording about how much history the Pico keeps.",
+ "version": "1.2.26",
+ "ref": "v1.2.26",
+ "notes": "Outside temperature: set your town under Config -> Weather and the history page compares your oil use with the daily temperature (free Open-Meteo data, filled in back to your first reading).",
  "files": {
   "app.py": [
-   "a0b5f2de42722e2c588ab210bfb447b2d1ecd24857b8bbabd8e4cb3f00482979",
-   52416
+   "c3fdf9ebfa2609041827b5e939d592baa26067f8b10ffd4a399a0d4558d21e99",
+   55736
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -24,8 +24,8 @@
    2120
   ],
   "hist.html": [
-   "2745b6a58e1f06f0f23bb2ddd48b39e2aa8402d36571eba4b8376a16ca9aedb3",
-   37150
+   "16e4fb3e600782cfd4eb23dbbc9e91a4408763cd1225bba012d1033b9a36fa19",
+   43551
   ],
   "histstore.py": [
    "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
@@ -44,20 +44,24 @@
    8588
   ],
   "ui.html": [
-   "404b9d83a6f9aa65fdf84a4dc7b0316e374927327a201fc4ccc32425fe4f0fbe",
-   63079
+   "da193ed4c79d0c1fba9347b9cb06b2ee011ac44f8116bc8ec2f82cb9023ce2af",
+   65177
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "0a9e4a59e5cef9613dbf0f12faec65cb8eff9b530291878ab263c74ca3fc66da",
+   "76ea16711a56fef4fa624a59f4c98a7310f46d28edd022bcfdb9705c4449f0a0",
    19
+  ],
+  "weather.py": [
+   "ac5f4f866233c79d42ddd689902a80453b40e2b2a59ea52a79ae8e57cc549c0e",
+   5210
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"a0b5f2de42722e2c588ab210bfb447b2d1ecd24857b8bbabd8e4cb3f00482979\", 52416], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"55df1935462611e18fe76cac107ca9a8a75b8f22669ae00325f05bb85ac5a37f\", 11046], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"2745b6a58e1f06f0f23bb2ddd48b39e2aa8402d36571eba4b8376a16ca9aedb3\", 37150], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"404b9d83a6f9aa65fdf84a4dc7b0316e374927327a201fc4ccc32425fe4f0fbe\", 63079], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"0a9e4a59e5cef9613dbf0f12faec65cb8eff9b530291878ab263c74ca3fc66da\", 19]}, \"notes\": \"Clearer wording about how much history the Pico keeps.\", \"ref\": \"v1.2.25\", \"version\": \"1.2.25\"}",
-  "sig": "7d690aee59c373a787145a1a6213f90ac54429e5d0f0ae08696ef1da9d363cf711065efc29b33f79d4130655c374bfc0cb2b6abdb0fbc798001d1536ce5c4c0e57f69f1bb5696c5732d87dd9487063931087a13938481cf8e48c257c090cb8e3a999c8d09f188b6cc6d4e48ca93708bc3121cf58d3331649c1bf55865f589a0eba3a1ed31b9878d48078413dfad00b524f3f61bca70eed964b4aa10c6b3b10a5b5ed28a5a9bd80728bd705a55c86146f722081ba27b826b3a782c0bc241ce2e3b392bf7852d6a9cd5bc39aeefef50d629a5d621364e24adf6bbaa990b01b0b7e4bc40bf754b6eac414f3515c263a086d0accece04d1d0d5f4eaa5e972d175b79"
+  "body": "{\"files\": {\"app.py\": [\"c3fdf9ebfa2609041827b5e939d592baa26067f8b10ffd4a399a0d4558d21e99\", 55736], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"55df1935462611e18fe76cac107ca9a8a75b8f22669ae00325f05bb85ac5a37f\", 11046], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"16e4fb3e600782cfd4eb23dbbc9e91a4408763cd1225bba012d1033b9a36fa19\", 43551], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"da193ed4c79d0c1fba9347b9cb06b2ee011ac44f8116bc8ec2f82cb9023ce2af\", 65177], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"76ea16711a56fef4fa624a59f4c98a7310f46d28edd022bcfdb9705c4449f0a0\", 19], \"weather.py\": [\"ac5f4f866233c79d42ddd689902a80453b40e2b2a59ea52a79ae8e57cc549c0e\", 5210]}, \"notes\": \"Outside temperature: set your town under Config -> Weather and the history page compares your oil use with the daily temperature (free Open-Meteo data, filled in back to your first reading).\", \"ref\": \"v1.2.26\", \"version\": \"1.2.26\"}",
+  "sig": "47588c7b5f87f60ee431269fb98487b55b64652e30559f145e5612711f32991f8d074fcdd3f010473751eb182822ca68860f0ccc41dd39b740c980ecfaa5a9389b990450ae9942c68fd3b908f34762affe1dbadd3b0321a8128e9e0159a855d155b630bbe1bd8b16d3e95d66e0f66bdf0d46c6211efbccc006e49167175736b9df772841f13338c75dbfe9d1185ceb48062441bb175cebd9fe2b4def322574af8011def85efcfdd7126ac6c6ac541e5cf78959ac068b2b7d1433965746a87e16e8587f07cd78aa13474ab91e0dca5154d2d922834eba42cf64eae8756ccc782659600a6a8547dfd24b98e4863a77eec3ea3876440cf0c742c3f503ca98f83322"
  }
 }
