@@ -1356,7 +1356,15 @@ async def weather_task():
     #           reading and refresh the last 10 (recent figures settle). ~9 KB a year per request.
     #  forecast: every 6 hours, the next 16 days (they drive the start of the oil forecast).
     #  normals: the usual weather for each month, one full year a request, the last 10 years, once per place.
-    await asyncio.sleep(90)
+    for _ in range(18):  # the saved averages count as soon as the clock is set after a restart, not after
+        w = cfg.get('wx')  # the first round of fetching
+        if w and wx_state['norm'] is None and time.time() > 1.7e9:
+            try:
+                wx_state['norm'] = weather.norm_view(weather.norm_load(w['lat'], w['lon']), time.gmtime()[0])
+            except Exception as ex:
+                print('weather normals', ex)
+                break
+        await asyncio.sleep(5)
     while True:
         w = cfg.get('wx')
         now = time.time()

@@ -1,11 +1,11 @@
 {
- "version": "1.2.33",
- "ref": "v1.2.33",
- "notes": "All tanks together: the History page opens on an All tanks view (combined use, forecast, deliveries from every tank), with each tank on its own tab; the Both tanks dashboard uses the whole history and links to it. A tank with no readings yet counts as unchanged.",
+ "version": "1.2.34",
+ "ref": "v1.2.34",
+ "notes": "After a restart the forecast uses your saved local weather averages straight away.",
  "files": {
   "app.py": [
-   "08f04070181e00bdd7468d214a154f8aecb9302d85b25fa17f5a0e4a7b6307bc",
-   61681
+   "5598bf3490c5c073b0fef3dce4c9a36215f5140b9c98db9122e38c9b6c3f8222",
+   62145
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -56,7 +56,7 @@
    9943
   ],
   "version.py": [
-   "7474b6dbd73fbde009977a280201bc86bca662c65ce871f63df56a8f3ca2112f",
+   "5d15ec8df7c28304a5ac27e99429475577d4f41657421cfbd9f8ddb7ac05ba4f",
    19
   ],
   "weather.py": [
@@ -65,7 +65,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"08f04070181e00bdd7468d214a154f8aecb9302d85b25fa17f5a0e4a7b6307bc\", 61681], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"d7b3fcb5e56f1d44ac6d12c9dc5b6fcc228c1dff294ca2c240cbe4653920a230\", 14308], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"2c8822e81c6c36f26829ac2692495c64562ff679fb863eb3422fd899e7489add\", 54628], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"dd3070110df417ee4c1b4662274a9388feb059002900b6bc75b4187d6b909324\", 67939], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"7474b6dbd73fbde009977a280201bc86bca662c65ce871f63df56a8f3ca2112f\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"All tanks together: the History page opens on an All tanks view (combined use, forecast, deliveries from every tank), with each tank on its own tab; the Both tanks dashboard uses the whole history and links to it. A tank with no readings yet counts as unchanged.\", \"ref\": \"v1.2.33\", \"version\": \"1.2.33\"}",
-  "sig": "077f84587bbd907038b129f765d520f7a01924df573d4e9722ddd3860f752aefb2cbfc341290afb08b4b264286588f08d6304d14818859b69cd2f21ecc86368af8f66c14a777e8ab204c9c5c44b23744ea5b1e1aa5da19460d52b9ce8831dc1cc43eb6c46b34216487a467c0dce9073630ae55973f9474e312de03f16df1e0eccd7d582b34c381eab8f4ed6530768fa0bd1caefd6ebbf12ec21b4d2d8179cfa25486ac58894492fa6a44d9d1237c0eb26d5a04defbb924f3853389ce79d3748c3589f7722d14e3094fd1f799bf36e26f73a38ae4ed2e5788f8168cd44831af8415961d78f0389f07ca69f1f7782733d015794874c88f5baa3cf1e56060b7ad75"
+  "body": "{\"files\": {\"app.py\": [\"5598bf3490c5c073b0fef3dce4c9a36215f5140b9c98db9122e38c9b6c3f8222\", 62145], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"d7b3fcb5e56f1d44ac6d12c9dc5b6fcc228c1dff294ca2c240cbe4653920a230\", 14308], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"2c8822e81c6c36f26829ac2692495c64562ff679fb863eb3422fd899e7489add\", 54628], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"0c712358b07c864568dd8eb68fc229cc078c59652031442676bed4e1bb3e3ec6\", 8588], \"ui.html\": [\"dd3070110df417ee4c1b4662274a9388feb059002900b6bc75b4187d6b909324\", 67939], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"5d15ec8df7c28304a5ac27e99429475577d4f41657421cfbd9f8ddb7ac05ba4f\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"After a restart the forecast uses your saved local weather averages straight away.\", \"ref\": \"v1.2.34\", \"version\": \"1.2.34\"}",
+  "sig": "7bbec263c60d086175f6615a987f9a623f42242f917935ef22f0f9a1ace42f106dab4f08fcc2968fc5a2027e724e50dc8bdca4a38b857849cd3d7eefdfca2dd1450b1c7feec94c28e69b17730c654ab296069a8e413507fbcd8836d9b501abf7aa57cd91afa1ad3e2a08c6e30d649f0dfabba475c769c1c8da7cb5c60de739c9c567256cf2c685c541a0f43ac213222afbc9d67747e15d06442a61cbd383cb15ab935aa08c72105642dc78a043f87fc1fcaa58322a5ebda8e22737bdd3f826800f514e688fef98b5444aa6b21e7c6d8ebf76843c7e7e744aa3a96ab4de3a535e2462d4b68a3c4c0fe9cb122e32b2c762a64cbb17901b8829215adaa603e24c29"
  }
 }
