@@ -2,9 +2,9 @@
 
 python3 case/make_case.py  ->  case/out/*.stl and hawki_case.3mf (needs trimesh, manifold3d, shapely, matplotlib)
 
-Base: the board sits on 4 pegs 10 mm up (room for soldered headers underneath), USB opening at one end,
-two screw ears to fix it to a wall or beam. Lid: friction-fit lip, posts that hold the board down on the
-pegs, a hole over the BOOTSEL button (hold it 5 s with a pen to clear a forgotten PIN), raised text.
+Base: the board sits on 4 pegs 10 mm up (room for soldered headers underneath), held in place by the walls (no pins:
+thin pins snapped), USB opening at one end, two screw ears to fix it to a wall or beam. Lid: a lip that clicks into
+grooves in the base, posts that stop just above the board so it can't lift off its pegs, a hole over the BOOTSEL button (hold it 5 s with a pen to clear a forgotten PIN), raised text.
 All sizes in mm; change them below.
 """
 import os
@@ -31,7 +31,10 @@ GAP = 0.6                                      # air around the board
 UNDER = 10.0                                   # under the board: headers stick out ~8.5 mm
 OVER = 5.5                                     # over the board: USB socket, RF can, header stubs
 PLUG_W, PLUG_H, PLUG_R = 11.0, 7.5, 2.0       # opening for the cable's plug (9.5 x 6.5 overmould + clearance)
-LIP, LIP_CLR = 3.0, 0.2                        # lid lip depth, clearance per side (PETG friction fit)
+LIP, LIP_CLR = 3.0, 0.15                       # lid lip depth, clearance per side
+# the lid clicks on: a rounded ridge along each long side of the lip snaps into a groove in the base wall
+RIDGE_R, RIDGE_LEN, GROOVE_EXTRA = 0.45, 24.0, 0.15   # ridge radius (0.3 mm of snap past the clearance), length; groove a little bigger
+POST_CLR = 0.3                                 # lid posts stop this far above the board: they keep it on its pegs without pressing
 EAR, SCREW_D, HEAD_D = 11.0, 4.5, 8.5          # screw ears for ~4 mm wood screws, countersunk
 TEXT, SUB = 'Oil Monitor', 'HAWKi'
 # cable-tie strain relief off the USB end: a tab, then a saddle (past the plug's 20 mm overmould) with a groove for the
@@ -122,9 +125,14 @@ def base():
     tie = box((sx0 + sx1) / 2 - TIE_W / 2, cy - SAD_W / 2 - 1, slot_top - TIE_H, (sx0 + sx1) / 2 + TIE_W / 2, cy + SAD_W / 2 + 1, slot_top)
     cuts += [groove, tie]
     body = D(body, *cuts)
-    posts = []
-    for x, y in holes:
-        posts += [cyl(x, y, FLOOR - 0.5, FLOOR + UNDER, 3.6), cyl(x, y, FLOOR + UNDER - 0.1, FLOOR + UNDER + PCB_T + 1.2, 1.8)]
+    # snap grooves: inside each long wall, where the lid's ridges land
+    gz = BASE_H - LIP / 2
+    for y in (WALL, OUT_W - WALL):
+        g = cyl(0, 0, -RIDGE_LEN / 2 - 1, RIDGE_LEN / 2 + 1, 2 * (RIDGE_R + GROOVE_EXTRA))
+        g.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
+        g.apply_translation((OUT_L / 2 - g.centroid[0], y - g.centroid[1], gz - g.centroid[2]))
+        body = D(body, g)
+    posts = [cyl(x, y, FLOOR - 0.5, FLOOR + UNDER, 3.6) for x, y in holes]   # pegs only: the walls locate the board
     return U(body, *posts)
 
 
@@ -175,9 +183,15 @@ def lid():
     c = LIP_CLR
     lip = D(box(WALL + c, WALL + c, -LIP, OUT_L - WALL - c, OUT_W - WALL - c, 0.01),
             box(WALL + c + 1.6, WALL + c + 1.6, -LIP - 1, OUT_L - WALL - c - 1.6, OUT_W - WALL - c - 1.6, 0.02))
-    # posts reach the board's top face (board top is OVER below the lid's underside)
-    posts = [D(cyl(x, y, -OVER, 0.01, 4.0), cyl(x, y, -OVER - 1, -OVER + 1.6, 2.2)) for x, y in holes]
-    body = U(plate, lip, *posts)
+    # posts stop POST_CLR above the board's top face (OVER below the lid's underside): solid, nothing to line up
+    posts = [cyl(x, y, -OVER + POST_CLR, 0.01, 4.0) for x, y in holes]
+    ridges = []
+    for y in (WALL + c, OUT_W - WALL - c):      # a rounded ridge along the middle of each long side of the lip
+        r = cyl(0, 0, -RIDGE_LEN / 2, RIDGE_LEN / 2, 2 * RIDGE_R)
+        r.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
+        r.apply_translation((OUT_L / 2 - r.centroid[0], y - r.centroid[1], -LIP / 2 - r.centroid[2]))
+        ridges.append(r)
+    body = U(plate, lip, *posts, *ridges)
     bx, by = X0 + BOOTSEL_X, Y0 + BOOTSEL_Y
     # flexible button: tongue from the hinge (away from USB) to a round tip just past the button
     tip = bx - TAB_TIP                               # USB-side end of the tongue
