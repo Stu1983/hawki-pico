@@ -2,9 +2,9 @@
 
 python3 case/make_case.py  ->  case/out/*.stl and hawki_case.3mf (needs trimesh, manifold3d, shapely, matplotlib)
 
-Base: the board sits on 4 pegs 10 mm up (room for soldered headers underneath), held in place by the walls (no pins:
-thin pins snapped), USB opening at one end, two screw ears to fix it to a wall or beam. Lid: a lip that clicks into
-grooves in the base, posts that stop just above the board so it can't lift off its pegs, a hole over the BOOTSEL button (hold it 5 s with a pen to clear a forgotten PIN), raised text.
+Base: the board sits on 4 pegs 10 mm up (room for soldered headers underneath): short pins on one diagonal line it up,
+two M2 self-tapping screws on the other hold it down. USB opening at one end, two screw ears to fix it to a wall or
+beam. Lid: a lip that clicks into grooves in the base (no posts: nothing to line up with the pins), a hole over the BOOTSEL button (hold it 5 s with a pen to clear a forgotten PIN), raised text.
 All sizes in mm; change them below.
 """
 import os
@@ -34,7 +34,10 @@ PLUG_W, PLUG_H, PLUG_R = 11.0, 7.5, 2.0       # opening for the cable's plug (9.
 LIP, LIP_CLR = 3.0, 0.15                       # lid lip depth, clearance per side
 # the lid clicks on: a rounded ridge along each long side of the lip snaps into a groove in the base wall
 RIDGE_R, RIDGE_LEN, GROOVE_EXTRA = 0.45, 24.0, 0.15   # ridge radius (0.3 mm of snap past the clearance), length; groove a little bigger
-POST_CLR = 0.3                                 # lid posts stop this far above the board: they keep it on its pegs without pressing
+# board fixing: locating pins on one diagonal, M2 self-tapping screws (pan head, ~6 mm) on the other (as on the MiSTer mount)
+PIN_D, PIN_UP, PIN_CH = 1.9, 0.8, 0.4          # pin (Pico holes are 2.1), how far it stands above the board, tip chamfer
+PEG_D, SCREW_PEG_D, PILOT_D, PILOT_DEEP = 3.6, 4.6, 1.7, 7.0   # pegs; the screw pegs are fatter round a 1.7 mm pilot this deep
+SCREWS_AT = (1, 2)                             # indexes into holes: the diagonal pair that gets screws; the other two get pins
 EAR, SCREW_D, HEAD_D = 11.0, 4.5, 8.5          # screw ears for ~4 mm wood screws, countersunk
 TEXT, SUB = 'Oil Monitor', 'HAWKi'
 # cable-tie strain relief off the USB end: a tab, then a saddle (past the plug's 20 mm overmould) with a groove for the
@@ -132,8 +135,16 @@ def base():
         g.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
         g.apply_translation((OUT_L / 2 - g.centroid[0], y - g.centroid[1], gz - g.centroid[2]))
         body = D(body, g)
-    posts = [cyl(x, y, FLOOR - 0.5, FLOOR + UNDER, 3.6) for x, y in holes]   # pegs only: the walls locate the board
-    return U(body, *posts)
+    top = FLOOR + UNDER                       # the board's underside
+    posts, pilots = [], []
+    for i, (x, y) in enumerate(holes):
+        if i in SCREWS_AT:                     # screw peg: fatter, with a pilot for an M2 self-tapper
+            posts.append(cyl(x, y, FLOOR - 0.5, top, SCREW_PEG_D))
+            pilots.append(cyl(x, y, top - PILOT_DEEP, top + 1, PILOT_D))
+        else:                                  # pin peg: a short pin through the board's hole, chamfered tip
+            posts += [cyl(x, y, FLOOR - 0.5, top, PEG_D), cyl(x, y, top - 0.1, top + PCB_T + PIN_UP - PIN_CH, PIN_D),
+                      cone(x, y, top + PCB_T + PIN_UP - PIN_CH - 0.01, top + PCB_T + PIN_UP, PIN_D, PIN_D - 2 * PIN_CH)]
+    return D(U(body, *posts), *pilots)
 
 
 def text_polys(s, size, cx, cy, bold=True):
@@ -183,15 +194,13 @@ def lid():
     c = LIP_CLR
     lip = D(box(WALL + c, WALL + c, -LIP, OUT_L - WALL - c, OUT_W - WALL - c, 0.01),
             box(WALL + c + 1.6, WALL + c + 1.6, -LIP - 1, OUT_L - WALL - c - 1.6, OUT_W - WALL - c - 1.6, 0.02))
-    # posts stop POST_CLR above the board's top face (OVER below the lid's underside): solid, nothing to line up
-    posts = [cyl(x, y, -OVER + POST_CLR, 0.01, 4.0) for x, y in holes]
     ridges = []
     for y in (WALL + c, OUT_W - WALL - c):      # a rounded ridge along the middle of each long side of the lip
         r = cyl(0, 0, -RIDGE_LEN / 2, RIDGE_LEN / 2, 2 * RIDGE_R)
         r.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
         r.apply_translation((OUT_L / 2 - r.centroid[0], y - r.centroid[1], -LIP / 2 - r.centroid[2]))
         ridges.append(r)
-    body = U(plate, lip, *posts, *ridges)
+    body = U(plate, lip, *ridges)
     bx, by = X0 + BOOTSEL_X, Y0 + BOOTSEL_Y
     # flexible button: tongue from the hinge (away from USB) to a round tip just past the button
     tip = bx - TAB_TIP                               # USB-side end of the tongue
