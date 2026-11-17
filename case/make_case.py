@@ -46,7 +46,8 @@ PLUG_LEN = 20.0                                # straight plug overmould length 
 TAB_OUT, TAB_WIDE, TAB_THK = 32.0, 16.0, 4.0   # how far the tab sticks out, its width and thickness
 SAD_L, SAD_W = 8.0, 12.0                       # saddle length (along the cable) and width
 CABLE_D = 4.0                                  # cable groove fits up to this diameter
-TIE_W, TIE_H = 5.0, 2.2                        # tie slot (ties up to ~4.8 x 1.5)
+TIE_W, TIE_H = 2.6, 5.2                        # tie slot, on its side (ties up to ~4.8 x 1.5 go through on edge), pointed
+                                               # 45-degree roof so it prints without support
 # flexible BOOTSEL button: a tongue cut from the lid, hinged on the side away from USB, flexing along the print layers
 TAB_W, TAB_LEN, TAB_TIP, SLOT = 7.0, 12.0, 2.5, 0.8   # width, hinge to tip, tip past the button centre, slot round it
 TAB_T = 1.44                                   # tongue thickness (the lid is thinned under it)
@@ -105,8 +106,11 @@ def base():
     body = U(shell, *ears)
     cav = box(WALL, WALL, FLOOR, OUT_L - WALL, OUT_W - WALL, BASE_H + 1)
     usb_z = FLOOR + UNDER + PCB_T + USB_Z
-    # rounded opening for the plug: drawn as (height, width), extruded, then turned to run through the end wall (x)
-    prof = Polygon([(-PLUG_H / 2, -PLUG_W / 2), (PLUG_H / 2, -PLUG_W / 2), (PLUG_H / 2, PLUG_W / 2), (-PLUG_H / 2, PLUG_W / 2)]).buffer(-PLUG_R).buffer(PLUG_R, resolution=12)
+    # opening for the plug: a U-slot open at the top (the lid closes it), so there's no roof to bridge and the cable
+    # drops in from above. Drawn as (height, width) about the socket centre, extruded, turned to run through the end wall
+    hb, ht = -PLUG_H / 2, BASE_H + 1 + PLUG_R - usb_z
+    hb, ht = -ht, -hb                              # the turn below maps the drawing's height to -z
+    prof = Polygon([(hb, -PLUG_W / 2), (ht, -PLUG_W / 2), (ht, PLUG_W / 2), (hb, PLUG_W / 2)]).buffer(-PLUG_R).buffer(PLUG_R, resolution=12)
     plug = trimesh.creation.extrude_polygon(prof, WALL + 2)
     plug.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
     plug.apply_translation((WALL + 1 - plug.bounds[1][0], Y0 + PCB_W / 2, usb_z))
@@ -124,8 +128,13 @@ def base():
     groove = cyl(0, 0, sx0 - 1, sx1 + 1, CABLE_D + 0.4)
     groove.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
     groove.apply_translation(((sx0 + sx1) / 2 - groove.centroid[0], cy - groove.centroid[1], usb_z - groove.centroid[2]))
-    slot_top = groove_bot - 1.6
-    tie = box((sx0 + sx1) / 2 - TIE_W / 2, cy - SAD_W / 2 - 1, slot_top - TIE_H, (sx0 + sx1) / 2 + TIE_W / 2, cy + SAD_W / 2 + 1, slot_top)
+    peak = groove_bot - 1.2                        # roof point, 1.2 mm under the cable groove
+    z1 = peak - TIE_W / 2                          # top of the straight sides
+    mx = (sx0 + sx1) / 2
+    tp = Polygon([(-TIE_W / 2, z1 - TIE_H), (TIE_W / 2, z1 - TIE_H), (TIE_W / 2, z1), (0, peak), (-TIE_W / 2, z1)])  # (x, z)
+    tie = trimesh.creation.extrude_polygon(tp, SAD_W + 2)            # extruded along +z ...
+    tie.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (1, 0, 0)))    # ... turned to run across (y), z kept
+    tie.apply_translation((mx, cy - SAD_W / 2 - 1 - tie.bounds[0][1], 0))
     cuts += [groove, tie]
     body = D(body, *cuts)
     # snap grooves: inside each long wall, where the lid's ridges land
