@@ -71,7 +71,7 @@ dialog::backdrop{background:#0008}
 <h2>Wi-Fi &amp; network</h2>
 <div class="card"><div class="row"><div><div id="wifi">…</div><div class="mut" id="wifi2">&nbsp;</div></div><button onclick="openWifi()">Change</button></div>
 <div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Name on the network: <b id="hn" style="white-space:nowrap">…</b></div><div class="mut" id="hn2">&nbsp;</div></div><button onclick="changeHost()">Change</button></div>
-<div class="mut" id="ipnote" style="margin-top:10px;min-height:36px">&nbsp;</div></div>
+<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Address: <b id="na" style="white-space:nowrap">…</b></div><div class="mut" id="na2" style="min-height:36px">&nbsp;</div></div><button onclick="openNet()">Change</button></div></div>
 
 <h2>Notifications</h2>
 <div class="card"><div class="mut" style="margin-bottom:10px">Alerts go to your phone through <b>Pushover</b> (pushover.net) or <b>ntfy</b> (free, no account: install the ntfy app and subscribe to the topic below), or both.</div>
@@ -156,6 +156,20 @@ dialog::backdrop{background:#0008}
 <label>Network<select id="w_ssid"><option>Scanning…</option></select></label>
 <label style="margin-top:8px">Password<input id="w_pw" type="password" autocomplete="off"></label>
 <div class="acts"><button type="button" onclick="wdlg.close()">Cancel</button><button class="pri">Save &amp; restart</button></div>
+</form></dialog>
+
+<dialog id="ndlg" oncancel="if(NETRUN)event.preventDefault()"><form method="dialog" onsubmit="return saveNet(event)">
+<b>Address on the network</b>
+<label style="margin-top:10px">How the Pico gets its address<select id="n_mode" onchange="netShow()"><option value="dhcp">Automatic: the router chooses</option><option value="static">Fixed: always the same</option></select></label>
+<div id="n_fix">
+<div class="hint" style="margin:8px 0">Filled in with what the Pico has now: Save to keep this address for good. For a different address, pick one the router doesn't give out to other devices.</div>
+<label>Address<input id="n_ip" inputmode="decimal" autocomplete="off" placeholder="192.168.1.50"></label>
+<label style="margin-top:8px">Subnet mask<input id="n_mask" inputmode="decimal" autocomplete="off" placeholder="255.255.255.0"></label>
+<label style="margin-top:8px">Router (gateway)<input id="n_gw" inputmode="decimal" autocomplete="off" placeholder="192.168.1.1"></label>
+<label style="margin-top:8px">DNS server<input id="n_dns" inputmode="decimal" autocomplete="off" placeholder="usually the router"></label>
+</div>
+<div class="hint" id="n_msg" style="min-height:54px;margin-top:10px"></div>
+<div class="acts"><button type="button" onclick="if(!NETRUN)ndlg.close()">Close</button><button class="pri" id="n_save">Save &amp; restart</button></div>
 </form></dialog>
 
 <dialog id="pdlg"><form method="dialog" onsubmit="return pinSubmit(event)">
@@ -389,7 +403,29 @@ async function testNotify(){const st=$('n_st');st.dataset.msg=1;st.textContent='
 
 // ---------- network name ----------
 function netRender(){$('hn').textContent=S.hostname||'hawki-pico';$('hn2').textContent=S.hostname?'http://'+S.hostname+'.local/ also works on most phones and computers':' ';
- $('ipnote').textContent=S.ip?'To keep '+S.ip+' for good, reserve it for this Pico in your router (often called "fixed IP" or "DHCP reservation"). The Pico\'s Wi-Fi address (MAC) is '+(S.mac||'?')+'.':' '}
+ const n=S.net||{};$('na').textContent=S.ip||'not connected';
+ $('na2').textContent=!S.ip?' ':n.static?(n.online===false?'Fixed, but the Pico hasn\'t been able to set its clock from the internet since it started: check the router (gateway) and DNS server under Change.':'Fixed: it stays this, whatever the router does.'):'Automatic: the router picks it and may change it. Change this to keep it for good.'}
+/* fixed address: the Pico restarts and tries it; it is kept only once this page reaches it there (else it goes back by itself) */
+function openNet(){const n=S.net||{},ndlg=$('ndlg');if(NETRUN){ndlg.showModal();return}$('n_mode').value=n.static?'static':'dhcp';$('n_mode').querySelector('[value=static]').disabled=!S.ip;
+ for(const k of['ip','mask','gw','dns'])$('n_'+k).value=n[k]||'';$('n_save').disabled=false;netShow();ndlg.showModal()}
+function netShow(){const f=$('n_mode').value==='static';$('n_fix').style.display=f?'block':'none';
+ $('n_msg').textContent=!S.ip?'Join the Wi-Fi first: then the address can be fixed.':f?'The Pico restarts and tries the address. If this page can\'t reach it there within 3 minutes, the Pico goes back to the settings it has now.':'The Pico restarts and asks the router for an address. If it changes, find the Pico in the router\'s device list.'}
+let NETRUN=false;  /* a restart or trial is under way: no second one, and the dialog stays open */
+async function saveNet(e){e.preventDefault();if(NETRUN)return false;const st=$('n_mode').value==='static',msg=$('n_msg'),ndlg=$('ndlg');
+ if(!st&&!(S.net&&S.net.static)){ndlg.close();return false}  /* automatic already */
+ NETRUN=true;$('n_save').disabled=true;msg.textContent='Checking…';
+ let r;try{r=await api('/api/net',st?{static:true,ip:$('n_ip').value,mask:$('n_mask').value,gw:$('n_gw').value,dns:$('n_dns').value}:{static:false})}catch(x){msg.textContent=x.message.replace(/^"|"$/g,'');NETRUN=false;$('n_save').disabled=false;return false}
+ if(!st){msg.textContent='Restarting with an automatic address…';setTimeout(()=>{NETRUN=false;ndlg.close();load()},15000);return false}
+ const t0=Date.now(),url='http://'+r.ip+'/api/net/keep?k='+r.k,here=r.ip===location.hostname;
+ msg.textContent='Restarting on '+r.ip+'…';
+ const tick=async()=>{const el=Math.round((Date.now()-t0)/1000);
+  if(el>r.secs+25){NETRUN=false;$('n_save').disabled=false;let kept=false;  /* what the Pico itself says now decides the message */
+   try{const s=await api('/api/state'),n=s.net||{};kept=n.static&&!n.trial&&['ip','mask','gw','dns'].every(k=>n[k]===r.net[k]);S=s;render()}catch(x){}
+   msg.textContent=kept?'Fixed at '+r.ip+'.':'This page could not reach the Pico at '+r.ip+'. Unless something else did, it has gone back to the settings it had: reload this page to check.';return}
+  let ok=false;try{const c=new AbortController();setTimeout(()=>c.abort(),4000);const a=await fetch(url,{method:'POST',signal:c.signal});ok=a.ok&&(await a.json())==='ok'}catch(x){}
+  if(ok){msg.textContent='Fixed at '+r.ip+'.';setTimeout(()=>{NETRUN=false;if(here){ndlg.close();load()}else location.href='http://'+r.ip+'/#cfg'},1500);return}
+  msg.textContent='Restarting on '+r.ip+'… checking it answers there ('+el+' s)';setTimeout(tick,3000)};
+ setTimeout(tick,7000);return false}
 async function changeHost(){const v=prompt('Name on the network (letters, digits and hyphens). The Pico restarts to use it.',S.hostname||'hawki-pico');if(v==null||v.trim()===''||v.trim()===S.hostname)return;
  try{await api('/api/hostname',{hostname:v.trim()});$('status').textContent='Restarting as '+v.trim()+'…';setTimeout(load,15000)}catch(x){alert(x.message.replace(/^"|"$/g,''))}}
 function wxRender(){const w=S.wx||{};$('wx1').textContent=w.name?'Location: '+w.name:'No location set';

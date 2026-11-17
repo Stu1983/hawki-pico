@@ -1,11 +1,11 @@
 {
- "version": "1.2.42",
- "ref": "v1.2.42",
- "notes": "History: Deliveries get their own tab (Usage | Costs | Deliveries); the Costs page's cost tile matches the dashboard (3-day \u00a3/day, then 7 and 14-day, and the next 30 days).",
+ "version": "1.2.43",
+ "ref": "v1.2.43",
+ "notes": "Fixed address: Config \u2192 Network \u2192 Address \u2192 Change lets the Pico keep its address for good (or use another). It restarts and tries the address, and keeps it only once your browser reaches it there; otherwise it goes back by itself within 3 minutes. Holding BOOTSEL for 5 s also returns it to automatic.",
  "files": {
   "app.py": [
-   "96459bdab0e415bd090acd4db48622a0b767b1f10b4e992b3832c2383fb9cf42",
-   65577
+   "4726b9bb9b03fb5a6d871da3331a63ac841e4d3117bb13d81e3cfea74204ff69",
+   74714
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -35,6 +35,10 @@
    "f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d",
    3391
   ],
+  "netcfg.py": [
+   "a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34",
+   3101
+  ],
   "notify.py": [
    "9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8",
    4530
@@ -48,15 +52,15 @@
    9040
   ],
   "ui.html": [
-   "6f8bda4fa4dd62939bfacfc3eda23bac2687b76aa23e814daeb2b80f669e3464",
-   71849
+   "777d9fd6bb9e3f1517551613e53b2ad5a0adf9eb2d32bd66dfc853e3b7df09eb",
+   76462
   ],
   "updater.py": [
    "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
    9943
   ],
   "version.py": [
-   "a8bfabbf11bd729fbf35a504cfb72d26302922c24134121d2a443aabc8311770",
+   "44e4f26bb9a49506c03c25888bdfd7c2a8eb119a596d30527725ab178a9c0848",
    19
   ],
   "weather.py": [
@@ -65,7 +69,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"96459bdab0e415bd090acd4db48622a0b767b1f10b4e992b3832c2383fb9cf42\", 65577], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"a2986d72078cde07f36390d69caed5ceb41d45bdd6aab872f6f6f57e15f90149\", 18073], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"4d1a13074b83864421e94fc727863b4cd12e89f44d6835734d16dbbe830c2811\", 56868], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"6f8bda4fa4dd62939bfacfc3eda23bac2687b76aa23e814daeb2b80f669e3464\", 71849], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"a8bfabbf11bd729fbf35a504cfb72d26302922c24134121d2a443aabc8311770\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"History: Deliveries get their own tab (Usage | Costs | Deliveries); the Costs page's cost tile matches the dashboard (3-day \\u00a3/day, then 7 and 14-day, and the next 30 days).\", \"ref\": \"v1.2.42\", \"version\": \"1.2.42\"}",
-  "sig": "42811589553f6612974b6aec4b2f18d9fbb3d7a86959fe7824d44a8502994e5f1fb1726b6b99d870ff36060d267c482048197fef11a52dbcafd3bdc63ff90504778ca69ae88b1e97d5e8c206c6444a9f737c2a0d0be37df0ddac9976cbd9dfb6a89d0f532e9b38e04df2beacd27560dd6b8372d0ee9d98f1414be944f7fbe70176d2f8ad24e77609361aa301756715170cca0280eeecec9ceac50fc00e0dc2aca1f11f060e4bf9cd73c816d3068eb9437c47d22c3e0799ef5429163007f637fdd31ad64967e115e4fd3313f883ff0c5b67d5f3e4ed9c99231bfe9b0bf58667ef83d8e45f3e49367c0d4a00bbc83d58ff4c048bd6f52c467a4baa3a2ba0814a57"
+  "body": "{\"files\": {\"app.py\": [\"4726b9bb9b03fb5a6d871da3331a63ac841e4d3117bb13d81e3cfea74204ff69\", 74714], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"a2986d72078cde07f36390d69caed5ceb41d45bdd6aab872f6f6f57e15f90149\", 18073], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"4d1a13074b83864421e94fc727863b4cd12e89f44d6835734d16dbbe830c2811\", 56868], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"5377d2713640e746dcd8fc9a2763b7682c56bbf07db0ed8f8725a932d52c7233\", 9040], \"ui.html\": [\"777d9fd6bb9e3f1517551613e53b2ad5a0adf9eb2d32bd66dfc853e3b7df09eb\", 76462], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"44e4f26bb9a49506c03c25888bdfd7c2a8eb119a596d30527725ab178a9c0848\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Fixed address: Config \\u2192 Network \\u2192 Address \\u2192 Change lets the Pico keep its address for good (or use another). It restarts and tries the address, and keeps it only once your browser reaches it there; otherwise it goes back by itself within 3 minutes. Holding BOOTSEL for 5 s also returns it to automatic.\", \"ref\": \"v1.2.43\", \"version\": \"1.2.43\"}",
+  "sig": "4be52906b298a48cca11f15ce972e42b54616dff5d204d662546e53f0d3541d310058a82e82ac9e765c20f32f9a143f0e6902bc4def3168838cfcc88cb5d282adde86f05e06dbb23b9afd50fccb843b38b04bb7f710caeaeea84650c170b5904d797a05c41a62ab3ea9a824066c03522467285f39da2d7941d7fa62031ef368abe35b9bc5906f9205955989a38df02679adeb76e1dacecc698033aa607ca8b4470f7556c1431d4a339e2a736ca7f480ff80fb5baabbfa0643b78e5f34e5f099992733d84f94a619166d00e9fe7a4c0f1432ac24c2b5e6200112699ab5354844e9f32d0e0f2a241be7b249a316bf32c0453548566f59854a1e4a703f72877582f"
  }
 }

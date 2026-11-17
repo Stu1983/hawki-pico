@@ -25,7 +25,8 @@
 #   POST /api/update/install  download + verify + install it, then restart (rolls back if it won't run)
 # Changes (every POST) need a session from the admin PIN:  GET /api/auth, POST /api/pin/login {pin},
 #   POST /api/pin/set {pin} (first setup, or signed in), POST /api/pin/logout. Header: X-Auth.
-#   Forgot the PIN: hold the Pico's BOOTSEL button for 5 seconds while it's running.
+#   Forgot the PIN: hold the Pico's BOOTSEL button for 5 seconds while it's running (also returns a fixed
+#   address to automatic).
 # Maintenance (token, and only if switched on in Software settings - off by default):
 #   PUT /file?name=x&t=TOK, GET /reboot?t=TOK, GET /run?name=x.py&t=TOK
 # Debug: GET /devices[?name=&addr=], GET /reset
@@ -41,6 +42,7 @@ from listen import Listener
 import notify
 import weather
 import price
+import netcfg
 import drops
 
 # HAWKi service UUID 00001923-1322-ffdd-3533-886fdadce133, as it appears in the advert (LE)
@@ -273,6 +275,115 @@ except Exception:
     pass
 wlan = network.WLAN(network.STA_IF)
 ap = network.WLAN(network.AP_IF)
+
+# ---------- fixed (static) address ----------
+# cfg['net'] = {ip, mask, gw, dns} once proven; a new one is tried for one boot only (netcfg.py).
+# Applied with wlan.ifconfig((..)) before joining: tested on the Pico 2 W to survive Wi-Fi drops and rejoins.
+# (wifi_keeper is the ONLY thing that calls wlan.connect: a second connect on top of it knocked the Pico offline.)
+net_trial = [netcfg.take_try()]   # settings on trial this boot (with their key 'k'), else None
+net_ok_ms = [None]                # ticks_ms of the last proof the network works: a request served over Wi-Fi (not
+                                  # the setup network), the clock set from the internet, or the router answering
+net_kept = [None]                 # key of the trial kept on this boot (so asking twice still says yes)
+net_gen = [0]                     # counts address changes asked for: one that was overtaken while it waited gives way
+net_restart = [False]             # an address change is decided and the restart is on its way: nothing else may start
+
+
+def net_now():
+    return net_trial[0] or cfg.get('net')
+
+
+def net_apply():
+    n = net_now()
+    if n:
+        try:
+            if tuple(wlan.ifconfig()) != netcfg.tup(n):
+                wlan.ifconfig(netcfg.tup(n))
+            # MicroPython 1.29: ifconfig((..)) reports the DNS server but leaves the resolver unable to use it
+            # (every name lookup then fails after 6 s, which also stalls this web server). Setting it again this
+            # way makes it work; measured on the Pico 2 W.
+            network.ipconfig(dns=n['dns'])
+        except Exception as ex:
+            print('net apply err', ex)
+
+
+def net_view():
+    n = net_now()
+    ic = wlan.ifconfig() if wlan.isconnected() else None
+    return {'static': bool(n), 'trial': bool(net_trial[0]), 'online': time.time() > 1700000000,  # (the clock is set from the internet)
+            'ip': ic and ic[0], 'mask': ic and ic[1], 'gw': ic and ic[2], 'dns': ic and ic[3]}
+
+
+async def answers(ip, port, secs=2):
+    # Does a device answer at ip:port? Accepting OR refusing the connection both mean something is there; only
+    # silence means no. Never blocks the other tasks. (Best effort: a device that ignores the port looks absent.)
+    # A non-blocking connect, asked again every 100 ms. Measured on the Pico 2 W (MicroPython 1.29): first
+    # EINPROGRESS (115); then EALREADY (114) for as long as nothing answers, EISCONN (106) once accepted, and
+    # EBADF (9) once refused (the refusal tears the socket down).
+    import socket
+    s = socket.socket()
+    try:
+        s.setblocking(False)
+        try:
+            s.connect((ip, port))
+            return True
+        except OSError as ex:
+            if not ex.args or ex.args[0] != 115:
+                return False  # no route to it at all
+        t0 = time.ticks_ms()
+        while time.ticks_diff(time.ticks_ms(), t0) < secs * 1000:
+            await asyncio.sleep_ms(100)
+            try:
+                s.connect((ip, port))
+                return True
+            except OSError as ex:
+                e = ex.args[0] if ex.args else 0
+                if e != 114:
+                    return e in (106, 9)
+        return False
+    except Exception:
+        return False
+    finally:
+        s.close()
+
+
+def net_proof():
+    net_ok_ms[0] = time.ticks_ms()
+
+
+NET_QUIET_MS = 15 * 60000
+net_asked = [boot_ms]  # when the router was last asked (MicroPython functions can't carry attributes)
+
+
+def net_quiet_ms():
+    # how long since anything showed the network works (from boot, if nothing has yet)
+    return time.ticks_diff(time.ticks_ms(), net_ok_ms[0] if net_ok_ms[0] is not None else boot_ms)
+
+
+async def net_check():
+    # A saved fixed address that reaches nothing (a new router, a changed network): joined, but for 15 minutes
+    # no browser has got through, and the router doesn't answer. Then the setup network comes up, so the address
+    # can be put right from a phone. Returns True while cut off. Asks the router at most every 5 minutes.
+    if not cfg.get('net') or net_trial[0]:
+        return False
+    if net_quiet_ms() > 5 * 60000 and time.ticks_diff(time.ticks_ms(), net_asked[0]) > 5 * 60000:
+        net_asked[0] = time.ticks_ms()
+        for port in (53, 80, 443):
+            if await answers(cfg['net']['gw'], port):
+                net_proof()
+                break
+    return net_quiet_ms() > NET_QUIET_MS
+
+
+
+async def net_trial_guard():
+    # a trial nobody confirmed: restart, which comes back with the settings from before (the trial file is gone)
+    if not net_trial[0]:
+        return
+    await asyncio.sleep(netcfg.TRIAL_SECS)
+    if net_trial[0]:
+        print('fixed address not confirmed: going back')
+        await asyncio.sleep(1)
+        machine.reset()
 AP_NAME = 'HAWKi-Setup-' + hx(machine.unique_id())[-4:].upper()
 
 
@@ -282,6 +393,7 @@ async def ntp_sync():
         try:
             ntptime.host = host
             ntptime.settime()
+            net_proof()
             return True
         except Exception as ex:
             print('ntp err', host, ex)
@@ -299,9 +411,11 @@ def ap_on():
 async def wifi_keeper():
     wlan.active(True)
     wlan.config(pm=0xa11140)  # power-save off: steadier for BLE coexistence + HTTP
+    net_apply()
     while True:
         if cfg.get('ssid') and not wlan.isconnected():
             try:
+                net_apply()
                 wlan.connect(cfg['ssid'], cfg.get('pw', ''))
             except Exception as ex:
                 print('wifi err', ex)
@@ -314,7 +428,9 @@ async def wifi_keeper():
                 await asyncio.sleep(0.5)
         if wlan.isconnected():
             led.value(1)
-            if ap.active():
+            if await net_check():
+                ap_on()
+            elif ap.active():
                 ap.active(False)
             if time.time() < 1700000000:
                 await ntp_sync()  # clock still unset; retry
@@ -434,11 +550,15 @@ async def close_first_pin_window():
     first_pin_window[0] = False
 
 
+def on_ap(peer):
+    # the request came in over the setup network (not the home Wi-Fi)
+    return ap.active() and peer.startswith(ap.ifconfig()[0].rsplit('.', 1)[0] + '.')
+
+
 def may_set_first_pin(peer):
     # Without a PIN, whoever sets one first owns the Pico. So a FIRST PIN can only be set from the
     # setup network (while it's actually up), or within 30 minutes of the Pico starting.
-    on_setup_ap = ap.active() and peer.startswith(ap.ifconfig()[0].rsplit('.', 1)[0] + '.')
-    return on_setup_ap or first_pin_window[0]
+    return on_ap(peer) or first_pin_window[0]
 
 
 def try_login(pin):
@@ -468,13 +588,19 @@ async def bootsel_reset():
         await asyncio.sleep(0.5)
         held = held + 1 if rp2.bootsel_button() else 0
         if held == 10:
-            for k in ('pin', 'pin_salt', 'sessions'):
+            was_fixed = bool(cfg.get('net')) or bool(net_trial[0])
+            net_trial[0] = None  # (before anything waits: nothing on trial can be kept from here on)
+            net_gen[0] += 1
+            rm(netcfg.TRY)
+            for k in ('pin', 'pin_salt', 'sessions', 'net'):
                 cfg.pop(k, None)
             save_cfg(cfg)
             print('PIN cleared by BOOTSEL')
             for _ in range(10):
                 led.toggle()
                 await asyncio.sleep(0.1)
+            if was_fixed:  # and back to an automatic address (needs a restart)
+                machine.reset()
 
 
 def free_bytes():
@@ -507,7 +633,7 @@ def rm(name):
 
 
 MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
-            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location', '/api/price')
+            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location', '/api/price', '/api/net')
 
 
 # ---------- views ----------
@@ -849,7 +975,7 @@ def state():
             'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint')),
             'primary': cfg.get('primary') if cfg.get('primary') in cfg['tanks'] or cfg.get('primary') == 'all' and len(tanks) > 1
                        else (tanks[0]['mac'] if tanks else None),
-            'hostname': HOSTNAME, 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'price': price_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
+            'hostname': HOSTNAME, 'net': net_view(), 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'price': price_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
 
 
 def num(v, lo, hi):
@@ -1080,6 +1206,8 @@ async def handle(r, w):
             elif hl.startswith(b'x-auth:'):
                 auth = h.split(b':', 1)[1].strip().decode()
         path, q = parse_q(path)
+        if peer and not on_ap(peer):
+            net_proof()
         maint = bool(cfg.get('maint')) and q.get('t') == TOKEN
         if method == 'PUT' and path == '/file' and maint:
             # stream uploads straight to flash: big files don't fit in one read
@@ -1159,6 +1287,61 @@ async def handle(r, w):
             cfg['maint'] = bool(json.loads(body or '{}').get('on'))
             save_cfg(cfg)
             return await send(w, 200, json.dumps(cfg['maint']))
+        if path == '/api/net' and method == 'POST':
+            try:
+                b = json.loads(body or '{}')
+                net_gen[0] += 1
+                gen = net_gen[0]
+
+                def clear_to_go():  # (asked again after every wait below)
+                    if net_restart[0] or installing[0]:
+                        raise ValueError('the Pico is about to restart: try again in a minute')
+                    if update_info()['pending']:  # restarts now would count against the new version
+                        raise ValueError('an update is still settling in: try again in a couple of minutes')
+                    if gen != net_gen[0]:
+                        raise ValueError('another address change was made meanwhile')
+                clear_to_go()
+                if not b.get('static'):  # automatic again: always works, so no trial
+                    net_trial[0] = None  # (and nothing on trial can be kept from here on)
+                    rm(netcfg.TRY)
+                    cfg.pop('net', None)
+                    save_cfg(cfg)
+                    out = {'static': False}
+                else:
+                    if not wlan.isconnected():
+                        raise ValueError('join the Wi-Fi first, then fix the address')
+                    n = netcfg.clean(b)
+                    if n['ip'] != wlan.ifconfig()[0] and (await answers(n['ip'], 80, 1.5) or await answers(n['ip'], 443, 1.5)):
+                        raise ValueError('address: another device is already using ' + n['ip'])
+                    clear_to_go()
+                    key = binascii.hexlify(os.urandom(8)).decode()
+                    net_trial[0] = None  # a trial already running is over: this one replaces it
+                    netcfg.write_try(n, key)
+                    out = {'static': True, 'ip': n['ip'], 'net': n, 'k': key, 'secs': netcfg.TRIAL_SECS}
+            except Exception as ex:
+                return await send(w, 400, json.dumps(str(ex)))
+            net_gen[0] += 1  # decided: nothing else may change the address (or start an update) before the restart
+            net_restart[0] = True
+            try:
+                await send(w, 200, json.dumps(out))
+                await asyncio.sleep(1)
+            finally:
+                machine.reset()  # decided: restart even if the browser has gone away
+        if path == '/api/net/keep' and method == 'POST':
+            # the browser reached the Pico at the address on trial: keep it. (No PIN: the one-time key from the
+            # signed-in request that started the trial is the proof, and a new address is a new site to the browser.)
+            t = net_trial[0]
+            cors = 'application/json\r\nAccess-Control-Allow-Origin: *'  # the page asking is still on the old address
+            if (t and q.get('k') == t['k'] and not on_ap(peer) and wlan.isconnected()
+                    and tuple(wlan.ifconfig()) == netcfg.tup(t)):  # (really running on those settings)
+                cfg['net'] = {k: t[k] for k in ('ip', 'mask', 'gw', 'dns')}
+                save_cfg(cfg)
+                net_trial[0] = None
+                net_kept[0] = t['k']
+                return await send(w, 200, '"ok"', cors)
+            if net_kept[0] and q.get('k') == net_kept[0]:
+                return await send(w, 200, '"ok"', cors)  # asked twice: already kept
+            return await send(w, 400, '"no address on trial"', cors)
         if path == '/api/hostname' and method == 'POST':
             try:
                 cfg['hostname'] = ok_hostname(json.loads(body or '{}').get('hostname'))
@@ -1227,6 +1410,8 @@ async def handle(r, w):
         if path == '/api/update/install' and method == 'POST':
             if installing[0]:
                 return await send(w, 409, json.dumps('An update is already being installed'))
+            if net_restart[0] or net_trial[0]:  # (its restarts would count against the new version)
+                return await send(w, 409, json.dumps('A new address is being tried: update in a few minutes'))
             installing[0] = True
             try:
                 import updater
@@ -1545,6 +1730,7 @@ async def main():
     asyncio.create_task(alerts())
     asyncio.create_task(weather_task())
     asyncio.create_task(price_task())
+    asyncio.create_task(net_trial_guard())
     asyncio.create_task(update_guard())
     asyncio.create_task(bootsel_reset())
     asyncio.create_task(close_first_pin_window())
