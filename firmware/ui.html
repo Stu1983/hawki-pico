@@ -129,6 +129,7 @@ dialog::backdrop{background:#0008}
 <label>Width, cm<input id="f_w" type="number" step="0.1" min="1"></label>
 <label style="grid-column:1/-1">Tank capacity, litres<input id="f_c" type="number" step="1" min="1" required><div class="hint">From the spec sheet (brimful, if it gives one). After a delivery, if you're sure of the heights, adjust this until the “sensor saw” figure on the history page matches the litres on the delivery note.</div></label>
 <label style="grid-column:1/-1">Reorder below, litres<input id="f_r" type="number" step="10" min="0" placeholder="200"><div class="hint">Forecast warns before this.</div></label>
+<label id="f_isoL" style="grid-column:1/-1;display:flex;gap:8px;align-items:flex-start"><input id="f_iso" type="checkbox" style="width:auto;margin-top:3px"><span>Isolated (valve closed)<div class="hint">Its oil still counts in what you have, and deliveries to it still show, but its readings never count as use. For a tank you're not drawing from.</div></span></label>
 <label style="grid-column:1/-1" id="wm_row">Window &amp; rib shape<select id="f_wm" onchange="wmShow()"><option value="standard">Standard (same maths as the Magnus app)</option><option value="measured">Measured</option></select></label>
 </div>
 <div id="meas" style="display:none;margin-top:10px">
@@ -274,17 +275,17 @@ function tankSvg(p){
 function hfOf(){const t=$('f_top').value,o=$('f_out').value;return t===''?null:+t-(o===''?0:+o)}
 function uEst(){const hf=hfOf();$('f_hh').textContent=hf==null?'Both from the ground.':hf<10?'The monitor must be at least 10 cm above the outlet.':'Fill height '+(+hf.toFixed(1))+' cm. The oil below the outlet isn\'t counted.';}
 function wmShow(){uEst();const cub=$('f_shape').value=='cuboid';$('wm_row').style.display=cub?'':'none';$('meas').style.display=(cub&&$('f_wm').value=='measured')?'':'none';draw()}
-function fill(c){$('f_name').value=c.name||'';$('f_shape').value=c.shape||'cuboid';$('f_windows').value=c.windows??0;$('f_top').value=c.height_cm!=null?Math.round((c.height_cm+(c.outlet_cm||0))*100)/100:'';$('f_out').value=c.outlet_cm??'';$('f_l').value=c.length_cm??'';$('f_w').value=c.width_cm??'';$('f_c').value=c.tank_l??c.tank_l_equiv??c.capacity_l??'';$('f_r').value=c.reserve_l??'';
+function fill(c){$('f_name').value=c.name||'';$('f_iso').checked=!!c.isolated;$('f_isoL').style.display=S.tanks.length+(S.tanks.some(x=>x.mac===cur)?0:1)>1?'flex':'none';  /* only means something with 2+ tanks */$('f_shape').value=c.shape||'cuboid';$('f_windows').value=c.windows??0;$('f_top').value=c.height_cm!=null?Math.round((c.height_cm+(c.outlet_cm||0))*100)/100:'';$('f_out').value=c.outlet_cm??'';$('f_l').value=c.length_cm??'';$('f_w').value=c.width_cm??'';$('f_c').value=c.tank_l??c.tank_l_equiv??c.capacity_l??'';$('f_r').value=c.reserve_l??'';
  $('f_wm').value=c.window_model||'standard';for(const k in MF)$(k).value=c[MF[k]]??'';const r=c.ribs_cm||[];$('m_nr').value=r.length;ribInputs(r);wmShow()}
 function add(mac){cur=mac;curLevel=(S.found.find(f=>f.mac==mac)||{}).level??null;$('dlgT').textContent='Add tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='hidden';fill({});fromList();dlg.showModal()}
 function edit(mac){const t=S.tanks.find(x=>x.mac==mac);cur=mac;curLevel=t.level;$('dlgT').textContent='Edit tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='visible';fill(Object.assign({name:t.name},t.cfg));fromList();dlg.showModal()}
 // a Titan R1225 as measured on one (heights from the ground; capacity checked against a metered delivery)
 const R1225={shape:'cuboid',windows:2,height_cm:123,outlet_cm:9.5,length_cm:178,width_cm:75,tank_l:1315,window_model:'measured',
  win_bottom_cm:45,win_top_cm:79,win_outer_w_cm:39,win_inner_w_cm:17,win_inner_h_cm:14,ribs_cm:[31.5,62.5,93.5],rib_h_cm:12.5,rib_depth_cm:1.5};
-function preset(){fill(Object.assign({},R1225,{name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value}))}
+function preset(){fill(Object.assign({},R1225,{name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,isolated:$('f_iso').checked}))}
 function fromList(){const o=S.tanks.filter(t=>t.mac!==cur);$('m_from').innerHTML=o.map(t=>`<option value="${okMac(t.mac)}">${esc(t.name)}</option>`).join('');$('m_row').style.display=o.length?'':'none'}
-function copyFrom(){const t=S.tanks.find(x=>x.mac===$('m_from').value);if(!t)return;const keep={name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value};fill(Object.assign({},t.cfg,keep))}
-async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:Math.round((hfOf()??0)*100)/100,outlet_cm:$('f_out').value===''?null:+$('f_out').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,tank_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,window_model:$('f_wm').value};
+function copyFrom(){const t=S.tanks.find(x=>x.mac===$('m_from').value);if(!t)return;const keep={name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,isolated:$('f_iso').checked};fill(Object.assign({},t.cfg,keep))}
+async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:Math.round((hfOf()??0)*100)/100,outlet_cm:$('f_out').value===''?null:+$('f_out').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,tank_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,window_model:$('f_wm').value,isolated:$('f_iso').checked};
  if(!(b.height_cm>=10)){alert('The monitor must be at least 10 cm above the top of the outlet.');return false}
  if(b.window_model=='measured'){for(const k in MF)b[MF[k]]=$(k).value===''?null:+$(k).value;const r=ribVals();if(r.some(v=>v==null)){alert('Fill in every rib height, or reduce the number of ribs.');return false}b.ribs_cm=r}
  if(b.shape=='cuboid'&&(!b.length_cm||!b.width_cm)){alert('A rectangular tank needs length and width.');return false}
@@ -426,8 +427,9 @@ async function dash(){if(!S.update)return;if(S.primary==='all'&&S.tanks.length>1
  const ck=JSON.stringify(t.cfg),fresh=AN&&AN.mac===t.mac&&AN.ck===ck&&Date.now()/1000-AN.t<600;
  if(!fresh){try{const[buf,cv]=await Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())]);
    AN={mac:t.mac,ck,t:Date.now()/1000,cv,base:parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)])}}catch(e){AN=null}}
- const now=Date.now()/1000,P=AN?AN.base.slice():[];
+ const now=Date.now()/1000;let P=AN?AN.base.slice():[];
  if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383&&AN)P.push([now-t.age,toL(t.level,AN.cv)]);
+ if(t.cfg.isolated)P=holdIsolated(P);  /* valve closed: its readings never count as use */
  const WV=await wxLoad(S),reserve=t.cfg.reserve_l??200,A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
  // oil left (+ unusable)
  $('d_l').textContent=t.litres==null?'–':L0(t.litres);
@@ -455,9 +457,9 @@ async function dashAll(){const ts=S.tanks;$('d_name').textContent=ts.length>2?'A
  if(!fresh){try{const got=await Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])));
    AN={mac:'all',ck,t:Date.now()/1000,cvs:got.map(g=>g[1]),bases:got.map(([buf,cv])=>parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)]))}}catch(e){AN=null}}
  const now=Date.now()/1000,series=AN?AN.bases.map((b,k)=>{const s=b.slice(),t=ts[k];if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383)s.push([now-t.age,toL(t.level,AN.cvs[k])]);return s}):[];
- const P=AN?combine(series):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S),A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
+ const P=AN?combine(series,ts.map(t=>!!t.cfg.isolated)):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S),A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
  const sum=f=>ts.reduce((a,t)=>a+(f(t)||0),0),lit=sum(t=>t.litres),cap=sum(t=>+t.cfg.capacity_l),un=sum(t=>t.unusable&&t.unusable[0]),known=ts.every(t=>t.litres!=null);
- $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
+ $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))+(t.cfg.isolated?' (isolated)':'')).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
  $('d_bar').style.width=(known&&cap?Math.max(0,Math.min(100,lit/cap*100)):0)+'%';
  const ok=A.recent!=null&&A.span>=2,av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;
  $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';

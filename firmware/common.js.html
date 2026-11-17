@@ -106,9 +106,12 @@ function analyse(pts,o){
  const slope=(t0,v0)=>{let n2=0,sx=0,sy=0,sxx=0,sxy=0;const add=(x,y)=>{n2++;sx+=x;sy+=y;sxx+=x*x;sxy+=x*y};
   let miss=0;for(let t=t0;t<tEnd;t+=3*H){const v=t===t0?v0:at(t);if(v!=null)add((t-t0)/DAY,v);else miss++}add((tEnd-t0)/DAY,a1);
   const den=n2*sxx-sx*sx;if(miss||n2<6||!(den>0))  /* a gap in the readings: the two ends are the fair figure */return v0!=null?(v0-a1)/((tEnd-t0)/DAY):null;return -(n2*sxy-sx*sy)/den};
+ // the plain average of the last d full days: the same days, and the same figures, as the bars on the charts
+ const fullDays=d=>{const today=midnight(tnow),v=[];for(let k=1;k<=d;k++){const t=addDays(today,-k);if(out.days[t]==null)return null;v.push(out.days[t])}return Math.max(0,mean(v))};
  out.recent=win>=1&&a0!=null?Math.max(0,slope(tStart,a0)):null;out.recentDays=win;
+ {const f14=fullDays(14);if(f14!=null){out.recent=f14;out.recentDays=14}}  /* 14 full days: their average (else the line, over what there is) */
  // shorter averages for the Using tile (same smoothed level, so 5 mm steps don't swing them)
- out.avgs={};for(const d of[3,7]){const s0=Math.max(pts[0][0],tEnd-d*DAY),w=(tEnd-s0)/DAY,v=at(s0);out.avgs[d]=w>=d-0.01&&v!=null?Math.max(0,slope(s0,v)):null}
+ out.avgs={};for(const d of[3,7])out.avgs[d]=fullDays(d);
  if(out.recent==null)return out;
  const recentDays=[];for(let t=tStart;t<tEnd;t+=DAY)recentDays.push(t);
  const avgOver=f=>mean(recentDays.map(f));
@@ -172,7 +175,10 @@ function flatten(s){const out=s.slice();let i=0;
   i=j+1}
  return out}
 function firstLevel(s){const d=s.filter(p=>p[0]-s[0][0]<=DAY).map(p=>p[1]);return Math.max(...d)-Math.min(...d)<=STEADY_L?d.reduce((a,b)=>a+b,0)/d.length:s[0][1]}
-function combine(series){if(series.length>1)series=series.map(flatten);const f0=series.map(s=>s.length?firstLevel(s):0),all=[...new Set(series.flatMap(s=>s.map(p=>p[0])))].sort((a,b)=>a-b),idx=series.map(()=>0);
+// An isolated tank (valve closed) holds its level and only moves on a change bigger than a delivery's REFILL_L
+// (a delivery, or the valve opened after all): radar jitter and warm oil never count as use.
+function holdIsolated(s){let h=null,sum=0,n=0;return s.map(p=>{if(h==null||Math.abs(p[1]-h)>REFILL_L){sum=0;n=0}sum+=p[1];n++;h=sum/n;return[p[0],h].concat(p.slice(2))})}  /* held at the running average of its readings since the last big change, so one jittery first reading can't set its level */
+function combine(series,iso){series=series.map((s,k)=>iso&&iso[k]?holdIsolated(s):series.length>1?flatten(s):s);const f0=series.map(s=>s.length?firstLevel(s):0),all=[...new Set(series.flatMap(s=>s.map(p=>p[0])))].sort((a,b)=>a-b),idx=series.map(()=>0);
  /* tanks read a minute or two apart count as one reading time (the later), so the sum has one point an hour like a single tank */
  const ts=[];let g0=-Infinity;for(const t of all){if(t-g0<900)ts[ts.length-1]=t;else{ts.push(t);g0=t}}  /* a group spans at most 15 minutes from its first reading */
  /* each tank at time t: its last reading at or before t; before its first reading, its first day's average

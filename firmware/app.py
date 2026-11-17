@@ -828,6 +828,8 @@ def set_tank(b, restore=False):
     for k in ('reserve_l', 'unusable_l'):
         if b.get(k) not in (None, ''):
             t[k] = num(b[k], 0, 100000)
+    if b.get('isolated'):
+        t['isolated'] = True  # valve closed: its oil counts in the total, its readings never count as use
     if b.get('outlet_cm') not in (None, ''):  # ground to the top of the outlet (any shape)
         t['outlet_cm'] = num(b['outlet_cm'], 0, 1000)
     if shape == 'cuboid':

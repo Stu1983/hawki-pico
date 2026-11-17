@@ -74,4 +74,12 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  ok(Math.abs(A1.avgs[3]-6)<0.6,'3-day use from a line through the readings, not two end readings: '+A1.avgs[3].toFixed(2)+' L/day (true 6)');
  const slow=[];let S2=500;for(let t=now-10*DAY;t<=now;t+=H){S2-=0.9/24;slow.push([t,q(S2)])}
  const fl=ctx.flatten(slow);ok(fl[0][1]-fl[fl.length-1][1]>5,'a tank slowly in use (0.9 L/day, summer hot water) is not flattened: '+(fl[0][1]-fl[fl.length-1][1]).toFixed(1)+' L over 10 days')}
+// 11. full-day averages match the chart's bars; an isolated tank never counts as use but its deliveries do
+{const now=T(2026,10,17)+3*H,p=[];let L=800;const per=[9,9,9,9,8.7,6.4,7.0];  /* the last three days: 8.7, 6.4, 7.0 */
+ for(let d=0;d<per.length;d++)for(let h=0;h<24;h++){p.push([T(2026,10,10+d)-12*H+h*H,L]);L-=per[d]/24}p.push([now,L]);
+ const A=ctx.analyse(p,{now});ok(Math.abs(A.avgs[3]-(8.7+6.4+7.0)/3)<0.25,'3-day average = the last 3 full days: '+A.avgs[3].toFixed(2)+' (bars 8.7, 6.4, 7.0 -> 7.37)');
+ const a=p.map(x=>[x[0],x[1]]),b=p.map((x,i)=>[x[0]+60,(i%3?2.1:7.4)+(i>40?500:0)]);  /* isolated: jitter, and a 500 L delivery */
+ const C=ctx.analyse(ctx.combine([a,b],[false,true]),{now});
+ ok(Math.abs(C.avgs[3]-A.avgs[3])<0.2,'isolated tank jitter not counted: '+C.avgs[3].toFixed(2)+' vs '+A.avgs[3].toFixed(2));
+ ok(C.fills.length===1&&Math.abs(C.fills[0].add-500)<10,'a delivery into the isolated tank still shows: '+(C.fills[0]&&Math.round(C.fills[0].add))+' L')}
 process.exit(fails?1:0);
