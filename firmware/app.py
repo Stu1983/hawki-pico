@@ -114,6 +114,23 @@ def with_room(fn, *a):
 boot = time.time()
 boot_ms = time.ticks_ms()
 
+# A fetch over HTTPS (weather, prices) holds up everything else for 1-3 s while it runs, so a page opened
+# then sat waiting (10+ s after a restart, with several in a row). Background fetches wait until nobody has
+# opened a page for a minute (polls of /api/state don't count: a late refresh isn't noticed).
+LOADS = ('/', '/index.html', '/history', '/common.js', '/api/hist', '/api/curve', '/api/deliveries', '/api/weather', '/api/prices')
+page_ms = [None]  # ticks_ms of the last page / chart data served
+
+
+async def web_quiet(most=600):
+    # wait (at most `most` seconds) until no page has loaded for 60 s
+    t0 = time.ticks_ms()
+    while page_ms[0] is not None and time.ticks_diff(time.ticks_ms(), t0) < most * 1000:
+        age = time.ticks_diff(time.ticks_ms(), page_ms[0])
+        if not 0 <= age < 60000:  # quiet (forget it: the tick counter wraps after ~12 days)
+            page_ms[0] = None
+            break
+        await asyncio.sleep(2)
+
 
 def hx(b):
     return binascii.hexlify(bytes(b)).decode()
@@ -1213,6 +1230,8 @@ async def handle(r, w):
         path, q = parse_q(path)
         if peer and not on_ap(peer):
             net_proof()
+        if path in LOADS:
+            page_ms[0] = time.ticks_ms()
         maint = bool(cfg.get('maint')) and q.get('t') == TOKEN
         if method == 'PUT' and path == '/file' and maint:
             # stream uploads straight to flash: big files don't fit in one read
@@ -1638,6 +1657,9 @@ async def weather_task():
                 d0 = weather.day_of(first) if first else today - 30
                 todo = weather.plan(have, max(d0, today - 3650), today)
                 for a, b in todo[:6]:  # at most 6 requests a go; the rest 10 minutes later
+                    await web_quiet()
+                    if cfg.get('wx') is not w:
+                        break  # the location changed (or weather was switched off) while waiting
                     got = with_room(weather.fetch, w['lat'], w['lon'], a, b)
                     if cfg.get('wx') is not w:
                         break  # the location changed meanwhile: drop this
@@ -1653,7 +1675,8 @@ async def weather_task():
             gc.collect()
         if ready and cfg.get('wx') is w and time.time() - wx_state['fat'] > 6 * 3600:
             try:
-                got = with_room(weather.forecast, w['lat'], w['lon'])
+                await web_quiet()
+                got = with_room(weather.forecast, w['lat'], w['lon']) if cfg.get('wx') is w else None
                 if cfg.get('wx') is w and got:
                     weather.save(got, weather.FFILE)
                     wx_state['fat'] = time.time()
@@ -1670,6 +1693,9 @@ async def weather_task():
                 for _ in range(2):
                     y = weather.norm_next(nm, yr)
                     if y is None:
+                        break
+                    await web_quiet()
+                    if cfg.get('wx') is not w:
                         break
                     got = with_room(weather.fetch, w['lat'], w['lon'], weather._day('%d-01-01' % y), weather._day('%d-12-31' % y))
                     if cfg.get('wx') is not w:
@@ -1728,6 +1754,12 @@ async def price_task():
                         price_state['pc'] = (cfg.get('price') or {}).get('pc')
                 d = None
             p = cfg.get('price')
+            if (p is not None and now > 1.7e9 and wlan.isconnected() and price_state['day'] != today
+                    and now - price_state['tried'] > 1800 and time.gmtime(now)[3] >= 9):
+                await web_quiet()
+                now = time.time()  # (after the wait: it may be another day, or prices switched off)
+                today = weather.day_of(now)
+                p = cfg.get('price')
             if (p is not None and now > 1.7e9 and wlan.isconnected() and price_state['day'] != today
                     and now - price_state['tried'] > 1800 and time.gmtime(now)[3] >= 9):
                 price_state['tried'] = now

@@ -1,11 +1,11 @@
 {
- "version": "1.2.49",
- "ref": "v1.2.49",
- "notes": "Same tank as: link monitors on identical tanks so their size and capacity are set once",
+ "version": "1.2.50",
+ "ref": "v1.2.50",
+ "notes": "Weather and price fetches wait until nobody is loading a page (each one held the Pico up for 1-3 s)",
  "files": {
   "app.py": [
-   "19a864b3b1111244a8a04c7995f505c5ed6e79a6d37d6cf24c99729c5bd7a8de",
-   76189
+   "dfc156dcb2aceb9f64d3e4df5cf0d34522871a8a9e17b1e2a5c1a93e3eec70b2",
+   77981
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -60,7 +60,7 @@
    9943
   ],
   "version.py": [
-   "6468b53e4bd298bf27952915157d91563ed060de352fbcbbaa60119418475ec0",
+   "26f00ada31a7178a2dedc78e4f397505ec383fd07ec320461060dcb5c42dce20",
    19
   ],
   "weather.py": [
@@ -69,7 +69,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"19a864b3b1111244a8a04c7995f505c5ed6e79a6d37d6cf24c99729c5bd7a8de\", 76189], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"300f31690b60d9c8efde422e51e6f40a82990bf0b74cf4b12468b1c4381fba9e\", 57653], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"e8af3090fc1d602af784e360bc364793c8c9995a519e4ff403e03e8bae094967\", 14355], \"ui.html\": [\"a56d1001199e529b6b5c04dc17908eb37e64c63ca920521c5908d2eb32da0177\", 79854], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"6468b53e4bd298bf27952915157d91563ed060de352fbcbbaa60119418475ec0\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Same tank as: link monitors on identical tanks so their size and capacity are set once\", \"ref\": \"v1.2.49\", \"version\": \"1.2.49\"}",
-  "sig": "1f277652fa1c01671186439c3095ced244f58c30382e48dc5cd36d788c9f383863235c19208384fd5cdc0d201147ef54a46a06284fbc3751aaa366c4dc696bd8574d20ee0201f3d89fe66bac9b54f496c9070757169f866b84ba16402e9aebd45d5da447732dbe4435b7557a57bb18ee49a646451d929aa03a5fa18092c62f00629b4f62e198873f0d531ad1395823c0eb09532355de45ee72b971f783f73cb2ad5aba0cd8c0f0bf5d6bca87f43b1676bd24c50aee137835ffd399fc77c9481343f0580e64ac21e9299e6b8b71cc8fb049a706e9e5f79ec64956ac4b7cff6d21d09ebc3b9e84a7031a8d76ec14341b86c40775fc64f83b2f1b76a85be6d2f3d3"
+  "body": "{\"files\": {\"app.py\": [\"dfc156dcb2aceb9f64d3e4df5cf0d34522871a8a9e17b1e2a5c1a93e3eec70b2\", 77981], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"300f31690b60d9c8efde422e51e6f40a82990bf0b74cf4b12468b1c4381fba9e\", 57653], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"e8af3090fc1d602af784e360bc364793c8c9995a519e4ff403e03e8bae094967\", 14355], \"ui.html\": [\"a56d1001199e529b6b5c04dc17908eb37e64c63ca920521c5908d2eb32da0177\", 79854], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"26f00ada31a7178a2dedc78e4f397505ec383fd07ec320461060dcb5c42dce20\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Weather and price fetches wait until nobody is loading a page (each one held the Pico up for 1-3 s)\", \"ref\": \"v1.2.50\", \"version\": \"1.2.50\"}",
+  "sig": "666fea45c75425a184c7c6694c98c84eb5c6add903d1c64cff5b38fb461df8c81f71f68abbd63e970e2c7f055a514e1fc49691e68cf0c155d60fb9ac5f299fa62a1e723dda713fb546931fcecbb942d3df819750b0d3f81fd4a7b584ca3b40c01b7948210e6bdd22979dac2f0ad7dfd0c009709ad5d13a154c76fff126603fc38b8b06cbb7f6d5c8cce08a0bbd23bd45889af0b86722d25305ccf0328bed9300053a96acaf1088a31c84e041b4a486250eea4cb439b4e0e5c8edecab1e75c4f58b22ed840c7611facd4b725cb8b0584f1fc44910b1a66dc203032e9553480cbb61f3185c5dfa2298200d1ee0930016ec581c22c90f2cf484289a737f2d141aef"
  }
 }
