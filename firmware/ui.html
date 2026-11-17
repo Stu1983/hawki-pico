@@ -297,7 +297,7 @@ function fill(c){$('f_name').value=c.name||'';$('f_iso').checked=!!c.isolated;$(
 function add(mac){cur=mac;curLevel=(S.found.find(f=>f.mac==mac)||{}).level??null;$('dlgT').textContent='Add tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='hidden';fill({});fromList();dlg.showModal()}
 function edit(mac){const t=S.tanks.find(x=>x.mac==mac);cur=mac;curLevel=t.level;$('dlgT').textContent='Edit tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='visible';fill(Object.assign({name:t.name},t.cfg));fromList();dlg.showModal()}
 // a Titan R1225 as measured on one (heights from the ground; capacity checked against a metered delivery)
-const R1225={shape:'cuboid',windows:2,height_cm:123,outlet_cm:9.5,length_cm:178,width_cm:75,tank_l:1315,window_model:'measured',
+const R1225={shape:'cuboid',windows:2,height_cm:123,outlet_cm:9.5,length_cm:173,width_cm:69,tank_l:1315,window_model:'measured',
  win_bottom_cm:45,win_top_cm:79,win_outer_w_cm:39,win_inner_w_cm:17,win_inner_h_cm:14,ribs_cm:[31.5,62.5,93.5],rib_h_cm:12.5,rib_depth_cm:1.5};
 function preset(){fill(Object.assign({},R1225,{name:$('f_name').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,isolated:$('f_iso').checked}))}
 function fromList(){const o=S.tanks.filter(t=>t.mac!==cur);$('m_from').innerHTML=o.map(t=>`<option value="${okMac(t.mac)}">${esc(t.name)}</option>`).join('');$('m_row').style.display=o.length?'':'none'}
