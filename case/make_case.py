@@ -4,7 +4,8 @@ python3 case/make_case.py  ->  case/out/*.stl and hawki_case.3mf (needs trimesh,
 
 Base: the board sits on 4 pegs 10 mm up (room for soldered headers underneath): short pins on one diagonal line it up,
 two M2 self-tapping screws on the other hold it down. USB opening at one end, two screw ears to fix it to a wall or
-beam. Lid: a lip that clicks into grooves in the base (no posts: nothing to line up with the pins), a hole over the BOOTSEL button (hold it 5 s with a pen to clear a forgotten PIN), raised text.
+beam. Lid: a lip that locates it and two clips that hook into pockets on the outside of the base (no posts:
+nothing to line up with the pins), a hole over the BOOTSEL button (hold it 5 s with a pen to clear a forgotten PIN), raised text.
 All sizes in mm; change them below.
 """
 import os
@@ -33,8 +34,11 @@ OVER = 5.5                                     # over the board: USB socket, RF 
 PLUG_W, PLUG_H, PLUG_R = 12.0, 8.5, 2.0       # opening for the cable's plug (9.5 x 6.5 overmould + clearance; +1 mm after a
                                                # test print only just fitted). The U's bottom is PLUG_H/2 under the socket centre
 LIP, LIP_CLR = 3.0, 0.15                       # lid lip depth, clearance per side
-# the lid clicks on: a rounded ridge along each long side of the lip snaps into a groove in the base wall
-RIDGE_R, RIDGE_LEN, GROOVE_EXTRA = 0.45, 24.0, 0.15   # ridge radius (0.3 mm of snap past the clearance), length; groove a little bigger
+# the lid clips on: a flexible tab down each long side, outside the base, with a hook that clicks into a pocket in the
+# base's outer wall well below the rim (where the wall is stiff). Flat catch on top: it stays on; pull the tabs out to open.
+CLIP_W, CLIP_T, CLIP_L, CLIP_GAP = 10.0, 1.5, 8.0, 0.1   # tab width, thickness, reach below the lid's underside, gap to the wall
+HOOK, HOOK_H = 0.7, 1.8                        # hook: how far it reaches in, its height (lead-in ramp below the catch)
+POCKET_D = 0.9                                 # pocket depth in the base wall (hook + gap + a little)
 # board fixing: locating pins on one diagonal, M2 self-tapping screws (pan head, ~6 mm) on the other (as on the MiSTer mount)
 PIN_D, PIN_UP, PIN_CH = 1.9, 0.8, 0.4          # pin (Pico holes are 2.1), how far it stands above the board, tip chamfer
 PEG_D, SCREW_PEG_D, PILOT_D, PILOT_DEEP = 3.6, 4.6, 1.7, 7.0   # pegs; the screw pegs are fatter round a 1.7 mm pilot this deep
@@ -96,6 +100,15 @@ def rbox(x0, y0, z0, x1, y1, z1, r):
 
 
 U = lambda *m: trimesh.boolean.union(list(m), engine='manifold')
+
+
+def prism_yz(poly, x0, x1, side=0):
+    """A (y, z) outline run along x from x0 to x1. side 1 mirrors it to the far long side (y -> OUT_W - y)."""
+    m = trimesh.creation.extrude_polygon(poly, x1 - x0)
+    m.apply_transform(np.array([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]], float))
+    if side:
+        m.apply_transform(np.array([[1, 0, 0, 0], [0, -1, 0, OUT_W], [0, 0, 1, 0], [0, 0, 0, 1]], float))
+    return m
 D = lambda a, *b: trimesh.boolean.difference([a] + list(b), engine='manifold')
 
 
@@ -138,13 +151,11 @@ def base():
     tie.apply_translation((mx, cy - SAD_W / 2 - 1 - tie.bounds[0][1], 0))
     cuts += [groove, tie]
     body = D(body, *cuts)
-    # snap grooves: inside each long wall, where the lid's ridges land
-    gz = BASE_H - LIP / 2
-    for y in (WALL, OUT_W - WALL):
-        g = cyl(0, 0, -RIDGE_LEN / 2 - 1, RIDGE_LEN / 2 + 1, 2 * (RIDGE_R + GROOVE_EXTRA))
-        g.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
-        g.apply_translation((OUT_L / 2 - g.centroid[0], y - g.centroid[1], gz - g.centroid[2]))
-        body = D(body, g)
+    # clip pockets in the outer face of each long wall (catch face flush with the hook's catch when the lid is down)
+    zc = BASE_H - CLIP_L + HOOK_H
+    for side in (0, 1):
+        body = D(body, prism_yz(Polygon([(-1, zc + 0.05), (POCKET_D, zc + 0.05), (POCKET_D, BASE_H - CLIP_L - 0.4), (-1, BASE_H - CLIP_L - 0.4)]),
+                                OUT_L / 2 - CLIP_W / 2 - 0.5, OUT_L / 2 + CLIP_W / 2 + 0.5, side))
     top = FLOOR + UNDER                       # the board's underside
     posts, pilots = [], []
     for i, (x, y) in enumerate(holes):
@@ -204,13 +215,14 @@ def lid():
     c = LIP_CLR
     lip = D(box(WALL + c, WALL + c, -LIP, OUT_L - WALL - c, OUT_W - WALL - c, 0.01),
             box(WALL + c + 1.6, WALL + c + 1.6, -LIP - 1, OUT_L - WALL - c - 1.6, OUT_W - WALL - c - 1.6, 0.02))
-    ridges = []
-    for y in (WALL + c, OUT_W - WALL - c):      # a rounded ridge along the middle of each long side of the lip
-        r = cyl(0, 0, -RIDGE_LEN / 2, RIDGE_LEN / 2, 2 * RIDGE_R)
-        r.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
-        r.apply_translation((OUT_L / 2 - r.centroid[0], y - r.centroid[1], -LIP / 2 - r.centroid[2]))
-        ridges.append(r)
-    body = U(plate, lip, *ridges)
+    clips = []
+    zc = -CLIP_L + HOOK_H                         # the hook's flat catch (top)
+    x0, x1 = OUT_L / 2 - CLIP_W / 2, OUT_L / 2 + CLIP_W / 2
+    for side in (0, 1):   # (y, z) drawn for the y = 0 side, outward = -y; mirrored for the other
+        tab = Polygon([(-CLIP_GAP - CLIP_T, -CLIP_L), (-CLIP_GAP, -CLIP_L), (-CLIP_GAP, 0), (1.0, 0), (1.0, TOP), (-CLIP_GAP - CLIP_T, TOP)])
+        hook = Polygon([(-CLIP_GAP - 0.01, zc), (-CLIP_GAP + HOOK, zc), (-CLIP_GAP + HOOK, zc - 0.4), (-CLIP_GAP - 0.01, -CLIP_L)])
+        clips.append(prism_yz(tab.union(hook), x0, x1, side))
+    body = U(plate, lip, *clips)
     bx, by = X0 + BOOTSEL_X, Y0 + BOOTSEL_Y
     # flexible button: tongue from the hinge (away from USB) to a round tip just past the button
     tip = bx - TAB_TIP                               # USB-side end of the tongue
