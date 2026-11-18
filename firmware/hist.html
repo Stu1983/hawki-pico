@@ -368,9 +368,10 @@ function renderDeliveries(){const f=$('fills');f.textContent='';const list=deliv
 // Best-fit tank capacity: with the heights right, the capacity only scales the litres, so each delivery's
 // "sensor saw" is a straight line in it. Least squares over every delivery with a receipt figure.
 let FIT={},CVS={};  /* FIT: suggested capacity per tank; CVS: each tank's curve (all-tanks view) */
-let FITGEN=0;
+let FITGEN=0,FITPEND=false;const CVM={},FITC={};  /* curves for trial capacities, and fitted answers, kept for the page's life (each curve is ~2 s of the Pico's time) */
 /* the capacity check is per tank: in the all-tanks view, one line for each tank, from its own deliveries */
-async function fitCap(){const gen=++FITGEN,box=$('fit');FIT={};box.textContent='';
+async function fitCap(){if(PG!=='del'){FITPEND=true;$('fit').textContent='';return}FITPEND=false;  /* only when the Deliveries page is open */
+ const gen=++FITGEN,box=$('fit');FIT={};box.textContent='';
  const list=T&&T.all?T.tanks.map(t=>({t,cv:CVS[t.mac],name:t.name})):T?[{t:T,cv:CV,name:null}]:[];
  for(const{t,cv,name}of list){const d=document.createElement('div');box.appendChild(d);
   await fitOne(gen,d,t,cv,deliveries().filter(x=>x.mac===t.mac),name);if(gen!==FITGEN)return}}
@@ -379,17 +380,17 @@ async function fitOne(gen,box,T,CV,dl,label){box.textContent=(label?label+': ':'
  const xs=dl.filter(x=>x.f&&x.r&&x.r.litres>0);if(!xs.length){box.textContent='';if(dl.some(x=>x.f))box.textContent=(label?label+': ':'')+'Add the litres from the receipt to a delivery (Edit) and this will suggest a tank capacity that fits.';return}
  const inv=L=>{const l=CV.l;for(let i=1;i<l.length;i++)if(l[i]<=L){const a=l[i-1],b=l[i];return (i-1+(a===b?0:(a-L)/(a-b)))*CV.step}return CV.h};  // litres -> distance on the current curve
  const ms=xs.map(x=>[inv(x.f.from),inv(x.f.to),x.r.litres]);
- const memo={},cv=async v=>{v=Math.round(v);if(!memo[v]){const r=await fetch('/api/curve?mac='+encodeURIComponent(mac)+'&tank_l='+v);if(!r.ok)throw 0;memo[v]=await r.json()}return memo[v]};  // one at a time: the Pico works each out (~2 s)
+ const ck=JSON.stringify(c),cv=async v=>{v=Math.round(v);const mk=mac+'|'+ck+'|'+v;if(!CVM[mk]){const r=await fetch('/api/curve?mac='+encodeURIComponent(mac)+'&tank_l='+v);if(!r.ok)throw 0;CVM[mk]=await r.json()}return CVM[mk]};  // one at a time: the Pico works each out (~2 s)
  const err=k=>ms.reduce((a,[m0,m1,L])=>a+Math.pow(toL(m1,k)-toL(m0,k)-L,2),0);
  // sensor-saw is a straight line in the capacity for most shapes, but piecewise for some: fit, then re-fit
  // around the answer a few times and keep the best one actually checked against the real curve
- let x=base,best=null;
- try{for(let it=0;it<4;it++){const x2=Math.round(x*1.05),k1=await cv(x),k2=await cv(x2);if(gen!==FITGEN)return;/* a newer render took over */
+ const fk=mac+'|'+ck+'|'+JSON.stringify(ms);let x=base,best=FITC[fk]||null,partial=false;  /* (same tank, settings and deliveries: the answer from before) */
+ if(!best)try{for(let it=0;it<4;it++){const x2=Math.round(x*1.05),k1=await cv(x),k2=await cv(x2);if(gen!==FITGEN)return;/* a newer render took over */
    const e1=err(k1);if(!best||e1<best[1])best=[Math.round(x),e1];if(e1<0.25*ms.length)break;  // fits to within half a litre
    let sa=0,sb=0;for(const[m0,m1,L]of ms){const d1=toL(m1,k1)-toL(m0,k1),d2=toL(m1,k2)-toL(m0,k2),al=(d2-d1)/(x2-x),be=d1-al*x;sa+=al*(L-be);sb+=al*al}
    if(!(sb>0)){x=Math.round(x*1.5);continue}/* flat here (some shapes): look further out */const nx=Math.round(sa/sb);if(!isFinite(nx)||nx<1||nx>200000)break;if(Math.abs(nx-x)<1){x=nx;break}x=nx}
-  if(best[0]!==Math.round(x)&&x>=1&&x<=200000){const kx=await cv(x);if(gen!==FITGEN)return;const ex=err(kx);if(ex<best[1])best=[Math.round(x),ex]}}catch(e){if(!best)return}
- if(!best||gen!==FITGEN)return;const fit=best[0],n=xs.length;box.textContent='';
+  if(best[0]!==Math.round(x)&&x>=1&&x<=200000){const kx=await cv(x);if(gen!==FITGEN)return;const ex=err(kx);if(ex<best[1])best=[Math.round(x),ex]}}catch(e){if(!best)return;partial=true}
+ if(!best||gen!==FITGEN)return;if(!partial)FITC[fk]=best;  /* (only a fit that ran to the end is kept: one cut short by a failed request is tried again next time) */const fit=best[0],n=xs.length;box.textContent='';
  const what=n===1?'this delivery':'these '+n+' deliveries',same=Math.abs(fit-base)<1,rough=n===1?' One delivery is a rough guide; it firms up with more.':'';
  box.textContent=(label?label+': ':'')+(same?'Your tank capacity ('+Math.round(base).toLocaleString()+' L) fits '+what+'.'+rough:'A tank capacity of '+fit.toLocaleString()+' L would fit '+what+' better than your '+Math.round(base).toLocaleString()+' L.'+rough);
  if(Math.abs(fit-base)>=1){FIT[mac]=fit;const b=document.createElement('button');b.textContent='Use '+fit.toLocaleString()+' L';b.style.marginLeft='8px';b.onclick=()=>useFit(mac);box.append(' ',b)}}
@@ -512,6 +513,7 @@ try{R=localStorage.hawkiRange||'30'}catch(e){}
 const PGS={use:'',cost:'#costs',del:'#deliveries'};let PG='use';try{const v=localStorage.hawkiPage;if(Object.prototype.hasOwnProperty.call(PGS,v))PG=v}catch(e){}for(const k in PGS)if(PGS[k]&&location.hash===PGS[k])PG=k;
 function page(k,quiet){PG=k;try{localStorage.hawkiPage=k}catch(e){}history.replaceState(null,'',location.pathname+location.search+PGS[k]);document.querySelectorAll('.pg').forEach(d=>d.hidden=!d.classList.contains('pg_'+k));
  document.querySelectorAll('#pgs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.pg===k));
+ if(k==='del'&&FITPEND&&!quiet)fitCap();
  if(quiet||typeof A==='undefined'||!A)return;if(k==='use'){drawLevel();drawMonths();drawHours();drawWeather()}else if(k==='cost')drawPrices()}
 page(PG,true);
 run();
