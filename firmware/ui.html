@@ -15,7 +15,7 @@ h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:22px 0 8px;color:var
 button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:7px 12px;cursor:pointer}
 button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.del{color:var(--bad)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{display:block;font-size:13px;color:var(--mut)}
-input,select{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);margin-top:3px}
+input,select{width:100%;font:inherit;font-size:16px;  /* (iOS zooms the page on any smaller input) */padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);margin-top:3px}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);width:min(520px,calc(100vw - 32px));padding:16px}
 dialog::backdrop{background:#0008}
 #viz,#d_tank{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}#d_tank{display:block;max-width:560px;margin:8px auto 0;touch-action:pan-y}.dots[hidden]{display:none}details.rd{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}details.rd summary{cursor:pointer;color:var(--acc);font-size:14px}.rdt{border-collapse:collapse;width:100%;font-size:13px;margin-top:6px}.rdt th,.rdt td{text-align:right;padding:3px 4px;border-bottom:1px solid var(--line)}.rdt th:first-child,.rdt td:first-child{text-align:left}.dots{display:flex;justify-content:center;gap:4px;margin-top:6px}.dots button{border:0;background:none;padding:6px;line-height:0}.dots i{display:block;width:8px;height:8px;border-radius:50%;background:var(--line)}.dots button[aria-current=true] i{background:var(--fg)}#d_tank text{font-size:11px}#d_tank .rl{stroke:var(--fg);stroke-width:.6;opacity:.25}#d_tank .tk{fill:none}svg#d_tank .inn{stroke:var(--fg)}#d_tank .rsv{stroke:var(--warn);stroke-width:1.2;stroke-dasharray:2 3}svg#d_tank .rsvt{fill:var(--warn)}
@@ -103,7 +103,7 @@ dialog::backdrop{background:#0008}
 <div class="card"><div class="row"><div><div id="pr1">…</div><div class="mut" id="pr2">&nbsp;</div></div><button id="prOffB" onclick="prOff()" style="visibility:hidden">Turn off</button></div>
 <div class="mut" style="margin:10px 0 6px">Northern Ireland only. Once a day, the cheapest and average price for 900 L from cheapestoil.co.uk, for your postcode district: the first half of your postcode, like BT51. Leave it blank for the Northern Ireland average.</div>
 <div class="row" style="gap:8px;justify-content:flex-start"><input id="prq" placeholder="e.g. BT51" maxlength="5" autocapitalize="characters" style="flex:1;margin:0" oninput="this.dataset.typed=1" onkeydown="if(event.key==='Enter')prSave()"><button onclick="prSave()">Save</button></div>
-<div class="mut" id="prs" style="min-height:22px;margin-top:6px"></div></div>
+<div class="mut" id="prs" style="min-height:44px;margin-top:6px"></div></div>
 
 <h2>Home Assistant</h2>
 <div class="card"><div class="row"><div><div id="mq1">…</div><div class="mut" id="mq2">&nbsp;</div></div><button id="mqOffB" onclick="mqOff()" style="visibility:hidden">Turn off</button></div>
@@ -207,9 +207,9 @@ dialog::backdrop{background:#0008}
 document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('svg'))e.preventDefault()});/* a long press on a chart reads the value: no Android menu or text selection */
 const $=id=>document.getElementById(id);let S={tanks:[],found:[]},cur=null;
 // ---------- admin PIN: changes need a signed-in browser ----------
-const SK='hawkiSession';let SESS=null,PMODE='login',pinRes=null;try{SESS=localStorage.getItem(SK)}catch(e){}
+const SK='hawkiSession';let SESS=null,PMODE='login',PWANT='login',pinRes=null;try{SESS=localStorage.getItem(SK)}catch(e){}
 function saveSess(s){SESS=s;try{s?localStorage.setItem(SK,s):localStorage.removeItem(SK)}catch(e){}}
-function askPin(mode){return new Promise(res=>{pinRes=res;PMODE=mode;const setup=mode!=='login';
+function askPin(mode){return new Promise(res=>{pinRes=res;PMODE=PWANT=mode;const setup=mode!=='login';
  $('pT').textContent=mode==='setup'?'Choose a PIN':mode==='change'?'Choose a new PIN':'Enter the PIN';
  $('pM').textContent=mode==='setup'?'Protects this Pico: changes (tanks, Wi-Fi, deliveries, updates) will need it. 4 to 12 characters. Forgot it? Hold the Pico\'s BOOTSEL button for 5 seconds.':mode==='change'?'Everyone else will have to sign in again.':'Needed to change anything on this Pico. This browser stays signed in.';
  $('p1').value='';$('p2').value='';$('pErr').textContent='';$('p2l').style.display=setup?'':'none';$('p1').autocomplete=setup?'new-password':'current-password';
@@ -219,9 +219,11 @@ async function pinSubmit(e){e.preventDefault();const p=$('p1').value;
  const h={'Content-Type':'application/json'};if(SESS)h['X-Auth']=SESS;
  const r=await fetch(PMODE==='login'?'/api/pin/login':'/api/pin/set',{method:'POST',headers:h,body:JSON.stringify({pin:p})});
  const j=await r.json().catch(()=>null);
- if(r.status===401){$('pErr').textContent='Sign in with the current PIN first.';PMODE='login';$('p2l').style.display='none';return false}
+ if(r.status===401){$('pErr').textContent='Sign in with the current PIN first.';PMODE='login';$('pT').textContent='Enter the current PIN';$('p1').value='';$('p2l').style.display='none';return false}
  if(!r.ok){$('pErr').textContent=typeof j==='string'?j.charAt(0).toUpperCase()+j.slice(1)+'.':'Could not sign in.';return false}
- saveSess(j.session);$('pdlg').close();const f=pinRes;pinRes=null;f&&f(true);return false}
+ saveSess(j.session);
+ if(PMODE==='login'&&PWANT==='change'){PMODE='change';$('pT').textContent='Choose a new PIN';$('pErr').textContent='Signed in: now the new PIN.';$('p1').value='';$('p2').value='';$('p2l').style.display='';$('p1').autocomplete='new-password';$('p1').focus();return false}  /* (signed in on the way: carry on to the new PIN, don't close as if it were changed) */
+ $('pdlg').close();const f=pinRes;pinRes=null;f&&f(true);return false}
 function pinCancel(){$('pdlg').close();const f=pinRes;pinRes=null;f&&f(false)}
 document.addEventListener('DOMContentLoaded',()=>$('pdlg').addEventListener('cancel',()=>{const f=pinRes;pinRes=null;f&&f(false)}));
 // fetch that adds the session and, on "sign in needed", asks for the PIN once and retries
@@ -252,7 +254,7 @@ async function rdLoad(m){const t=S.tanks.find(x=>x.mac===m);if(!t)return;const m
 function readAt(t){const r=t.misread!=null||t.saved?t.good_at:t.listen&&t.listen.read_at,  /* after a misread: when the level shown was read */now=Date.now()/1000;if(!r)return ago(t.age);const d=new Date(r*1000),late=now-r>2*3600;
  return (late?'<b style="color:var(--bad)">no new reading since ':'read at ')+(late&&now-r>20*3600?d.toLocaleDateString([], {day:'numeric',month:'short'})+' ':'')+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(late?'</b>':'')}
 const okMac=m=>/^[0-9a-f:]{17}$/.test(m)?m:'';
-async function api(p,body){const r=await authFetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(r.status===401)throw new Error("The PIN is needed to change this.");if(!r.ok)throw new Error(await r.text());return r.json()}
+async function api(p,body){const r=await authFetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(r.status===401)throw new Error("The PIN is needed to change this.");if(!r.ok)throw new Error((await r.text()).replace(/^"|"$/g,''));return r.json()}  /* (the Pico's message, without its JSON quotes) */
 let LDN=0;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render()}catch(e){if(g===LDN)$('status').textContent='Cannot reach the Pico: '+e.message}}  /* (an older answer arriving after a newer one is dropped) */
 function render(){
  $('status').textContent=S.ap?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
@@ -262,7 +264,7 @@ function render(){
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
  $('tanks').innerHTML=(S.tanks.length>1?`<div class="card"><div class="row" style="min-height:34px"><div><b>Both tanks together</b><div class="mut">Oil, use and forecast for the tanks combined</div></div>${S.primary==='all'?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('all')">Show on dashboard</button>`}</div></div>`:'')+(S.tanks.length?S.tanks.map(t=>{/* the Tanks page shows ALL the oil in the tank (the dashboard shows the usable oil): usable + what's below the outlet */
   const tot=t.total,whole=+t.cfg.tank_l,pc=tot!=null&&whole?Math.round(tot/whole*1000)/10:t.percent,big=tot??t.litres,p=pc??0;  /* total: worked out on the Pico from the reading, floor to surface */const md=modeOf(t.cfg);return `<div class="card"><div class="row"><b>${esc(t.name)}${md==='use'||S.tanks.length<2?'':' <span class="mut">('+(md==='off'?'off':'standby')+')</span>'}</b><button onclick="edit('${okMac(t.mac)}')">Edit</button></div>
-  <div class="row" style="margin-top:8px;min-height:34px"><a class="lnk" href="/history?mac=${okMac(t.mac)}">History &amp; forecast</a>${S.tanks.length>1?(t.mac===S.primary?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('${okMac(t.mac)}')">Show on dashboard</button>`):'<span></span>'}</div>
+  <div class="row" style="margin-top:8px;min-height:40px"><a class="lnk" href="/history?mac=${okMac(t.mac)}">History &amp; forecast</a>${S.tanks.length>1?(t.mac===S.primary?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('${okMac(t.mac)}')">Show on dashboard</button>`):'<span></span>'}</div>
   <div class="row" style="margin-top:6px"><span class="big">${big==null?'–':Math.round(big)+' L'}</span><span class="big">${pc==null?'':pc+'%'}</span></div>
   <div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div>
   <div class="mut" style="min-height:36px">${big==null?'&nbsp;':tot==null?'Usable oil only (set the whole-tank capacity under Edit to see all of it)':'All the oil: '+Math.round(t.litres)+' L usable + '+Math.round(tot-t.litres)+' L below the outlet'}${t.total_standard!=null?' · Magnus-style maths (which also counts all the oil): '+Math.round(t.total_standard)+' L':''}</div>
@@ -270,7 +272,7 @@ function render(){
   <details class="rd" data-mac="${okMac(t.mac)}"${RDO.has(t.mac)?' open':''} ontoggle="rdToggle(this)"><summary>Today's readings</summary><div class="rdb">${RD[t.mac]?RD[t.mac].html:'Loading…'}</div></details></div>`}).join('')
   :'<div class="empty">No tanks yet: add one from the sensors below.</div>');
  RDO.forEach(m=>rdLoad(m));  /* open ones: refresh when a new reading has come */
- $('found').innerHTML=S.found.length?S.found.map(f=>`<div class="card row"><div><b>${esc(f.name||f.mac)}</b><div class="mut">${f.rssi} dBm · ${ago(f.age)}${f.level!=null?' · '+f.level+' mm':''}</div></div><button class="pri" onclick="add('${okMac(f.mac)}')">Add</button></div>`).join('')
+ $('found').innerHTML=S.found.length?S.found.slice().sort((a,b)=>a.mac<b.mac?-1:1).map(f=>`<div class="card row"><div><b>${esc(f.name||f.mac)}</b><div class="mut">${f.rssi} dBm · ${ago(f.age)}${f.level!=null?' · '+f.level+' mm':''}</div></div><button class="pri" onclick="add('${okMac(f.mac)}')">Add</button></div>`).join('')
   :'<div class="empty">None heard right now. HAWKi monitors broadcast every few seconds; give it a minute.</div>';
 }
 const MF={m_wb:'win_bottom_cm',m_wt:'win_top_cm',m_wo:'win_outer_w_cm',m_wi:'win_inner_w_cm',m_hi:'win_inner_h_cm',m_rh:'rib_h_cm',m_rd:'rib_depth_cm'};
@@ -375,7 +377,7 @@ $('dlg').addEventListener('focusin',e=>{focusF=e.target.dataset&&e.target.datase
 $('dlg').addEventListener('focusout',()=>{focusF=null;draw()});
 // ---------- security card ----------
 function secRender(){$('secT').textContent=S.pin_set?'PIN is set':'No PIN yet';
- $('secM').textContent=S.pin_set?(SESS?'This browser is signed in (or will be asked on the next change).':'Changes ask for the PIN.'):'Anyone on your Wi-Fi can change settings until you set one.';
+ $('secM').textContent=S.pin_set?(SESS?'This browser is signed in (or will be asked on the next change).':'Changes ask for the PIN.'):'No PIN yet: set one to make changes (within 30 minutes of the Pico starting, or from its setup network).';
  $('secB').textContent=S.pin_set?'Change PIN':'Set PIN';$('secOut').style.visibility=S.pin_set&&SESS?'visible':'hidden';
  if(document.activeElement!==$('maint'))$('maint').checked=!!S.maint}
 async function secClick(){if(S.pin_set&&!SESS&&!(await askPin('login')))return;if(await askPin(S.pin_set?'change':'setup'))load()}
@@ -562,7 +564,7 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
    .then(([buf,cv])=>({mac:t.mac,ck,t:Date.now()/1000,cv,base:parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)])})));
  if(ANK!==vk)return;const HF=anFailed(t.mac,ck);  /* (another tank or setting asked for meanwhile: its render draws) */
  const now=Date.now()/1000;let P=AN?AN.base.slice():[];
- if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383&&AN)P.push([now-t.age,toL(t.level,AN.cv)]);
+ if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383&&AN){const lt=now-t.age;if(!P.length||lt>P[P.length-1][0])P.push([lt,toL(t.level,AN.cv)])}  /* (only if newer than the last saved one) */
  if(t.cfg.isolated)P=holdIsolated(P,t.cfg.isolated);  /* valve closed: its readings never count as use */
  const WV=await wxLoad(S);if(ANK!==vk)return;const reserve=t.cfg.reserve_l??200,A=anCached(vk,P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name},WV);
  // oil left (+ unusable)
@@ -708,7 +710,7 @@ function drawLvl(o,msg){const svg=$('c_lvl');if(!o){noData(svg,msg||'No readings
  if(fc.length)el('path',{class:'fc',d:solid(fc,1e12)},svg);
  el('line',{class:'ax',x1:f.X(now),x2:f.X(now),y1:MT,y2:CH-MB,'stroke-dasharray':'1 3'},svg);
  const xs=[];let last=-1e9;for(const[t,v]of pts){const x=f.X(t);if(x-last>=3){xs.push([x,[new Date(t*1000).toLocaleString(undefined,{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}),L0(v)+' ('+Math.round(100*v/cap)+'%)'],v]);last=x}}
- for(const[t,v]of fc.slice(1)){xs.push([f.X(t),[fmtD(t)+' (forecast)','about '+L0(v)+' if it turns cold'],v])}
+ for(const[t,v]of fc.slice(1)){xs.push([f.X(t),[fmtD(t)+' (forecast)','about '+L0(v)+' left'],v])}
  hover(svg,xs,(g,b)=>el('circle',{class:'dot',cx:b[0],cy:f.Y(b[2]),r:4,fill:'var(--oil)'},g))}
 
 tab(location.hash.slice(1));

@@ -23,7 +23,7 @@ const state={tanks:[{mac:'aa:bb:cc:00:00:01',name:'Tank 1',level:mmOf(L),litres:
 const empty=process.argv[4]==='empty';
 const dom=new JSDOM(html,{url:'http://pico/history?mac='+(empty?'aa:bb:cc:00:00:02':'aa:bb:cc:00:00:01'),runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){
  w.Date.now=()=>NOW*1000;
- w.fetch=async u=>({ok:true,json:async()=>u.startsWith('/api/state')?state:cv,arrayBuffer:async()=>empty?new ArrayBuffer(0):b.buffer.slice(b.byteOffset,b.byteOffset+b.length)});
+ w.fetch=async u=>({ok:true,json:async()=>u.startsWith('/api/state')?state:u.startsWith('/api/curve')?cv:{},arrayBuffer:async()=>empty||!u.startsWith('/api/hist')?new ArrayBuffer(0):b.buffer.slice(b.byteOffset,b.byteOffset+b.length)});  // (deliveries, weather, prices: what the Pico sends when there are none)
  w.onerror=m=>console.log('ERR',m)}});
 setTimeout(()=>{const w=dom.window,d=w.document,A=w.eval('A');
  const txt=id=>d.getElementById(id).textContent;
