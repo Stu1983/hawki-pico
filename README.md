@@ -56,6 +56,23 @@ Nothing else leaves your network. Your Wi-Fi password and PIN never leave the Pi
 
 **Tank height** is the *maximum fill height*: from the bottom of the monitor down to the top of the outlet pipe. That's what the Magnus app asks for too.
 
+## On your phone
+
+These work while your phone is on your home Wi-Fi (the Pico isn't reachable from outside; alerts reach you anywhere).
+
+**An app icon.** In Safari, open the monitor's page (<http://hawki-pico.local/>), tap *Share*, then *Add to Home Screen*. It opens full screen like an app. Sign in with the PIN once in it (it keeps its own sign-in, apart from Safari's). On Android, Chrome's menu has *Add to Home screen*.
+
+**A widget showing the oil left (iPhone, iPad).** The free [Scriptable](https://apps.apple.com/app/scriptable/id1405459188) app runs `tools/hawki-widget.js`, which shows the oil left, % full, the order-by date (amber three weeks ahead, red one week ahead) and how old the reading is. Away from home it shows the last figures it had, marked "as of". Tapping it opens the monitor's page.
+
+1. Install **Scriptable** from the App Store.
+2. In Safari, open <https://raw.githubusercontent.com/Stu1983/hawki-pico/main/tools/hawki-widget.js>, select all the text and copy it.
+3. In Scriptable, tap **+**, paste, and tap the title at the top to name it **Oil**.
+4. At home, tap **▶** to try it. Allow it to find devices on your local network when iOS asks. You should see the widget.
+5. On the home screen, press and hold an empty space, tap **Edit** (or **+**), choose **Scriptable**, pick the small or medium size and **Add Widget**. Press and hold the new widget, **Edit Widget**, and set **Script** to **Oil**. If the monitor isn't at `hawki-pico.local`, put its address (e.g. `http://192.168.1.57`) in **Parameter**.
+6. For the lock screen: press and hold the lock screen, **Customize**, tap the widget area, add **Scriptable** (the wide one is best) and choose **Oil** the same way.
+
+iOS decides how often a widget refreshes (usually every 15 to 30 minutes). The order-by date appears once the dashboard has been opened, since it's worked out there.
+
 ## Updates
 
 **Software → Check for updates** on the Pico's page compares its version with the latest release here. If there's a newer one, **Install**:

@@ -241,6 +241,10 @@ def boot_grace_over():
 # A fetch over HTTPS (weather, prices) holds up everything else for 1-3 s while it runs, so a page opened
 # then sat waiting (10+ s after a restart, with several in a row). Background fetches wait until nobody has
 # opened a page for a minute (polls of /api/state don't count: a late refresh isn't noticed).
+ICON_PATHS = ('/apple-touch-icon.png', '/apple-touch-icon-precomposed.png', '/icon.png', '/favicon.ico')
+WEB_MANIFEST = json.dumps({'name': 'Oil Tanks', 'short_name': 'Oil Tanks', 'start_url': '/', 'display': 'standalone',
+                           'background_color': '#f4f5f7', 'theme_color': '#2f6fdb',
+                           'icons': [{'src': '/icon.png', 'sizes': '180x180', 'type': 'image/png'}]})
 LOADS = ('/', '/index.html', '/history', '/common.js', '/api/hist', '/api/curve', '/api/deliveries', '/api/weather', '/api/prices')
 page_s = [None]  # mono_s() of the last page / chart data served
 
@@ -2445,6 +2449,15 @@ async def handle(r, w):
 
         if path in ('/', '/index.html'):
             return await send_page(w, 'ui.html', 'text/html; charset=utf-8', inm)
+        if path in ICON_PATHS:  # (iPhones ask for /apple-touch-icon.png by themselves, even without the page's link)
+            import icon
+            png = binascii.a2b_base64(icon.B64)
+            w.write(('HTTP/1.0 200 OK\r\nContent-Type: image/png\r\nContent-Length: %d\r\nCache-Control: max-age=604800\r\n'
+                     'Connection: close\r\n\r\n' % len(png)).encode())
+            w.write(png)
+            return await asyncio.wait_for(w.drain(), 20)
+        if path == '/manifest.webmanifest':  # (Android's "Install app"; iPhones use the page's apple-* tags)
+            return await send(w, 200, WEB_MANIFEST, 'application/manifest+json')
         if path == '/api/state':
             return await send(w, 200, json.dumps(state(peer)))
         if path == '/api/auth':

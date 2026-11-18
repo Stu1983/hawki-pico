@@ -50,7 +50,7 @@ async def nosleep(s):
 
 T = types.SimpleNamespace(ticks_ms=lambda: 0, ticks_add=lambda a, b: a + b, ticks_diff=lambda a, b: a - b, time=lambda: 1795400000)
 names = ('setup_restart_ok', 'ap_channel', 'note_seen', 'wifi_seen', 'SEEN_S', 'aps_of', 'best_ap', 'STICK_DB', 'pick_ap', 'keep_ap', 'keeper_hit', 'join_wifi', 'try_join', 'join_view', 'joining', 'join', 'ap_hold', 'handle', 'send', 'parse_q', 'jb', 'BadRequest', '_Req', '_Resp',
-         'LOADS', 'MUTATING', 'read_body_to', 'FIRST_PIN_SECS', 'captive_to')
+         'LOADS', 'ICON_PATHS', 'WEB_MANIFEST', 'MUTATING', 'read_body_to', 'FIRST_PIN_SECS', 'captive_to')
 saved = []
 aps = []
 CLOCK = [1000]

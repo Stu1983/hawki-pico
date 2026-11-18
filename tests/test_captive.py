@@ -17,7 +17,7 @@ def ok(c, m):
 
 
 T = types.SimpleNamespace(ticks_ms=lambda: 0, ticks_add=lambda a, b: a + b, ticks_diff=lambda a, b: a - b, time=lambda: 1795400000)
-names = ('dns_task', 'handle', 'send', 'parse_q', 'jb', 'BadRequest', '_Req', '_Resp', 'LOADS', 'MUTATING', 'read_body_to', 'dns_answer', 'captive_to')
+names = ('dns_task', 'handle', 'send', 'parse_q', 'jb', 'BadRequest', '_Req', '_Resp', 'LOADS', 'ICON_PATHS', 'WEB_MANIFEST', 'MUTATING', 'read_body_to', 'dns_answer', 'captive_to')
 AP = types.SimpleNamespace(up=True)
 ap = types.SimpleNamespace(active=lambda: AP.up, ifconfig=lambda: ('192.168.4.1', '255.255.255.0', '192.168.4.1', '8.8.8.8'))
 wlan = types.SimpleNamespace(ifconfig=lambda: ('192.168.1.20', '255.255.255.0', '192.168.1.1', '192.168.1.1'))

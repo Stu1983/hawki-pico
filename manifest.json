@@ -1,11 +1,11 @@
 {
- "version": "1.3.6",
- "ref": "v1.3.6",
- "notes": "Pages load quickly again after a restart (only the setup join is told the access point's channel: that stalled big transfers); clearer last steps of the setup: a red note to screenshot or copy the address, and that it can take a minute or two to answer.",
+ "version": "1.3.7",
+ "ref": "v1.3.7",
+ "notes": "Add to Home Screen gives a proper icon and opens full screen like an app; a home/lock-screen widget for iPhone (Scriptable) showing the oil left, % and the order-by date: see the README.",
  "files": {
   "app.py": [
-   "3579b7c028f9d214194df92e88b8068948290b237e83feb502fe2bc320d4180e",
-   146736
+   "bb71ec56cf6e2a71e0ca660aa469f7acd1b9e425e22fbc794f264af90d4fdedb",
+   147804
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -24,12 +24,16 @@
    2120
   ],
   "hist.html": [
-   "5f31ed909a9a2e11cd6dfa579087dbf58991dcade922221a03ecd532717e285a",
-   62168
+   "f51bc03cbbe15e529cfa07e97a26947c796984820e26f88c78c422296999cd35",
+   62495
   ],
   "histstore.py": [
    "bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80",
    2943
+  ],
+  "icon.py": [
+   "e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9",
+   6004
   ],
   "listen.py": [
    "f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d",
@@ -56,8 +60,8 @@
    14435
   ],
   "ui.html": [
-   "2438d18cfa5a218384962a654dda25f08b4d88ae53799103b8fdbd24686852c7",
-   113846
+   "35cd709e1f6110506c00ca805e9ddeb4bc00a3234e2ae25c68080b525f30058f",
+   114173
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -68,7 +72,7 @@
    13431
   ],
   "version.py": [
-   "5ca269135cc7cb3e99cc97199db7332a36324a69b7feeb9a249a97919d08bbdb",
+   "e4667b9e203ac55ddd4fc29e05a47a28882588cbe578175a52db80997d0de205",
    18
   ],
   "weather.py": [
@@ -77,7 +81,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"3579b7c028f9d214194df92e88b8068948290b237e83feb502fe2bc320d4180e\", 146736], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"4d47b50dd8c7dfa7312eb83aef12a6b9eff28d521462eaee2a80e9ecb712b3ec\", 26034], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"5f31ed909a9a2e11cd6dfa579087dbf58991dcade922221a03ecd532717e285a\", 62168], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"2438d18cfa5a218384962a654dda25f08b4d88ae53799103b8fdbd24686852c7\", 113846], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"5ca269135cc7cb3e99cc97199db7332a36324a69b7feeb9a249a97919d08bbdb\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744]}, \"notes\": \"Pages load quickly again after a restart (only the setup join is told the access point's channel: that stalled big transfers); clearer last steps of the setup: a red note to screenshot or copy the address, and that it can take a minute or two to answer.\", \"ref\": \"v1.3.6\", \"version\": \"1.3.6\"}",
-  "sig": "63688e589b596ea8fa2532443e23a56e19cb81ca56d7551dd86ea3368f5fffb26f7e029788e4f2e7496c757f66356b8dfcfb1489aad689d8fee35834b023554b5e65b588646597a4583dc1b6964a334d72c8616f309cac9331e4e4837450c03bb2b3ef67a6dfc789098b54e8fbedeb0e094d0f1405bf3f83620a1abff96a500cef69de2e426e40e3faee34b44b82d872c391536172927a059229aaf65c401e13e0a887b18e99885f5b7b78496fb281df591e4d107fbb88d91074eafa92fffce0cd85ef1be5c120d138432efca8a1404b291d8a270cf79f610059f4d9f6f45352f679e9b7c7dced91b78932044d0e821cbb25ef8c8831ded0ddbe9bdb225d79c7"
+  "body": "{\"files\": {\"app.py\": [\"bb71ec56cf6e2a71e0ca660aa469f7acd1b9e425e22fbc794f264af90d4fdedb\", 147804], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"4d47b50dd8c7dfa7312eb83aef12a6b9eff28d521462eaee2a80e9ecb712b3ec\", 26034], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"f51bc03cbbe15e529cfa07e97a26947c796984820e26f88c78c422296999cd35\", 62495], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"35cd709e1f6110506c00ca805e9ddeb4bc00a3234e2ae25c68080b525f30058f\", 114173], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"e4667b9e203ac55ddd4fc29e05a47a28882588cbe578175a52db80997d0de205\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744]}, \"notes\": \"Add to Home Screen gives a proper icon and opens full screen like an app; a home/lock-screen widget for iPhone (Scriptable) showing the oil left, % and the order-by date: see the README.\", \"ref\": \"v1.3.7\", \"version\": \"1.3.7\"}",
+  "sig": "3b087eabbcea9017fbfc3c9c732773d77002127de1f3059a81017836ca9eec51c908c17d33f9b2dda04de0546de9f40f6ec0ba9a060d80b90bbaacbc80157bf2b3a4c284cc44779f56fbb9eb0c63fd127adf9fcb54987a9cdce926a2071b5258dff43d52cdc70250aecaade4eb647db3e657f3ef8c60e6afe1d206469fcde100b701dcca55edad18ecbda1e54f1ef91085408fa01bc1469b61410d35c8e6a95feaaf1937fff77dc8f4e22b5eab421971f6b3423de5a9d8f49c33051c73199206a68c0ce19bafa8640264b06592c295beae4fddf062a021fb29ebdfb9c165b16c827d15fa54c4979ecfbf88769c65369e6cfbdfa4d89d9c8238091d9bfee60fb3"
  }
 }
