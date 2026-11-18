@@ -497,9 +497,82 @@ def test_undo_with_a_stuck_journal_does_not_loop():
     assert boot_then_guard() == 'reset' and not os.path.exists('upd.pending') and files_state() == 'OLD'
 
 
+def test_only_changed_files():
+    # most files don't change between releases: only the changed ones are downloaded, journalled and swapped
+    same = dict(OLD, **{'version.py': b"VERSION = '1.0.1'", 'extra.py': b'added'})
+    rel = {'app.py': OLD['app.py'], 'ui.html': OLD['ui.html'], 'version.py': same['version.py'], 'extra.py': b'added2'}
+    setup(OLD)
+    raw, served = release('1.0.1', rel)
+    serve(raw, served)
+    m = updater.check('1.0.0')['manifest']
+    real_get, fetched = updater._get, []
+
+    def spy(path, sink=None, limit=200000):
+        fetched.append(path.rsplit('/', 1)[1])
+        return real_get(path, sink, limit)
+    updater._get = spy
+    updater.install(m, '1.0.0')
+    ok_files = sorted(fetched)
+    assert ok_files == ['extra.py', 'version.py'], ok_files  # app.py and ui.html are already these
+    j = json.load(open('upd.pending'))
+    assert sorted(j['files']) == ['extra.py', 'version.py'] and not os.path.exists('app.py.bak'), j
+    assert read('version.py') == b"VERSION = '1.0.1'" and read('extra.py') == b'added2' and read('app.py') == OLD['app.py']
+    assert rollback.undo('x') and read('version.py') == OLD['version.py'] and not os.path.exists('extra.py')
+    # an old .bak of a skipped file (left by a power cut) is cleared, so a rollback can't put it back
+    setup(OLD)
+    open('app.py.bak', 'wb').write(b'ancient app')
+    serve(raw, served)
+    updater._get = spy
+    updater.install(m, '1.0.0')
+    assert not os.path.exists('app.py.bak')
+    open('upd.pending', 'wb').write(b'')  # and a rollback that can't read its journal restores every .bak there is
+    rollback.undo(rollback.boot_check())
+    assert read('app.py') == OLD['app.py'], read('app.py')
+    # a file that's there but damaged is downloaded again
+    setup(OLD)
+    open('app.py', 'wb').write(b'old apX')
+    serve(raw, served)
+    fetched.clear()
+    updater._get = spy
+    updater.install(m, '1.0.0')
+    assert 'app.py' in fetched and read('app.py') == OLD['app.py'], fetched
+
+
+def test_one_tls_context_per_install():
+    setup(OLD)
+    raw, served = release('1.0.1', NEW)
+    serve(raw, served)
+    m = updater.check('1.0.0')['manifest']
+    made = []
+    real = updater.ssl.SSLContext
+
+    class Ctx:
+        def __init__(self, *a):
+            made.append(1)
+            self.verify_mode = None
+
+        def load_verify_locations(self, **k):
+            pass
+    open('ca.pem', 'wb').write(b'x')
+
+    def get(path, sink=None, limit=200000):
+        updater._ctx()
+        b = served[path.rsplit('/', 1)[1]]
+        sink(b)
+        return len(b)
+    updater.ssl.SSLContext, updater._get = Ctx, get
+    try:
+        updater.install(m, '1.0.0')
+    finally:
+        updater.ssl.SSLContext = real
+    assert len(made) == 1, made
+    assert updater._CTX == [None, False], 'not kept after the install'
+
+
 if __name__ == '__main__':
     test_signature(); test_rejects_unsigned_tampered_and_protected(); test_update_rollback_commit()
     test_bad_download_changes_nothing(); test_power_cut_mid_swap(); test_boot_loop_rolls_back(); test_refuses_without_new_recovery_files(); test_one_install_at_a_time(); test_old_main_py_refused(); test_swap_error_is_undone_at_once(); test_out_of_memory_retried(); test_https_github()
     test_power_cut_during_commit(); test_undo_keeps_journal_when_a_restore_fails(); test_unreadable_journal(); test_leftovers_tidied(); test_journal_write_failure_leaves_nothing()
     test_power_cut_during_undo(); test_commit_keeps_backups_if_journal_stays(); test_undo_with_a_stuck_journal_does_not_loop()
+    test_only_changed_files(); test_one_tls_context_per_install()
     print('all ok')

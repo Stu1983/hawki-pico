@@ -62,7 +62,12 @@ def verify(body, sig_hex):
     return em == int.from_bytes(want, 'big')
 
 
+_CTX = [None, False]  # during an install (keep=True): one TLS context, ca.pem parsed once, for all its downloads
+
+
 def _ctx():
+    if _CTX[0] is not None:
+        return _CTX[0]
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ctx.verify_mode = ssl.CERT_REQUIRED
     with open('ca.pem', 'rb') as f:
@@ -71,6 +76,8 @@ def _ctx():
         ctx.load_verify_locations(cadata=ca)  # MicroPython: PEM bytes
     except Exception:
         ctx.load_verify_locations(cadata=ca.decode())  # CPython wants PEM as str
+    if _CTX[1]:
+        _CTX[0] = ctx
     return ctx
 
 
@@ -180,10 +187,26 @@ def _exists(n):
         return False
 
 
+def _same(n, sha, size):
+    # is the file on the Pico already this one? (most files don't change from one release to the next)
+    try:
+        if os.stat(n)[6] != size:
+            return False
+        h = hashlib.sha256()
+        with open(n, 'rb') as f:
+            while True:
+                b = f.read(1024)
+                if not b:
+                    break
+                h.update(b)
+        return _hex(h.digest()) == sha
+    except OSError:
+        return False
+
+
 def install(m, current):
-    """m must come from parse()/check(). Downloads + verifies everything, then swaps it in."""
-    files = m['files']
-    for n in files:
+    """m must come from parse()/check(). Downloads + verifies the files that changed, then swaps them in."""
+    for n in m['files']:
         if not ok_name(n):
             raise ValueError('refusing to write %s' % n)
     if _exists('upd.pending'):
@@ -195,10 +218,13 @@ def install(m, current):
         boot_ok = False
     if not hasattr(rollback, 'boot_check') or not boot_ok:
         raise OSError('this Pico needs its start-up files (main.py, rollback.py) updated over USB first: run tools/install.sh')
+    # only what changed is downloaded, journalled and swapped (v1.2.52 -> 1.2.53 changed 4 of 17 files)
+    files = {n: v for n, v in m['files'].items() if not _same(n, v[0], v[1])}
     need = sum(v[1] for v in files.values()) * 2 + 40000  # .new copies + .bak copies + slack
     st = os.statvfs('/')
     if st[0] * st[3] < need:
         raise OSError('not enough flash for the update')
+    _CTX[0], _CTX[1] = None, True
     try:
         for n, (sha, size) in files.items():
             for attempt in (0, 1):  # out of memory part-way: collect and start this file again, once
@@ -213,15 +239,18 @@ def install(m, current):
                 except Exception as ex:
                     if attempt or not _oom(ex):
                         raise
+                    _CTX[0] = None  # (a fresh TLS context for the retry: the old one may be left unusable)
             if got != size or _hex(h.digest()) != sha:
                 raise ValueError('%s did not match the release (download damaged?)' % n)
     except Exception:
         for n in files:
             _rm(n + '.new')
         raise
+    finally:
+        _CTX[0], _CTX[1] = None, False  # (not kept in memory after the install)
     # everything downloaded and verified. Journal first, then swap.
-    for n in files:
-        _rm(n + '.bak')
+    for n in m['files']:  # (every file in the release, skipped ones too: an old .bak left by a power cut must never
+        _rm(n + '.bak')   # be 'restored' over a current file by a rollback that can't read its journal)
     had = [n for n in files if _exists(n)]
     j = {'from': current, 'to': m['version'], 'files': list(files), 'had': had, 'stage': 'swapping', 'boots': 0}
     try:
