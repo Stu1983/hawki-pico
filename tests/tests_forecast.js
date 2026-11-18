@@ -97,34 +97,37 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
 {const now=T(2026,10,16),p=[];let L=200;for(let t=now-20*DAY;t<now-2*H;t+=H){L-=8/24;p.push([t,L])}const low=L;
  p.push([now-H,low+400],[now,low+900]);const A=ctx.analyse(p,{now,reserve:200});  /* read once while the tanker was still pumping */
  ok(Math.abs(A.cur-(low+900))<5,'a delivery read part-way: starts from the full level '+Math.round(A.cur)+' L (real '+Math.round(low+900)+')')}
-// a typical year's oil given in Config: only where the forecast STARTS. A fortnight of heating: mostly the figure;
-// a month of heating: all your own readings; it draws the average year until earlier years of your own exist
-{ctx.vm=1;const yearSum=(A,f)=>{let s=0;for(let d=0;d<365;d++)s+=f(T(2026,6,1)+d*DAY);return s};
- const mk=(days,per)=>{const now=T(2026,10,18),p=[];let L=900;for(let t=now-days*DAY;t<=now;t+=H){L-=per/24;p.push([t,L])}return{now,p}};
- {const{now,p}=mk(12,6),A0=ctx.analyse(p,{now}),A=ctx.analyse(p,{now,yearL:2100});
-  ok(A.ownW>0.3&&A.ownW<0.5&&A.heatDays>=11&&A.heatDays<=12,'12 days of heating: your readings count for '+Math.round(A.ownW*100)+'%');
-  const j=T(2027,0,15),r0=A0.rate(j),r=A.rate(j),pr=A.avg(j);
-  ok(r>r0&&r<pr&&Math.abs(r-(A.ownW*r0+(1-A.ownW)*pr))<0.3,'January: between your readings ('+r0.toFixed(1)+') and the typical year ('+pr.toFixed(1)+'): '+r.toFixed(1)+' L/day');
-  ok(Math.abs(yearSum(A,A.avg)-2100)<15&&A.avgFrom==='given','the average year adds up to the 2,100 L given: '+Math.round(yearSum(A,A.avg)));
-  ok(/Starts from the 2,100 L you gave/.test(ctx.howText(A)),'and the words say so')}
- {const{now,p}=mk(45,6),A0=ctx.analyse(p,{now}),A=ctx.analyse(p,{now,yearL:2100}),j=T(2027,0,15);
-  ok(A.ownW===1&&A.rate(j)===A0.rate(j),'a month of heating: the forecast is all your own readings, the figure ignored ('+A.rate(j).toFixed(1)+' L/day)');
-  ok(A.fc.ord===A0.fc.ord,'...so the order date is the same with or without it');
-  ok(A.avgFrom==='given'&&A0.avgFrom==='model'&&yearSum(A0,A0.avg)<yearSum(A,A.avg),'it still draws the average year, so this year shows against it ('+Math.round(yearSum(A0,A0.avg))+' L by your readings)');
-  ok(/no longer used/.test(ctx.howText(A)),'and the words say it is no longer used')}
- {const{now,p}=mk(20,1.2);const s=T(2026,7,10),q=[];let L=900;for(let t=s;t<=s+20*DAY;t+=H){L-=1.2/24;q.push([t,L])}const A=ctx.analyse(q,{now:s+20*DAY,yearL:2100});
-  ok(A.ownW===0&&A.rate(T(2027,0,15))>8,'summer, heating off: nothing of your own to go on, January starts from the figure ('+A.rate(T(2027,0,15)).toFixed(1)+' L/day)')}
- {const now=T(2027,10,18),p=[];let L=5000;for(let t=now-470*DAY;t<=now;t+=H){L-=(1+4*ctx.heatShape(t))/24;p.push([t,L])}const A=ctx.analyse(p,{now,yearL:2100}),A0=ctx.analyse(p,{now});
-  const ys=f=>{let s=0;for(let d=0;d<365;d++)s+=f(T(2027,6,1)+d*DAY);return s};
-  ok(A.useOwn&&A.rate(T(2028,0,15))===A0.rate(T(2028,0,15)),'next year: the forecast is your own earlier year');
-  ok(A.avgFrom==='own'&&Math.abs(ys(A.avg)-1825)<60&&ys(A.avg)===ys(A0.avg),'...and so is the average year ('+Math.round(ys(A.avg))+' L, really 1,825): the 2,100 L figure is ignored everywhere')}
- {const now=T(2026,8,1),p=[];let L=3000;for(let t=T(2026,0,1);t<=now;t+=H){L-=(1+4*ctx.heatShape(t))/24;p.push([t,L])}const A=ctx.analyse(p,{now,yearL:2100}),A0=ctx.analyse(p,{now});
-  ok(A.ownW===1&&A.rate(T(2027,0,15))===A0.rate(T(2027,0,15)),'a first winter of readings, then summer: the figure does not come back when the winter days get old')}
- {const now=T(2027,0,18),p=[];let L=5000;for(let t=T(2026,0,1);t<=now;t+=H){L-=(1+4*ctx.heatShape(t))/24;p.push([t,L])}const A=ctx.analyse(p,{now,yearL:2100});
-  ok(A.useOwn&&A.avgFrom==='own','a year of readings that began in January: the average year is your own by the next January, not the figure')}
- {const{now,p}=mk(12,6),A=ctx.analyse(p,{now,yearL:2100,yearDone:true}),A0=ctx.analyse(p,{now}),j=T(2027,0,15);
-  ok(A.ownW===1&&A.rate(j)===A0.rate(j)&&A.avgFrom==='given','once the Pico has noted the figure is done, it stays done whatever the weather data says');
-  const{now:n2,p:p2}=mk(45,6),B=ctx.analyse(p2,{now:n2,yearL:2100,reserve:200});B.fc&&ok(ctx.fcBody(B,'all',200).year_done===1&&ctx.fcBody(ctx.analyse(p,{now,yearL:2100}),'all',200).year_done===undefined,'the dashboard tells the Pico when (a month of heating), not before')}
- ok(ctx.yearFor({year_l:2100,tanks:[{mac:'a',cfg:{mode:'standby'}}]},['a'])===null,'no tank in use: the figure is not applied');
- ok(ctx.yearFor({year_l:2100,tanks:[{mac:'a',cfg:{}},{mac:'b',cfg:{mode:'off'}}]},['a'])===2100&&ctx.yearFor({year_l:2100,tanks:[{mac:'a',cfg:{}},{mac:'b',cfg:{}}]},['a'])===null&&ctx.yearFor({tanks:[]},[])===null,'the figure is the whole house\'s: used only for a view holding every tank in use')}
+// A typical year's oil given in Config stands in for LAST YEAR: each month is forecast from its curve, scaled by how
+// this year is running against it; a month with real readings from an earlier year goes by those alone, never mixed.
+{const J=(y)=>T(y,0,15),monthSum=(f,y,m)=>{let s=0;const n=new Date(y,m+1,0).getDate();for(let d=1;d<=n;d++)s+=f(T(y,m,d));return s};
+ const curve=t=>2100/365*(0.15*ctx.hwShape(t)/1.125+0.85*ctx.heatShape(t));  /* the figure's own shape */
+ const run=(from,to,f)=>{const p=[];let L=9000;for(let t=from;t<=to;t+=H){L-=f(t)/24;p.push([t,L])}return p};
+ {const now=T(2026,10,18),A=ctx.analyse(run(T(2026,7,6),now,t=>0.8*curve(t)),{now,yearL:2100}),A0=ctx.analyse(run(T(2026,7,6),now,t=>0.8*curve(t)),{now});
+  ok(Math.abs(A.kS-0.8)<0.02&&A.kSDays>90,'running a fifth under the figure since August: '+Math.round(A.kS*100)+'% over '+A.kSDays+' days');
+  const jan=monthSum(A.rate,2027,0),fig=monthSum(curve,2027,0);
+  ok(Math.abs(fig-340)<8&&Math.abs(jan-0.8*fig)<6,'January is forecast a fifth under the figure\'s January: '+Math.round(jan)+' L (figure '+Math.round(fig)+')');
+  ok(Math.abs(monthSum(A.avg,2027,0)-fig)<2&&A.avgSrc(J(2027))==='given','the average-year line is the figure itself: '+Math.round(monthSum(A.avg,2027,0)));
+  ok(/Last year stands in.*2,100 L.*80% over the \d+ days so far/.test(ctx.howText(A)),'and the words say so: '+ctx.howText(A).slice(0,150))}
+ {const now=T(2026,7,16),A=ctx.analyse(run(T(2026,7,6),now,t=>0.5*curve(t)),{now,yearL:2100});
+  ok(A.kS===1&&Math.abs(A.rate(J(2027))-curve(J(2027)))<0.01,'under 14 days of readings: the figure as it is ('+A.rate(J(2027)).toFixed(1)+' L/day in January)')}
+ {const now=T(2026,10,18),A=ctx.analyse(run(T(2026,7,6),now,t=>0.2*curve(t)),{now,yearL:2100});
+  ok(A.kS===0.5,'a figure far too high is followed down only to half')}
+ /* the worked example: figure Jan 340; Jan 2027 really 240 -> Jan 2028 is forecast from 240, not from an average with 340 */
+ {const now=T(2027,10,18),use=t=>(t>=T(2027,0,1)-DAY/2&&t<T(2027,1,1)-DAY/2?240/31:0.8*curve(t)),p=run(T(2026,7,6),now,use),A=ctx.analyse(p,{now,yearL:2100});
+  const j28=monthSum(A.rate,2028,0);
+  ok(A.useOwn&&Math.abs(A.k-1)<0.03,'second winter: compared with your own last year ('+Math.round(A.k*100)+'%)');
+  ok(Math.abs(j28-240)<14,'January 2028 goes by the 240 L of January 2027, not an average with the figure\'s 340: '+Math.round(j28)+' L');
+  ok(Math.abs(monthSum(A.avg,2028,0)-240)<14&&A.avgSrc(J(2028))==='own','and the average-year line for January is that 240 L: '+Math.round(monthSum(A.avg,2028,0)));
+  ok(A.avgSrc(T(2027,6,15))==='given'&&Math.abs(monthSum(A.avg,2027,6)-monthSum(curve,2027,6))<1,'July, before the readings began: still the figure, as it is');
+  ok(/Dates with no earlier year of your own yet go by the 2,100 L/.test(ctx.howText(A)),'and the words say so')}
+ /* readings from January, now November of the same year: next January goes by the real January already */
+ {const now=T(2026,10,18),use=t=>new Date(t*1000).getMonth()===0?240/31:0.8*curve(t),A=ctx.analyse(run(T(2026,0,1),now,use),{now,yearL:2100}),j=monthSum(A.rate,2027,0);
+  ok(!A.useOwn&&Math.abs(j-240)<14,'a first year that began in January: next January is the real 240 L, not the figure ('+Math.round(j)+' L)')}
+ /* a third year: the average of the two real Januaries only */
+ {const now=T(2028,10,18),use=t=>{const d=new Date(t*1000);return d.getMonth()===0?(d.getFullYear()===2027?240:235)/31:0.8*curve(t)},A=ctx.analyse(run(T(2026,7,6),now,use),{now,yearL:2100});
+  const a=monthSum(A.avg,2029,0);ok(Math.abs(a-237.5)<12,'two real Januaries (240, 235): the average is theirs alone, '+Math.round(a)+' L, never pulled up by the figure\'s 340')}
+ /* no figure given: nothing here changes a forecast with no earlier years */
+ {const now=T(2026,10,18),p=run(T(2026,7,6),now,t=>0.8*curve(t)),A=ctx.analyse(p,{now});ok(A.kS===null&&A.yearL===null&&A.avgSrc(J(2027))==='model','no figure: the forecast is your own readings and the weather, as before')}
+ ok(ctx.yearFor({year_l:2100,tanks:[{mac:'a',cfg:{}},{mac:'b',cfg:{mode:'off'}}]},['a'])===2100&&ctx.yearFor({year_l:2100,tanks:[{mac:'a',cfg:{}},{mac:'b',cfg:{}}]},['a'])===null&&ctx.yearFor({tanks:[]},[])===null,'the figure is the whole house\'s: used only for a view holding every tank in use');
+ ok(ctx.yearFor({year_l:2100,tanks:[{mac:'a',cfg:{mode:'standby'}}]},['a'])===null,'no tank in use: the figure is not applied')}
 process.exit(fails?1:0);

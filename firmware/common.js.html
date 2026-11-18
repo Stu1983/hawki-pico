@@ -9,7 +9,6 @@ const HDD=[340,300,280,210,140,75,45,50,90,170,260,320];
 const HEAT=HDD.map(v=>Math.max(0,v-60));
 const HW_SHARE=0.15;      // before a summer of your own data: share of a year's oil assumed to go on hot water
 const MAINS=0.25;         // hot water takes up to 25 % more oil in winter (mains water ~6 °C instead of ~15 °C)
-const YEAR_DAYS=30;        // days with the heating on before the forecast is all your own readings (a typical year given in Config)
 const REFILL_L=30;        // a rise this big is a delivery, not sensor noise or warm oil
 
 function parse(buf){const v=new DataView(buf),o=[];for(let i=0;i+6<=buf.byteLength;i+=6)o.push([v.getUint32(i,true),v.getUint16(i+4,true)]);
@@ -119,12 +118,14 @@ function analyse(pts,o){
  /* the real weather, as long as the recent days it's fitted on have it (a gap would fill in the usual and skew the fit) */
  const heat=o.heat&&recentDays.filter(t=>!o.heat.has(t)).length<=2?o.heat:heatShape;
  // 1st choice: your own data from earlier years at this time of year, scaled to how this year compares
- const old=Object.keys(out.days).map(Number).filter(t=>t<tnow-300*DAY);
+ /* (every day goes in; each lookup says how far back its days must be) */
+ const old=Object.keys(out.days).map(Number);
  /* earlier days by day of the year, worked out once: each lookup only visits the days within ±11 of the date (it was every earlier day, ~1500 lookups each filtering every day: 1-2 s on every dashboard refresh) */
  const byDoy=[];for(const s of old){const d=doy(s);(byDoy[Math.floor(d)]=byDoy[Math.floor(d)]||[]).push([s,d])}
  const ownBy=(t,before,real)=>{const x=doy(t),fx=Math.floor(x),hit=[],seen=new Set();for(let k=fx-11;k<=fx+11;k++){const kk=((k%366)+366)%366;if(seen.has(kk))continue;seen.add(kk);for(const o of byDoy[kk]||[]){const s=o[0];if(s<before&&!(real&&out.gap[s])&&(dd=>Math.min(dd,365-dd)<=10)(Math.abs(o[1]-x)))hit.push(s)}}
   hit.sort((p,q)=>p-q);const v=hit.map(s=>out.days[s]);return v.length>=10?Math.max(0,mean(v)):null};  /* (same days, same order as before, so the same sums) */
- const own=t=>ownBy(t,Infinity);
+ const own=t=>ownBy(t,tnow-300*DAY);  /* earlier years: days at least 300 days back from now (scaled by k) */
+ const ownLast=t=>ownBy(t,t-300*DAY);  /* ...and the same time of year at least 300 days before the DATE: this year's own days too, already at this year's level, so never scaled */
  // how this year compares with earlier years: over as much of the past year as can be compared (up to
  // 365 days), so a steady change (an ageing boiler, feeling the cold more) carries into the forecast
  let sNow=0,sOld=0,nCmp=0;for(const t in out.days){const tt=+t;if(tt<tEnd-365*DAY||tt>=tEnd||out.gap[t])continue;const o=ownBy(tt,tt-300*DAY,true);if(o==null)continue;  /* only earlier years, never the day itself */sNow+=out.days[t];sOld+=o;nCmp++}
@@ -145,25 +146,30 @@ function analyse(pts,o){
  else{const S=t=>HW_SHARE*hwShape(t)/HW_MEAN+(1-HW_SHARE)*heat(t),sR=avgOver(S);
   modelWith=hf=>t=>out.recent*(HW_SHARE*hwShape(t)/HW_MEAN+(1-HW_SHARE)*hf(t))/sR}
  model=modelWith(heat);
- // A typical year's oil, if you gave one (Config): spread over the year by the weather (hot water + heating, each
- // averaging 1 over a year). The forecast starts from it and moves over to your own readings as the days with the
- // heating on add up: all yours after YEAR_DAYS of them. Never used once earlier years of your own are there.
+ // A typical year's oil, if you gave one (Config), stands in for LAST YEAR wherever you have no earlier year of
+ // your own: spread over the year by the weather (hot water + heating, each averaging 1 over a year), then scaled by
+ // how you are running against it over every day so far that can only be compared with it (kS: e.g. 0.8 = a fifth
+ // less than the figure says, so January is forecast a fifth below the figure's January). A date that has an earlier
+ // year of your own goes by that alone: the figure is never averaged in with real readings.
  const yearL=o.yearL>0?+o.yearL:null,priorWith=hf=>t=>yearL/365*(HW_SHARE*hwShape(t)/HW_MEAN+(1-HW_SHARE)*hf(t));
- let own_w=1;if(yearL&&k==null){const cnt=hf=>{let c=0;for(const t in out.days){const tt=+t;if(tt<tEnd&&!out.gap[t]&&hf(tt+DAY/2)>=0.5)c++}return c};const nh=Math.max(cnt(heat),o.heat&&o.heat!==heat?cnt(o.heat):0);  /* (by your weather even while the fit can't use it: a gap in the weather must not bring the figure back) */  /* (every such day there has ever been: once past YEAR_DAYS the figure never comes back, summer included) */own_w=o.yearDone?1:Math.min(1,nh/YEAR_DAYS);out.heatDays=nh}  /* (yearDone: the Pico remembers it was reached once, so a gap in the weather can't bring the figure back) */
- out.yearL=yearL;out.ownW=own_w;
- const prior=yearL?priorWith(heat):null,blend=t=>own_w>=1||!prior?model(t):own_w*model(t)+(1-own_w)*prior(t);
- const rate=t=>{const v=k!=null?own(t):null;return v!=null?v*k:blend(t)};
+ /* (in the USUAL weather, for the comparison and the forecast alike: against the weather that really happened the daily figures swing far more than the oil does - a mild September with the heating on read 157%, a cold November 61%, where month against usual month every one was 74-82%) */
+ const syn=yearL?priorWith(usualHeat):null;let kS=null,nS=0;
+ if(syn){let a=0,b=0;for(const t in out.days){const tt=+t;if(tt<tEnd-365*DAY||tt>=tEnd||ownBy(tt,tt-300*DAY,true)!=null)continue;  /* (days filled in across a gap count too: the total over them is real) */a+=out.days[t];b+=syn(tt+DAY/2);nS++}
+  kS=nS>=14&&b>0?Math.min(1.6,Math.max(0.5,a/b)):1}
+ out.yearL=yearL;out.kS=kS;out.kSDays=nS;
+ /* earlier years x how this year compares (as ever); else, with a figure given: your own readings from the same time
+    of year once that has happened (next February goes by this February, as it was, never the figure), else the
+    figure x how you are running against it; with no figure, the model */
+ const rate=t=>{let v=k!=null?own(t):null;if(v!=null)return v*k;if(!syn)return model(t);v=ownLast(t);return v!=null?v:syn(t)*kS};
  out.rate=rate;
- // an average year, for the monthly chart: your own earlier years once there are any; else the typical year you gave;
- // else this forecast's own model in the usual weather
- /* your own: every day before this oil year began (1 July), by day of the year (±10 days, 10+ of them). With 200+
-    such days the figure you gave is ignored for good: a month with none of your own falls back to the model */
- const oy=new Date(tnow*1000),oyStart=new Date(oy.getFullYear()-(oy.getMonth()<6?1:0),6,1).getTime()/1000,prevD=[];let nPrev=0;
- const pool=lim=>{prevD.length=0;nPrev=0;for(const t in out.days){const tt=+t;if(tt<lim&&!out.gap[t]){const d=doy(tt);(prevD[Math.floor(d)]=prevD[Math.floor(d)]||[]).push([d,out.days[t]]);nPrev++}}};
- pool(oyStart);if(nPrev<200&&k!=null)pool(tnow-300*DAY);  /* (a year of readings that began mid oil-year: the days the forecast itself goes by) */
+ // an average year, for the monthly chart, date by date: your own readings from before this oil year began (1 July)
+ // at that time of year (±10 days, 10+ of them); where there are none, the typical year you gave; else this
+ // forecast's own model in the usual weather
+ const oy=new Date(tnow*1000),oyStart=new Date(oy.getFullYear()-(oy.getMonth()<6?1:0),6,1).getTime()/1000,prevD=[];
+ for(const t in out.days){const tt=+t;if(tt<oyStart&&!out.gap[t]){const d=doy(tt);(prevD[Math.floor(d)]=prevD[Math.floor(d)]||[]).push([d,out.days[t]])}}
  const avgOwn=t=>{const x=doy(t),fx=Math.floor(x),seen=new Set();let n2=0,sm2=0;for(let q=fx-11;q<=fx+11;q++){const kk=((q%366)+366)%366;if(seen.has(kk))continue;seen.add(kk);for(const e of prevD[kk]||[]){const dd=Math.abs(e[0]-x);if(Math.min(dd,365-dd)<=10){n2++;sm2+=e[1]}}}return n2>=10?Math.max(0,sm2/n2):null};
- const hasPrev=nPrev>=200||k!=null&&nPrev>=14,avgM=!hasPrev&&yearL?priorWith(usualHeat):modelWith(usualHeat);
- out.avg=t=>{const v=hasPrev?avgOwn(t):null;return v!=null?v:avgM(t)};out.avgFrom=hasPrev?'own':yearL?'given':'model';
+ const avgM=yearL?priorWith(usualHeat):modelWith(usualHeat);
+ out.avg=t=>{const v=avgOwn(t);return v!=null?v:avgM(t)};out.avgSrc=t=>avgOwn(t)!=null?'own':yearL?'given':'model';
  // simulate forward from the current level
  const lf=out.fills.length?out.fills[out.fills.length-1].t:-Infinity,tail=pts.slice(-4).filter(p=>p[0]>=lf).map(p=>p[1]),cur=!tail.length?med(L.slice(-4)):tail.length<3?tail[tail.length-1]:med(tail.slice(-3));out.cur=cur;  // actual level now: the last few readings, none from before the last delivery; with under 3 since it, the newest (one read while the tanker was still pumping would drag a median down) (sm is the delivery-adjusted level)
  const sim=f=>{let l=cur,t=tEnd,ord=null,dry=null;const path=[[t,l]];
@@ -177,8 +183,9 @@ function analyse(pts,o){
  return out}
 
 // Words for the forecast method, shared by both pages.
-function howText(A){const b=howBase(A);if(!A.yearL||A.useOwn)return b;
- return A.ownW>=1?b+' (The '+Math.round(A.yearL).toLocaleString()+' L you gave for a typical year is no longer used: there are '+YEAR_DAYS+' days of your own heating to go on.)':'Starts from the '+Math.round(A.yearL).toLocaleString()+' L you gave for a typical year, spread over the year by the weather. Your own readings count for '+Math.round(A.ownW*100)+'% so far ('+A.heatDays+' days with the heating on) and take over fully after '+YEAR_DAYS+'. Your readings: '+b}
+function howText(A){const b=howBase(A);if(!A.yearL)return b;const y=Math.round(A.yearL).toLocaleString()+' L';
+ if(A.useOwn)return b+' Dates with no earlier year of your own yet go by the '+y+' you gave for a typical year.';
+ return 'Last year stands in for your own: the '+y+' you gave for a typical year, spread over the year by '+(A.wx?'the usual weather for '+A.wx:'a typical UK heating year')+(A.kSDays>=14?', and scaled by how you are running against it: '+Math.round(A.kS*100)+'% over the '+A.kSDays+' days so far.':'. It is used as it is until there are 14 days of readings to compare.')+' Each month goes by your own readings once you have had it.'}
 function howBase(A){
  if(A.useOwn)return 'Seasonal pattern: your own usage from previous years at the same time of year, scaled by how this year compares: '+Math.round(A.k*100)+'% of earlier years over the '+A.kDays+' days that can be compared. A steady change (an older boiler, a colder year) carries on into the forecast.'+(A.wx?' Any days with no earlier year to go on follow '+A.wx+"'s weather.":'');
  if(A.hw)return 'Seasonal pattern: hot water uses about '+A.hw.perDay.toFixed(2)+' L/day (your summer'+(A.hw.months>1?' months':' '+MON[A.hw.m])+' '+A.hw.y+', heating off), up to '+Math.round(MAINS*100)+'% more in winter because the mains water is colder. Heating follows '+(A.wx?A.wx+"'s weather: the next 16 days' forecast, then the usual for the time of year (10-year average)":'a typical UK year (degree days)')+(A.heatFit>=1?', sized to your use over the last '+Math.round(A.recentDays)+' days.':A.heatFit>0?', sized partly from your last '+Math.round(A.recentDays)+' days and partly from a typical '+Math.round(HW_SHARE*100)+'% hot-water share.':', sized from a typical '+Math.round(HW_SHARE*100)+'% hot-water share until the heating season shows your real use.');
@@ -205,8 +212,7 @@ function firstLevel(s){const d=s.filter(p=>p[0]-s[0][0]<=DAY).map(p=>p[1]);retur
 // (a delivery, or the valve opened after all): radar jitter and warm oil never count as use.
 /* a tank's mode: In use (counted, warns), Standby (valve shut: its oil counts, its readings never count as use, no warning of its own), Off (left out of totals, forecasts and warnings). Older settings: isolated = standby */
 /* the forecast as the Pico keeps it for Home Assistant's order date: from the last reading (t0), the litres expected to be used by the end of each day after, for 400 days. Running totals, so rounding never adds up; the Pico steps through them exactly as analyse() does (fc.ord) */
-function fcBody(A,key,reserve){if(A.yearL&&A.ownW>=1&&!A.useOwn)return Object.assign(fcBody(Object.assign({},A,{yearL:null}),key,reserve),{year_done:1});  /* tells the Pico the typical-year figure has done its job */
- const t0=A.fc.path[0][0],cum=[];let c=0;for(let d=0;d<400;d++){c+=A.rate(t0+d*DAY);cum.push(Math.round(c*100)/100)}return{mac:key,t0:Math.floor(t0),cur:Math.max(0,Math.round(A.cur*100)/100),reserve,cum}}
+function fcBody(A,key,reserve){ const t0=A.fc.path[0][0],cum=[];let c=0;for(let d=0;d<400;d++){c+=A.rate(t0+d*DAY);cum.push(Math.round(c*100)/100)}return{mac:key,t0:Math.floor(t0),cur:Math.max(0,Math.round(A.cur*100)/100),reserve,cum}}
 /* the typical year's oil (Config) is the whole house's: it applies to a view only when that view holds every tank in use */
 function yearFor(st,macs){const y=st&&+st.year_l;if(!(y>0))return null;const use=(st.tanks||[]).filter(t=>modeOf(t.cfg)==='use');return use.length&&use.every(t=>macs.includes(t.mac))?y:null}  /* (no tank in use: nothing is being burnt, so no figure) */
 function modeOf(c){return c&&(c.mode==='use'||c.mode==='standby'||c.mode==='off')?c.mode:c&&c.isolated?'standby':'use'}  /* (an explicit mode first: the form's settings copied from another tank carry its isolated time) */

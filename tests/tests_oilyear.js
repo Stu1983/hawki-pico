@@ -17,7 +17,7 @@ function open(page,url,y){return new JSDOM(pg(page),{url,runScripts:'dangerously
 (async()=>{
  for(const y of [2100,null]){const w=open('hist.html','http://pico/history?mac='+M,y);await wait(900);const d=w.document;
   const rows=[...d.querySelectorAll('#tbl tr')].map(r=>[...r.children].map(c=>c.textContent)),head=rows[0],mon=rows.slice(1).map(r=>r[0]);
-  if(y){const fp=posts.filter(x=>x[0]==='/api/forecast');ok(fp.length===1&&fp[0][1].year_done===1&&fp[0][1].mac===M&&fp[0][1].cum.length===400,'a month of heating seen from the history page alone: it tells the Pico the figure is done');
+  if(y){
    ok(mon.join(' ')==='Jul Aug Sep Oct Nov Dec Jan Feb Mar Apr May Jun','the year runs July to June: '+mon.join(' '));
    ok(head.join('|')==='Month|2026/27|Average year','columns: '+head.join('|'));
    const r=m=>rows.find(x=>x[0]===m);
@@ -25,7 +25,7 @@ function open(page,url,y){return new JSDOM(pg(page),{url,runScripts:'dangerously
    ok(['Dec','Jan','Feb','Mar','Jun'].every(m=>/^≈\d+ L$/.test(r(m)[1])),'the forecast carries on past December: Jan '+r('Jan')[1]+', Feb '+r('Feb')[1]);
    ok(r('Jul')[1]==='–'&&/^\d+ L$/.test(r('Jul')[2]),'a month before the readings began: a dash, and still its average');
    const avg=rows.slice(1).reduce((a,x)=>a+parseInt(x[2]),0);ok(Math.abs(avg-2100)<15,'the average year adds up to the 2,100 L given: '+avg);
-   ok(/Typical year you gave \(2,100 L\)/.test(d.getElementById('lg2').textContent)&&/Used 2026\/27/.test(d.getElementById('lg2').textContent),'legend: '+d.getElementById('lg2').textContent);
+   ok(/The typical year you gave \(2,100 L\)/.test(d.getElementById('lg2').textContent)&&/Used 2026\/27/.test(d.getElementById('lg2').textContent),'legend: '+d.getElementById('lg2').textContent);
    const st=d.getElementById('c2s').textContent;ok(/^Since Aug: [\d,]+ L used · about [\d,]+ L more by June · the same months of an average year [\d,]+ L$/.test(st)&&+st.match(/year ([\d,]+)/)[1].replace(',','')<2100,'readings began in August: a part year is compared with the same months, never the whole 2,100: '+st);
    const svg=d.getElementById('c2');ok(svg.querySelectorAll('rect[stroke-dasharray]').length===8&&svg.querySelectorAll('line[stroke="var(--fg)"]').length===12,'8 forecast bars (Nov to Jun) and 12 average marks drawn')}
   else{ok(head.join('|')==='Month|2026/27|Average year'&&/Average year \(usual weather\)/.test(d.getElementById('lg2').textContent),'no figure given: the average year is the usual weather for your own use');

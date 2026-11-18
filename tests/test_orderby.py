@@ -85,18 +85,6 @@ for label, b in (('an unknown tank', dict(good, mac='aa:aa:aa:aa:aa:aa')), ('a t
     except (ValueError, KeyError, TypeError):
         ok(True, 'refused: ' + label)
 g['set_forecast'](good)
-# the typical-year figure: the dashboard says when it has done its job, and the Pico remembers (only if one is set)
-saves = []
-g['save_cfg'] = lambda c: saves.append(1)
-g['set_forecast'](dict(good, year_done=1))
-ok('year_done' not in g['cfg'] and not saves, 'year_done with no figure set: nothing kept')
-g['cfg']['year_l'] = 2100
-g['set_forecast'](dict(good))
-ok('year_done' not in g['cfg'], 'a forecast without it: the figure is still in use')
-g['set_forecast'](dict(good, year_done=1))
-g['set_forecast'](dict(good, year_done=1))
-ok(g['cfg'].get('year_done') == 1 and len(saves) == 1, 'year_done with a figure set: remembered, saved once')
-g['cfg'].pop('year_l'), g['cfg'].pop('year_done')
 f = g['forecasts'][M]
 ok(type(f['t0']) is int and 'reserve' not in f, 'kept with an int time; the posted reorder level is never used (the Pico\'s own)')
 ok(g['order_by'](f, 150, clock[0], 200) == clock[0], 'already at or below the reorder level: today')

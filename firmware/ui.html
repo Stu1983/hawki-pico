@@ -94,7 +94,7 @@ dialog::backdrop{background:#0008}
 <div class="mut" id="n_st" style="min-height:18px;margin-top:6px"></div></div>
 
 <h2>Forecast</h2>
-<div class="card"><div>Oil used in a typical year</div><div class="mut" style="margin:4px 0 10px">Optional. Only used at the start: the forecast begins from this until there is a month of your own heating to go on, and the history page shows it as the average year until you have a year of readings. After that it is ignored. Leave it empty if you don't know.</div>
+<div class="card"><div>Oil used in a typical year</div><div class="mut" style="margin:4px 0 10px">Optional. It stands in for last year until you have one of your own: each month is forecast from it, scaled by how you are running against it so far, and it is the average year on the history page. A month you have real readings for goes by those from then on, never mixed with this. Leave it empty if you don't know.</div>
 <div class="row" style="gap:8px;justify-content:flex-start"><input id="yr_l" type="number" inputmode="numeric" min="100" max="50000" step="50" placeholder="Litres, e.g. 2100" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')yrSave()"><button onclick="yrSave()">Save</button></div>
 <div class="mut" id="yr_st" style="min-height:18px;margin-top:6px"></div></div>
 
@@ -513,7 +513,7 @@ async function saveNet(e){e.preventDefault();if(NETRUN)return false;const st=$('
 async function changeHost(){const v=prompt('Name on the network (letters, digits and hyphens). The Pico restarts to use it.',S.hostname||'hawki-pico');if(v==null||v.trim()===''||v.trim()===S.hostname)return;
  try{await api('/api/hostname',{hostname:v.trim()});$('status').textContent='Restarting as '+v.trim()+'…';setTimeout(load,15000)}catch(x){alert(x.message.replace(/^"|"$/g,''))}}
 function yrRender(){const i=$('yr_l');if(document.activeElement!==i)i.value=S.year_l||''}
-async function yrSave(){const v=$('yr_l').value.trim(),m=$('yr_st');try{const r=await api('/api/year',{litres:v===''?null:+v});S.year_l=r.year_l;S.year_done=false;AC=null;m.textContent=r.year_l?'Saved: '+r.year_l.toLocaleString()+' L a year.':'Removed.';yrRender();if(!$('p_dash').hidden)dash()}catch(e){m.textContent=e.message==='out of range'?'Enter a figure between 100 and 50,000 litres.':e.message}}
+async function yrSave(){const v=$('yr_l').value.trim(),m=$('yr_st');try{const r=await api('/api/year',{litres:v===''?null:+v});S.year_l=r.year_l;AC=null;m.textContent=r.year_l?'Saved: '+r.year_l.toLocaleString()+' L a year.':'Removed.';yrRender();if(!$('p_dash').hidden)dash()}catch(e){m.textContent=e.message==='out of range'?'Enter a figure between 100 and 50,000 litres.':e.message}}
 function wxRender(){const w=S.wx||{};$('wx1').textContent=w.name?'Location: '+w.name:'No location set';
  $('wx2').textContent=w.name?(w.err?'Could not fetch the weather: '+w.err:'Temperatures are fetched once a day, back to your first reading, with a 16-day forecast and 10-year averages for the oil forecast.'):'Pick your town below.';$('wxRm').style.visibility=w.name?'visible':'hidden'}
 async function wxFind(){const q=$('wxq').value.trim(),box=$('wxr');if(q.length<2)return;box.textContent='Searching…';
@@ -565,7 +565,7 @@ async function anLoad(mac,ck,get){const k=mac+'|'+ck;if(AN&&(AN.mac!==mac||AN.ck
  const id=ANW=++ANN;ANP={k,id,p:get().then(a=>{if(ANW===id){AN=a;ANF=null}},e=>{if(ANW===id)ANF={k,at:Date.now()/1000}}).finally(()=>{if(ANP&&ANP.id===id)ANP=null})};
  return ANP.p}
 /* the forecast for the dashboard: worked out again only when something it uses changed (the view and its settings, the readings, the live level, the weather, the reorder level), or every 10 minutes; each caller gets its own copy (dash() clears fc on its copy) */
-let AC=null;function anCached(vk,P,o,WV){const a=P[0]||[0,0],z=P[P.length-1]||[0,0],k=[vk,AN&&AN.t,P.length,a[0],Math.round(z[0]/300),z[1],o.reserve,o.yearL,o.yearDone,WV&&WV.heat?WXC.key+WXC.at:'-',Math.floor(o.now/600),new Date(o.now*1000).toDateString()].join('|');  /* (the live reading's time is rebuilt from its age each poll, so it jitters by milliseconds: rounded; and a new local day is a new forecast) */
+let AC=null;function anCached(vk,P,o,WV){const a=P[0]||[0,0],z=P[P.length-1]||[0,0],k=[vk,AN&&AN.t,P.length,a[0],Math.round(z[0]/300),z[1],o.reserve,o.yearL,WV&&WV.heat?WXC.key+WXC.at:'-',Math.floor(o.now/600),new Date(o.now*1000).toDateString()].join('|');  /* (the live reading's time is rebuilt from its age each poll, so it jitters by milliseconds: rounded; and a new local day is a new forecast) */
  if(!AC||AC.k!==k)AC={k,A:analyse(P,o)};return Object.assign({},AC.A)}
 function anReset(){AN=ANF=ANP=null;ANW=0}  /* the history changed (backup imported, another tank): forget it all, including a download still on its way */
 const anFailed=(mac,ck)=>!AN&&!!ANF&&ANF.k===mac+'|'+ck;
@@ -586,7 +586,7 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
  const now=Date.now()/1000;let P=AN?AN.base.slice():[];
  if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383&&AN){const lt=now-t.age;if(!P.length||lt>P[P.length-1][0])P.push([lt,toL(t.level,AN.cv)])}  /* (only if newer than the last saved one) */
  if(t.cfg.isolated)P=holdIsolated(P,t.cfg.isolated);  /* valve closed: its readings never count as use */
- const WV=await wxLoad(S);if(ANK!==vk)return;const reserve=t.cfg.reserve_l??200,A=anCached(vk,P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name,yearL:yearFor(S,[t.mac]),yearDone:S.year_done},WV);
+ const WV=await wxLoad(S);if(ANK!==vk)return;const reserve=t.cfg.reserve_l??200,A=anCached(vk,P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name,yearL:yearFor(S,[t.mac])},WV);
  // oil left (+ unusable)
  $('d_l').textContent=t.litres==null?'–':L0(t.litres);
  const u=t.unusable;$('d_l2').textContent=(t.percent!=null?t.percent+'% · ':'')+(u?'(+ '+(u[1]==='estimate'?'about ':'')+L0(u[0])+' unusable below the outlet)':'(unusable amount not set: Tanks → Edit)');
@@ -632,7 +632,7 @@ async function dashAll(ts){$('d_name').textContent=ts.length>2?'All tanks':'Both
    .then(got=>({mac:'all',ck,t:Date.now()/1000,cvs:got.map(g=>g[1]),bases:got.map(([buf,cv])=>parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)]))})));
  if(ANK!==vk)return;const HF=anFailed('all',ck);
  const now=Date.now()/1000,series=AN?AN.bases.map((b,k)=>{const s=b.slice(),t=ts[k];if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383)s.push([now-t.age,toL(t.level,AN.cvs[k])]);return s}):[];
- const P=AN?combine(series,ts.map(t=>t.cfg.isolated)):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S);if(ANK!==vk)return;const A=anCached(vk,P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name,yearL:yearFor(S,ts.map(t=>t.mac)),yearDone:S.year_done},WV);
+ const P=AN?combine(series,ts.map(t=>t.cfg.isolated)):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S);if(ANK!==vk)return;const A=anCached(vk,P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name,yearL:yearFor(S,ts.map(t=>t.mac))},WV);
  const sum=f=>ts.reduce((a,t)=>a+(f(t)||0),0),lit=sum(t=>t.litres),cap=sum(t=>+t.cfg.capacity_l),un=sum(t=>t.unusable&&t.unusable[0]),known=ts.every(t=>t.litres!=null);
  $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))+(modeOf(t.cfg)==='standby'?' (standby)':'')).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
  $('d_bar').style.width=(known&&cap?Math.max(0,Math.min(100,lit/cap*100)):0)+'%';

@@ -1030,9 +1030,6 @@ def set_forecast(b):
     cum = [num(x, 0, 1000000) for x in cum]
     if any(cum[i] < cum[i - 1] for i in range(1, len(cum))):
         raise ValueError('bad forecast')
-    if b.get('year_done') and cfg.get('year_l') and not cfg.get('year_done'):
-        cfg['year_done'] = 1  # the typical year's figure has done its job (a month of real heating): for good
-        save_cfg(cfg)
     new = key not in forecasts
     # (the reorder level is never taken from the request: the Pico's own settings, so a made-up forecast from
     # someone on the Wi-Fi can't set it)
@@ -1731,7 +1728,7 @@ def state():
             'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint')),
             'primary': cfg.get('primary') if cfg.get('primary') in cfg['tanks'] or cfg.get('primary') == 'all' and len(tanks) > 1
                        else (tanks[0]['mac'] if tanks else None),
-            'hostname': HOSTNAME, 'net': net_view(), 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'price': price_view(), 'year_l': cfg.get('year_l'), 'year_done': bool(cfg.get('year_done')), 'mqtt': mqtt_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
+            'hostname': HOSTNAME, 'net': net_view(), 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'price': price_view(), 'year_l': cfg.get('year_l'), 'mqtt': mqtt_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
 
 
 def num(v, lo, hi):
@@ -2280,7 +2277,7 @@ async def handle(r, w):
                     cfg.pop('year_l', None)
                 else:
                     cfg['year_l'] = int(num(v, 100, 50000))
-                cfg.pop('year_done', None)  # (a figure given afresh starts afresh; not if it was refused)
+                cfg.pop('year_done', None)  # (left by 1.3.2)
                 save_cfg(cfg)
                 return await send(w, 200, json.dumps({'year_l': cfg.get('year_l')}))
             except BadRequest:

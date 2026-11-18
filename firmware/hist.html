@@ -271,8 +271,9 @@ function drawMonths(){
  const svg=$('c2');svg.textContent='';$('lg2').textContent='';$('tbl').textContent='';$('c2s').textContent=' ';
  const Hh=220,W=fit(svg,Hh),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
  const M=(A&&A.months)||{},d0=new Date(now*1000),cy=d0.getFullYear(),cm=d0.getMonth(),y0=cm>=6?cy:cy-1,oy=y=>y+'/'+String(y+1).slice(2);
+ const src=new Set();
  const mo=Array.from({length:12},(_,i)=>{const y=i<6?y0:y0+1,m=(i+6)%12,k=y+'-'+m,o=M[k],fut=y>cy||(y===cy&&m>=cm),dim=new Date(y,m+1,0).getDate();
-  let avg=null;if(A&&A.avg){avg=0;for(let dd=1;dd<=dim;dd++)avg+=A.avg(new Date(y,m,dd,12).getTime()/1000)}
+  let avg=null;if(A&&A.avg){avg=0;for(let dd=1;dd<=dim;dd++){const td=new Date(y,m,dd,12).getTime()/1000;avg+=A.avg(td);src.add(A.avgSrc(td))}}
   return{y,m,o,dim,cur:y===cy&&m===cm,used:o?Math.max(0,o.used):0,fc:fut&&A&&A.fmonths&&A.fmonths[k]>0?A.fmonths[k]:0,avg}});
  let max=10;for(const q of mo)max=Math.max(max,q.used+q.fc,q.avg||0);
  const st=niceStep(max,4);max=Math.ceil(max/st)*st;const y=v=>mt+ph-Math.max(0,v)/max*ph;
@@ -290,7 +291,7 @@ function drawMonths(){
   if(q.avg!=null)lines.push('Average year '+L0(q.avg));
   if(lines.length>1){const r=el('rect',{x:ml+i*gw,y:mt,width:gw,height:ph,fill:'transparent',class:'bar',tabindex:0},svg);
    r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip);r.addEventListener('focus',()=>{const b=r.getBoundingClientRect();showTip({clientX:b.right,clientY:b.top},lines)});r.addEventListener('blur',hideTip)}});
- const avgName=!A?'':A.avgFrom==='own'?'Average of your earlier years':A.avgFrom==='given'?'Typical year you gave ('+Math.round(A.yearL).toLocaleString()+' L)':'Average year (usual weather)';
+ const yl=A&&A.yearL?'the typical year you gave ('+Math.round(A.yearL).toLocaleString()+' L)':'',avgName=src.has('own')?(src.size>1?'Your earlier years; '+(src.has('given')?yl:'the usual weather')+' where there are none':'Your earlier years'):src.has('given')?yl[0].toUpperCase()+yl.slice(1):'Average year (usual weather)';
  const lg=(css,cls,txt)=>{const s=document.createElement('span'),i=document.createElement('i');if(cls)i.className=cls;i.style.cssText=css;s.appendChild(i);s.appendChild(document.createTextNode(txt));$('lg2').appendChild(s)};
  lg('background:'+C,'','Used '+oy(y0));lg('border:2px dashed '+C+';background:none','','Forecast');if(hasAvg)lg('border-color:var(--fg)','l',avgName);
  const used=mo.reduce((a,q)=>a+q.used,0),fc=mo.reduce((a,q)=>a+q.fc,0),avg=mo.reduce((a,q)=>a+(q.avg||0),0);
@@ -514,9 +515,8 @@ async function load(){const g=++LG;FITGEN++;
  else{t1=s0.tanks.find(t=>t.mac===mac);const[buf,cv]=await Promise.all([fetch('/api/hist?mac='+mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+mac).then(r=>r.json())]);if(g!==LG)return;
   cv1=cv;p1=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);const l=live(t1,cv);if(l)if(!p1.length||l[0]>p1[p1.length-1][0])p1.push(l);  /* (the live reading only if it is newer than the last saved one: out of order it read as a delivery) */if(t1.cfg.isolated)p1=holdIsolated(p1,t1.cfg.isolated)}  /* valve closed: its readings never count as use */
  const d0=(await dlP)||{};if(g!==LG)return;
- const WV=await wxLoad(s0);if(g!==LG)return;const a=analyse(p1,{now:nw,reserve:t1.cfg.reserve_l??200,heat:WV&&WV.heat,wxName:WV&&WV.name,yearL:yearFor(s0,t1.all?t1.tanks.map(t=>t.mac):[mac]),yearDone:s0.year_done});
+ const WV=await wxLoad(s0);if(g!==LG)return;const a=analyse(p1,{now:nw,reserve:t1.cfg.reserve_l??200,heat:WV&&WV.heat,wxName:WV&&WV.name,yearL:yearFor(s0,t1.all?t1.tanks.map(t=>t.mac):[mac])});
  if(!(a.recent!=null&&a.span>=2))a.fc=null;  /* no forecast line until there's a forecast */
- if(a.fc&&a.yearL&&a.ownW>=1&&!a.useOwn&&!s0.year_done)fetch('/api/forecast',{method:'POST',body:JSON.stringify(fcBody(a,t1.all?'all':mac,t1.cfg.reserve_l??200))}).catch(()=>{});  /* the typical-year figure has done its job: the Pico remembers (the dashboard says so too) */
  S=s0;now=nw;T=t1;CV=cv1;P=p1;D=d0;A=a;if(cvs){CVS=cvs;TF=tf}FITGEN++;  /* the page's data, all at once (and any capacity fit still running for the last one is dropped) */
  $('ttl').textContent=T.name;
  $('sub').textContent=(P.length?'Readings since '+fmtDY(P[0][0])+' · '+(A.span<1?Math.round(A.span*24)+' hours':Math.round(A.span)+' days'):'No readings saved yet')+(late.length?' · readings for '+late.join(', ')+' (held level before then)':'');
