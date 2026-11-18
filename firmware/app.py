@@ -1061,14 +1061,16 @@ def order_by_iso(mac, t, v=None):
     return '%04d-%02d-%02dT%02d:%02d:%02d+00:00' % (y, mo, d, h, mi, s)
 
 
-def tank_view(mac, t, now):
-    d = hawki.get(mac) or {}
-    lvl = d.get('level')
-    if lvl in (None, 16383):  # nothing heard yet since a restart, or only a misread: the last saved reading,
-        s = saved_last(mac)   # with its own time (so it's never passed off as fresh, and alerts don't use it)
-        if s and 1700000000 < now and s[0] <= now + 60:  # (not one dated ahead of a clock that was put back)
-            d = dict(d, good_at=s[0], bad_level=d.get('bad_level')) if 'bad_level' in d else dict(d, good_at=s[0], saved=True)
-            lvl = s[1]
+_tm = {}  # mac -> ((level, settings saved count), results): /api/state and MQTT (every 10 s) ask far more often
+
+
+def tank_maths(mac, t, lvl):
+    # litres, %, all the oil, the standard model's figures and the unusable part for this level: they only change
+    # with the level or the settings (every settings change goes through save_cfg, which counts cfg_gen)
+    key = (lvl, cfg_gen[0])
+    c = _tm.get(mac)
+    if c is not None and c[0] == key:
+        return c[1]
     lit, pct = reading(t, lvl) if lvl is not None else (None, None)
     std = tot = tot_std = None  # Magnus-style standard model, for comparison; and all the oil (floor up)
     try:
@@ -1079,6 +1081,20 @@ def tank_view(mac, t, now):
                 tot_std = total(dict(t, window_model='standard'), lvl)
     except Exception:  # odd stored values must never break /api/state
         pass
+    r = (lit, pct, tot, std, tot_std, unusable(t))
+    _tm[mac] = (key, r)
+    return r
+
+
+def tank_view(mac, t, now):
+    d = hawki.get(mac) or {}
+    lvl = d.get('level')
+    if lvl in (None, 16383):  # nothing heard yet since a restart, or only a misread: the last saved reading,
+        s = saved_last(mac)   # with its own time (so it's never passed off as fresh, and alerts don't use it)
+        if s and 1700000000 < now and s[0] <= now + 60:  # (not one dated ahead of a clock that was put back)
+            d = dict(d, good_at=s[0], bad_level=d.get('bad_level')) if 'bad_level' in d else dict(d, good_at=s[0], saved=True)
+            lvl = s[1]
+    lit, pct, tot, std, tot_std, un = tank_maths(mac, t, lvl)
     r1 = lambda v: None if v is None else round(v, 1)
     try:
         ob = order_by_iso(mac, t)
@@ -1086,7 +1102,7 @@ def tank_view(mac, t, now):
         ob = None
     return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct, 'order_by': ob,
             # misread: the rejected reading (-1: no level at all), or None
-            'misread': (-1 if d['bad_level'] is None else d['bad_level']) if 'bad_level' in d else None, 'good_at': d.get('good_at'), 'saved': bool(d.get('saved')), 'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': unusable(t), 'listen': listener.info(mac),
+            'misread': (-1 if d['bad_level'] is None else d['bad_level']) if 'bad_level' in d else None, 'good_at': d.get('good_at'), 'saved': bool(d.get('saved')), 'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': list(un) if un else un, 'listen': listener.info(mac),
             'battery': d.get('battery'), 'rssi': d.get('rssi'),
             'age': (now - d['good_at'] if d.get('good_at') else None) if 'bad_level' in d or d.get('saved') else (now - d['rx']) if d.get('rx') else None,  # after a misread: the shown level's own age
             'cfg': cfg_view(t)}
