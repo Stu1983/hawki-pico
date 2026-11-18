@@ -185,6 +185,14 @@ g['keep_ap']((-72, 6, b'\x06also'))
 ok(g['cfg']['ap_b'] == '06616c736f', 'a join that worked elsewhere: that one remembered')
 g['keep_ap'](None)
 ok('ap_b' not in g['cfg'], 'joined just anyhow: nothing remembered')
+# told its channel only for the setup join (it stalls big transfers); the keeper's joins: the access point alone
+g = fresh([])
+g['join_wifi']('HomeNet', 'pw', (-60, 6, b'near'))
+g['join_wifi']('HomeNet', 'pw', (-60, 6, b'near'), on_channel=True)
+g['join_wifi']('HomeNet', 'pw', None)
+ok(g['wlan'].calls == [('connect', 'HomeNet', 'pw', b'near'), ('connect', 'HomeNet', 'pw', 6, b'near'), ('connect', 'HomeNet', 'pw')],
+   'normal joins: the access point only; the setup join: with its channel; none known: any (%r)' % g['wlan'].calls)
+ok('on_channel=True' not in src_keeper, 'the keeper never tells the chip the channel')
 ok('keep_ap(keeper_hit[0])' in src_keeper and 'keeper_hit[:] = [pick_ap(' in src_keeper, 'the keeper joins the remembered one and remembers what worked')
 outer = src_keeper[src_keeper.index('led.value(1)'):][:300]
 ok('if keeper_hit[1]:' in outer and 'keep_ap(keeper_hit[0])' in outer, 'recorded whenever it is first seen joined (a join that came late too)')

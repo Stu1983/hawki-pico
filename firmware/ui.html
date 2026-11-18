@@ -72,12 +72,13 @@ dialog::backdrop{background:#0008}
  <div class="msg" id="s_tryM"></div></div>
 <div class="card" id="s_done" hidden>
  <div class="ok" aria-hidden="true">&#10003;</div><h2 id="s_doneT" style="margin-top:8px">Connected</h2>
- <p class="lead" style="margin:0"><b>Take a screenshot of this screen</b> before you tap Finish: this window may close when the setup Wi-Fi switches off. On your home Wi-Fi, the monitor is at:</p><div class="addr"><a id="s_addr" class="lnk" style="font-size:inherit;margin:0" target="_blank" rel="noopener"></a></div><div class="mut" id="s_addr2"></div>
+ <p id="s_shot" style="color:var(--bad);font-weight:600;font-size:14px;margin:0 0 10px">Before you tap Finish: take a screenshot of this screen, or press and hold the address below to copy it. This window may close when the setup Wi-Fi switches off.</p>
+ <p class="lead" style="margin:0">On your home Wi-Fi, the monitor is at:</p><div class="addr"><a id="s_addr" class="lnk" style="font-size:inherit;margin:0" target="_blank" rel="noopener"></a></div><div class="mut" id="s_addr2"></div>
  <div class="mut" id="s_far" hidden style="margin-top:8px"></div>
  <ol><li id="s_li1">Tap <b>Finish</b>. The monitor restarts, its setup Wi-Fi switches off, and your phone goes back to <span id="s_home">your Wi-Fi</span>.</li>
  <li>Then open the address above in your browser (Safari, Chrome…), and bookmark it.</li><li>Enter your PIN there, then add your tanks under <b>Config</b>.</li></ol>
  <div class="msg bad" id="s_finE"></div><div class="acts" style="margin-top:4px"><button class="pri" id="s_fin" onclick="suFinish()">Finish</button></div></div>
-<div class="card" id="s_bye" hidden><h2>All done</h2><p class="lead" style="margin:0">The monitor is restarting on your Wi-Fi, and its setup Wi-Fi switches off. Give it half a minute; once your phone is back on your home Wi-Fi, tap <a id="s_addr3" class="lnk" style="font-size:inherit;margin:0" target="_blank" rel="noopener"></a> to open the monitor.</p><div class="msg" id="s_byeM"></div></div>
+<div class="card" id="s_bye" hidden><h2>All done</h2><p class="lead" style="margin:0">The monitor is restarting on your Wi-Fi, and its setup Wi-Fi switches off. It can take a minute or two before it answers. Once your phone is back on your home Wi-Fi, open <a id="s_addr3" class="lnk" style="font-size:inherit;margin:0" target="_blank" rel="noopener"></a> to open the monitor.</p><div class="msg" id="s_byeM"></div></div>
 </section>
 
 <section id="p_dash">
@@ -855,7 +856,7 @@ function suBack(){const t0=Date.now(),M=$('s_byeM'),b0=S.update&&S.update.boot,m
   const hit=(await Promise.all(urls.map(probe))).find(Boolean);  /* (only a NEW start counts: the old one still answering is not "back") */
   if(hit){M.textContent='It\'s back: opening it…';suGo(hit);return}
   if(Date.now()-t0>180000){M.textContent='It hasn\'t come back yet. Check your phone is on your home Wi-Fi, then tap the address above.';return}
-  M.textContent='Restarting… this page opens the monitor as soon as it\'s back.';setTimeout(tick,3000)};
+  M.textContent='Restarting…';setTimeout(tick,3000)};
  setTimeout(tick,3000)}
 async function suFinish(){const b=$('s_fin');b.disabled=true;$('s_finE').textContent='';
  try{const r=await authFetch('/api/setup/done',{method:'POST'});if(!r.ok)throw 0;suShow('bye');SU='bye';suBack()}

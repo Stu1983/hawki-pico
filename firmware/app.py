@@ -769,12 +769,16 @@ def keep_ap(hit):
         save_cfg(cfg)
 
 
-def join_wifi(ssid, pw, hit):
-    # Join the network's STRONGEST access point (hit: from wifi_seen), else whichever answers. Left to itself the
-    # chip takes the first it hears: on a house with several (mesh, extenders) that was a far one at -80, where the
-    # chip keeps scanning to roam and the connection went half-dead (joined, but nothing got through).
-    if hit:
+def join_wifi(ssid, pw, hit, on_channel=False):
+    # Join the access point picked (hit: from wifi_seen), else whichever answers. on_channel: tell the chip its
+    # channel too, so it doesn't look on every channel first (that takes the setup network off the air, and an
+    # iPhone's sign-in window gives up) - ONLY for the setup join: a join told its channel leaves big transfers
+    # crawling or stalled (a 100 KB page took 20 s+, measured; the same join without it: half a second).
+    # Finish's restart then rejoins without it.
+    if hit and on_channel:
         wlan.connect(ssid, pw, bssid=hit[2], channel=hit[1])
+    elif hit:
+        wlan.connect(ssid, pw, bssid=hit[2])
     else:
         wlan.connect(ssid, pw)
 
@@ -791,7 +795,7 @@ async def try_join(j):
             wlan.disconnect()  # (always: also drops a connect of the keeper's own still under way)
             ap_on()  # (the phone waiting for the answer is on it)
             net_apply()
-            join_wifi(j['ssid'], j['pw'], hit)
+            join_wifi(j['ssid'], j['pw'], hit, on_channel=True)
             for i in range(24 if hit else 60):  # (12 s at a known access point, ~3 s is usual; 30 s at any: 54 s at most,
                 await asyncio.sleep(0.5)          # inside the page's 75)
                 led.toggle()

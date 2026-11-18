@@ -54,7 +54,7 @@ const until=async(f,ms=3000)=>{for(let t=0;t<ms;t+=20){if(f())return true;await 
  {const a=$(w,'s_addr2').querySelector('a');ok(a&&a.href==='http://hawki-pico.local/'&&a.target==='_blank','...and the .local name too, as a link');}
  ok($(w,'s_addr3').href==='http://192.168.1.57/','"All done" links to it as well');
  ok(/goes back to HomeNet/.test($(w,'s_done').textContent),'and that the phone goes back to the home Wi-Fi');
- ok(/Take a screenshot of this screen/.test($(w,'s_done').textContent),'...and to take a screenshot before Finish (the sign-in window closes with the setup Wi-Fi)');
+ ok(/take a screenshot of this screen, or press and hold the address/.test($(w,'s_shot').textContent)&&w.getComputedStyle($(w,'s_shot')).color!==w.getComputedStyle($(w,'s_addr2')).color,'...and, in red, to screenshot it or press and hold the address to copy it, before Finish');
  ok(!vis(w,'p_dash')&&!vis(w,w.document.querySelector('.tabs')),'still only the setup screen, though the monitor is now on the home Wi-Fi');
  await w.suFinish();ok(w.posts.some(p=>p[0]==='/api/setup/done')&&vis(w,'s_bye'),'Finish: the setup Wi-Fi is told to go, "All done"');
  await wait(100);ok(vis(w,'s_bye'),'...and it stays at "All done"');
