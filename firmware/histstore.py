@@ -22,46 +22,64 @@ def _records(f):
             yield struct.unpack_from('<IH', buf, i)
 
 
+def _needed(name, cutoff):
+    # read-only, and only as far as the cutoff (the file is in time order): is anything older than it not yet one
+    # record per day, at midday?
+    last = None
+    with open(name, 'rb') as f:
+        for t, mm in _records(f):
+            if t >= cutoff:
+                return False
+            d = t // DAY
+            if d == last or t != d * DAY + DAY // 2:
+                return True
+            last = d
+    return False
+
+
 def compact(name, cutoff):
     """Shrink records older than `cutoff` (epoch) to one per day. Returns (records in, out)."""
     cutoff -= cutoff % DAY  # whole UTC days only: a day cut part-way would be merged ahead of its own later readings
     try:
-        f = open(name, 'rb')
+        n = os.stat(name)[6] // 6
     except OSError:
         return 0, 0
+    if not _needed(name, cutoff):  # (every night and after each restart: no copy of the file written for nothing)
+        return n, n
     n_in = n_out = 0
-    changed = False
     day, vals = None, []
 
     def flush(o):
         vals.sort()
         o.write(struct.pack('<IH', day * DAY + DAY // 2, vals[len(vals) // 2]))
 
-    with f, open(name + '.cmp', 'wb') as o:
-        for t, mm in _records(f):
-            n_in += 1
-            if t < cutoff:
-                d = t // DAY
-                if d != day:
-                    if vals:
-                        flush(o)
-                        n_out += 1
-                    day, vals = d, []
-                vals.append(mm)
-                if len(vals) > 1 or t != d * DAY + DAY // 2:
-                    changed = True
-                continue
+    try:
+        with open(name, 'rb') as f, open(name + '.cmp', 'wb') as o:
+            for t, mm in _records(f):
+                n_in += 1
+                if t < cutoff:
+                    d = t // DAY
+                    if d != day:
+                        if vals:
+                            flush(o)
+                            n_out += 1
+                        day, vals = d, []
+                    vals.append(mm)
+                    continue
+                if vals:
+                    flush(o)
+                    n_out += 1
+                    day, vals = None, []
+                o.write(struct.pack('<IH', t, mm))
+                n_out += 1
             if vals:
                 flush(o)
                 n_out += 1
-                day, vals = None, []
-            o.write(struct.pack('<IH', t, mm))
-            n_out += 1
-        if vals:
-            flush(o)
-            n_out += 1
-    if changed:
-        os.rename(name + '.cmp', name)
-    else:
-        os.remove(name + '.cmp')
+    except BaseException:  # (flash full, say: no half-written .cmp left taking the space; the history as it was)
+        try:
+            os.remove(name + '.cmp')
+        except OSError:
+            pass
+        raise
+    os.rename(name + '.cmp', name)
     return n_in, n_out

@@ -67,7 +67,60 @@ def test_cutoff_mid_day():
     assert read(p) == out, 'second run changed it'
 
 
+def test_nothing_to_do_writes_nothing():
+    # every night (and after each restart past 03:00): no copy of the file written when nothing is old enough,
+    # or when what is old is already one per day; and a failed write leaves no .cmp behind
+    import builtins
+    d = tempfile.mkdtemp()
+    p = os.path.join(d, 'h.bin')
+    base = 1700000000 // DAY * DAY
+    recs = [(base + h * H, 700) for h in range(24 * 30)]
+    write(p, recs)
+    real_open, opened = builtins.open, []
+
+    def spy(n, *a, **k):
+        if str(n).endswith('.cmp'):
+            opened.append(n)
+        return real_open(n, *a, **k)
+    builtins.open = spy
+    try:
+        assert compact(p, base - DAY) == (len(recs), len(recs))
+        assert not opened, 'nothing old enough: no copy written'
+        compact(p, base + 10 * DAY)  # 10 days compacted
+        opened.clear()
+        out = read(p)
+        assert compact(p, base + 10 * DAY) == (len(out), len(out)) and not opened, 'already compacted: no copy written'
+        assert read(p) == out
+    finally:
+        builtins.open = real_open
+
+    class Full(Exception):
+        pass
+
+    def full(n, *a, **k):
+        f = real_open(n, *a, **k)
+        if str(n).endswith('.cmp'):
+            w = f.write
+
+            def wr(b):
+                if f.tell() > 600:
+                    raise Full()
+                return w(b)
+            f.write = wr
+        return f
+    builtins.open = full
+    try:
+        compact(p, base + 20 * DAY)
+        raise AssertionError('no error')
+    except Full:
+        pass
+    finally:
+        builtins.open = real_open
+    assert not os.path.exists(p + '.cmp') and read(p) == out, 'a failed write leaves no .cmp and the history as it was'
+
+
 if __name__ == '__main__':
+    test_nothing_to_do_writes_nothing()
     test_cutoff_mid_day()
     test_compact()
     print('all ok')
