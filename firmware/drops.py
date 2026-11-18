@@ -6,11 +6,11 @@ several: oil lost since each reading in the last WINDOW hours, against what the 
 in that time plus SLACK. To rule out one bad reading, the reading after must show the same.
 """
 
-WINDOW = 6.5 * 3600   # look back this far (s)
-SLACK = 15.0          # litres: two 5 mm steps plus temperature
+WINDOW = 23400        # look back this far (s): 6.5 h (an int: epoch arithmetic must never go through a float)
+SLACK = 15.0          # litres: two 5 mm steps plus temperature (at least; more on a tank where 5 mm is more)
 
 
-def excess(recent, cap, i=None):
+def excess(recent, cap, i=None, slack=SLACK):
     """recent: [(epoch, litres)] sorted by time. Litres lost beyond what the burner could explain by
     reading i (default the newest), and over how many hours; (0, 0) if none."""
     i = len(recent) - 1 if i is None else i
@@ -25,19 +25,19 @@ def excess(recent, cap, i=None):
         h = (tn - t) / 3600
         if h * 3600 > WINDOW or h <= 0:
             continue
-        x = (l - ln) - (cap * max(h, 1.0) + SLACK)
+        x = (l - ln) - (cap * max(h, 1.0) + slack)
         if x > worst:
             worst, hrs = x, h
     return worst, hrs
 
 
-def check(recent, cap):
+def check(recent, cap, slack=SLACK):
     """Alert-worthy? Returns (litres lost, hours) for the message, or None. Needs the newest reading
     AND the one before it to both show the excess (a single bad reading doesn't count)."""
     if len(recent) < 3:
         return None
-    a, _ = excess(recent, cap, len(recent) - 2)
-    b, _ = excess(recent, cap)
+    a, _ = excess(recent, cap, len(recent) - 2, slack)
+    b, _ = excess(recent, cap, None, slack)
     if a > 0 and b > 0:
         tn, ln = recent[-1]
         lost, hrs = 0.0, 0.0

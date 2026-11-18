@@ -60,4 +60,13 @@ ok(check([(0, 600.0), (H, 800.0), (2 * H, 598.0), (3 * H, 597.0)], 6.0) is None,
 rec = series([1.0] * 20)
 rec[10] = (rec[10][0], rec[10][1] + 200)
 ok(alerts(rec) == [], 'one glitchy high reading in a series: no alert')
+# on a ~6000 L tank one 5 mm step is ~27 L: an ordinary step mustn't read as a leak (slack scaled to the step)
+import drops as _d
+t0 = 1795400000
+flat = [(t0 + h * 3600, 1000.0) for h in range(4)] + [(t0 + 4 * 3600, 972.5), (t0 + 5 * 3600, 972.5)]
+ok(check(flat, 6) is not None, 'one 27.5 L step with the fixed 15 L slack: an alert (as before)')
+ok(check(flat, 6, slack=2.5 * 27.5) is None, 'with the slack scaled to the tank (27.5 L a step): no alert')
+big = flat[:4] + [(t0 + 4 * 3600, 800.0), (t0 + 5 * 3600, 800.0)]
+ok(check(big, 6, slack=2.5 * 27.5) is not None, 'a real 200 L drop on that tank still alerts')
+ok(type(_d.WINDOW) is int, 'the window is an int (epoch arithmetic never through a float)')
 sys.exit(1 if fails else 0)

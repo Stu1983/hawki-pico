@@ -1228,7 +1228,11 @@ async def drop_check(mac, t, lvl):
     n = cfg.get('notify') or {}
     if not (n.get('drops', True) and notify.channels(n)):
         return
-    hit = drops.check([(ts, reading(tank, mm)[0]) for ts, mm in r], float(n.get('burner_lph', 6)))  # current shape
+    try:  # the tank's litres in a 5 mm step, on average: on a big tank one ordinary step is more than 15 L
+        slack = max(drops.SLACK, 2.5 * above(tank) / (float(tank['height_cm']) * 10) * 5)
+    except Exception:
+        slack = drops.SLACK
+    hit = drops.check([(ts, reading(tank, mm)[0]) for ts, mm in r], float(n.get('burner_lph', 6)), slack)  # current shape
     a = cfg.setdefault('alerted', {}).setdefault(mac, {})
     if hit and time.time() - a.get('drop', 0) > 12 * 3600:
         res = await send_alert('%s: oil dropping fast' % tank.get('name', mac),
@@ -1855,6 +1859,21 @@ async def send_page(w, name, ctype, inm=''):
     await send_file(w, name, ctype, 'no-cache', tag)
 
 
+class BadRequest(Exception):
+    pass
+
+
+def jb(body):
+    # a request's JSON object, or a 400 (not a dropped connection) when it isn't one
+    try:
+        b = json.loads(body or '{}')
+    except ValueError:
+        raise BadRequest('not JSON')
+    if not isinstance(b, dict):
+        raise BadRequest('not a JSON object')
+    return b
+
+
 conns = [0]
 installing = [False]
 hist_busy = [False]
@@ -1870,10 +1889,14 @@ async def handle(r, w):
 
         buf = [b'']
 
+        skip, got = [None], [0]
+
         async def rl():  # our own readline: never buffers more than ~2 KB per line
             while b'\n' not in buf[0]:
-                if len(buf[0]) > 2048:
-                    raise OSError('header too long')
+                if len(buf[0]) > 2048:  # an over-long line (a big Cookie: from other sites on the same host name)
+                    if skip[0] is None:  # is dropped, not the whole request; but never one of the headers read below
+                        skip[0] = buf[0][:16].lower()
+                    buf[0] = b''
                 left = time.ticks_diff(dl, time.ticks_ms())
                 if left <= 0:
                     raise OSError('slow request')
@@ -1881,11 +1904,17 @@ async def handle(r, w):
                 if not c:
                     ln, buf[0] = buf[0], b''
                     return ln
+                got[0] += len(c)
+                if got[0] > 16384:  # (the request line and headers, all of them, however they arrive)
+                    raise OSError('headers too long')
                 buf[0] += c
             i = buf[0].index(b'\n') + 1
-            if i > 2048:
-                raise OSError('header too long')
             ln, buf[0] = buf[0][:i], buf[0][i:]
+            if skip[0] is not None or i > 2048:
+                hd, skip[0] = skip[0] if skip[0] is not None else ln[:16].lower(), None
+                if hd.startswith((b'content-length', b'x-auth', b'if-none-match')):
+                    raise OSError('header too long')  # (dropping one of these would change what the request does)
+                return b'X-Dropped: 1\r\n'  # (a header nobody reads)
             return ln
         try:
             peer = w.get_extra_info('peername')[0]
@@ -1894,7 +1923,7 @@ async def handle(r, w):
         line = (await rl()).decode()
         method, path, _ = line.split(' ', 2)
         clen, auth, inm = 0, '', ''
-        for _ in range(40):
+        for _ in range(100):
             h = await rl()
             if h in (b'\r\n', b'\n', b''):
                 break
@@ -1907,6 +1936,8 @@ async def handle(r, w):
                 auth = h.split(b':', 1)[1].strip().decode()
             elif hl.startswith(b'if-none-match:'):
                 inm = h.split(b':', 1)[1].strip().decode()
+        else:  # (no blank line after 100: never take headers for the body)
+            return await send(w, 431, '"too many headers"')
         path, q = parse_q(path)
         if peer and not on_ap(peer) and not me:
             net_proof()
@@ -1992,7 +2023,7 @@ async def handle(r, w):
             except Exception as ex:
                 return await send(w, 400, json.dumps(str(ex)))
         if path == '/api/maint' and method == 'POST':
-            cfg['maint'] = bool(json.loads(body or '{}').get('on'))
+            cfg['maint'] = bool(jb(body).get('on'))
             save_cfg(cfg)
             return await send(w, 200, json.dumps(cfg['maint']))
         if path == '/api/net' and method == 'POST':
@@ -2100,7 +2131,7 @@ async def handle(r, w):
             except OSError:
                 return await send(w, 200, b'', 'application/octet-stream')
         if path == '/api/primary' and method == 'POST':
-            mac = str(json.loads(body or '{}').get('mac', '')).lower()
+            mac = str(jb(body).get('mac', '')).lower()
             if mac not in cfg['tanks'] and not (mac == 'all' and len(cfg['tanks']) > 1):  # 'all' = both tanks together
                 return await send(w, 400, '"unknown tank"')
             cfg['primary'] = mac
@@ -2165,8 +2196,13 @@ async def handle(r, w):
                 return await send(w, 400, json.dumps('Could not save: %s' % ex))
             return await send(w, 200, json.dumps(res if res is not None else 'ok'))
         if path == '/api/tank/delete' and method == 'POST':
-            dm = str(json.loads(body).get('mac', '')).lower()
-            cfg['tanks'].pop(dm, None)
+            dm = str(jb(body).get('mac', '')).lower()
+            gone = cfg['tanks'].pop(dm, None) or {}
+            if gone.get('group'):  # a link down to one tank is no link (as set_tank does)
+                left = [t for t in cfg['tanks'].values() if t.get('group') == gone['group']]
+                if len(left) == 1:
+                    left[0].pop('group', None)
+            (cfg.get('alerted') or {}).pop(dm, None)
             unset.clear(dm)  # (readings kept aside while the clock was unset: not for a tank that's gone)
             last_saved.pop(dm, None)
             save_cfg(cfg)
@@ -2182,7 +2218,7 @@ async def handle(r, w):
             return await send(w, 200, json.dumps([{'ssid': s, 'rssi': v} for s, v in
                                                   sorted(nets.items(), key=lambda x: -x[1])]))
         if path == '/api/wifi' and method == 'POST':
-            b = json.loads(body)
+            b = jb(body)
             if not b.get('ssid'):
                 return await send(w, 400, '"Pick a network"')
             cfg['ssid'], cfg['pw'] = b['ssid'], b.get('pw', '')
@@ -2270,6 +2306,11 @@ async def handle(r, w):
                         start_scan()
                 return await send(w, 200, res)
         await send(w, 404, '"not found"')
+    except BadRequest as ex:
+        try:
+            await send(w, 400, json.dumps('Could not save: %s' % ex))
+        except Exception:
+            pass
     except Exception as ex:
         print('http err', ex)
     finally:
@@ -2590,10 +2631,12 @@ async def price_task():
                 if d:
                     last = max(d)
                     price_state['now'] = [last] + list(d[last] or (None, None))
-                    if last == today:
-                        price_state['day'] = today  # already fetched today (before a restart)
-                        price_state['pc'] = (cfg.get('price') or {}).get('pc')
                 d = None
+            if not price_state.get('checked') and now > 1.7e9:  # (with the clock set: 'today' before then is 2021,
+                price_state['checked'] = True                    # and a day already fetched would be fetched again)
+                if price_state['now'] and price_state['now'][0] == today:
+                    price_state['day'] = today  # already fetched today (before a restart)
+                    price_state['pc'] = (cfg.get('price') or {}).get('pc')
             p = cfg.get('price')
             gap = price_state.get('gap') or 1800  # (after a failure: 30 min, doubling to 8 h; reset by a success)
             if (p is not None and now > 1.7e9 and wlan.isconnected() and price_state['day'] != today
