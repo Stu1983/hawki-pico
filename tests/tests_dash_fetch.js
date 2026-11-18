@@ -48,4 +48,11 @@ function page(o){const hits=[];const dom=new JSDOM(html,{url:'http://pico/#dash'
    const exp=want==='all'?'Both tanks':want===M?'Tank 1':'Tank 2',expL=want==='all'?'840 L':want===M?'640 L':'200 L';
    ok(name===exp&&lit===expL,seq.map(x=>x===M?'T1':x===M2?'T2':'all').join(' -> ')+': shows '+name+' '+lit+' (want '+exp+' '+expL+')')}
   ok(!errs.length,'no errors while switching: '+errs.slice(0,2).join(' | '))}
+ /* 5. a refresh with nothing new doesn't work the forecast out again (it took 1-2 s with years of history) */
+ {const p=page({});await wait(400);let n=0;const real=p.w.analyse;p.w.analyse=(...a)=>{n++;return real(...a)};
+  const clock=[0];p.w.Date.now=()=>NOW*1000+clock[0];
+  for(let i=0;i<3;i++){clock[0]+=10000+[13,250,77][i];state.tanks[0].age+=10;p.w.load();await wait(150)}  /* 10 s on each time, the reply a little slower or quicker */
+  state.tanks[0].age=60;
+  ok(n===0,'3 refreshes 10 s apart with nothing new: the forecast isn\'t worked out again ('+n+')');
+  ok(/day/.test(p.d.getElementById('d_r2').textContent)&&p.d.getElementById('d_w').textContent!=='–','...and the page still shows it: '+p.d.getElementById('d_w').textContent)}
  process.exit(fails?1:0)})();

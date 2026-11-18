@@ -542,6 +542,9 @@ async function anLoad(mac,ck,get){const k=mac+'|'+ck;if(AN&&(AN.mac!==mac||AN.ck
  if(ANP&&ANP.k===k){ANW=ANP.id;return ANP.p}
  const id=ANW=++ANN;ANP={k,id,p:get().then(a=>{if(ANW===id){AN=a;ANF=null}},e=>{if(ANW===id)ANF={k,at:Date.now()/1000}}).finally(()=>{if(ANP&&ANP.id===id)ANP=null})};
  return ANP.p}
+/* the forecast for the dashboard: worked out again only when something it uses changed (the view and its settings, the readings, the live level, the weather, the reorder level), or every 10 minutes; each caller gets its own copy (dash() clears fc on its copy) */
+let AC=null;function anCached(vk,P,o,WV){const a=P[0]||[0,0],z=P[P.length-1]||[0,0],k=[vk,AN&&AN.t,P.length,a[0],Math.round(z[0]/300),z[1],o.reserve,WV&&WV.heat?WXC.key+WXC.at:'-',Math.floor(o.now/600),new Date(o.now*1000).toDateString()].join('|');  /* (the live reading's time is rebuilt from its age each poll, so it jitters by milliseconds: rounded; and a new local day is a new forecast) */
+ if(!AC||AC.k!==k)AC={k,A:analyse(P,o)};return Object.assign({},AC.A)}
 function anReset(){AN=ANF=ANP=null;ANW=0}  /* the history changed (backup imported, another tank): forget it all, including a download still on its way */
 const anFailed=(mac,ck)=>!AN&&!!ANF&&ANF.k===mac+'|'+ck;
 /* "Looks like you've switched": the Pico saw a standby tank go down while the tank in use held steady. Only a hint: the button opens that tank's settings, nothing changes until it's saved. Its room is kept while any tank is on standby, so nothing below moves when it comes and goes */
@@ -560,7 +563,7 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
  const now=Date.now()/1000;let P=AN?AN.base.slice():[];
  if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383&&AN)P.push([now-t.age,toL(t.level,AN.cv)]);
  if(t.cfg.isolated)P=holdIsolated(P,t.cfg.isolated);  /* valve closed: its readings never count as use */
- const WV=await wxLoad(S);if(ANK!==vk)return;const reserve=t.cfg.reserve_l??200,A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
+ const WV=await wxLoad(S);if(ANK!==vk)return;const reserve=t.cfg.reserve_l??200,A=anCached(vk,P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name},WV);
  // oil left (+ unusable)
  $('d_l').textContent=t.litres==null?'–':L0(t.litres);
  const u=t.unusable;$('d_l2').textContent=(t.percent!=null?t.percent+'% · ':'')+(u?'(+ '+(u[1]==='estimate'?'about ':'')+L0(u[0])+' unusable below the outlet)':'(unusable amount not set: Tanks → Edit)');
@@ -605,7 +608,7 @@ async function dashAll(ts){$('d_name').textContent=ts.length>2?'All tanks':'Both
    .then(got=>({mac:'all',ck,t:Date.now()/1000,cvs:got.map(g=>g[1]),bases:got.map(([buf,cv])=>parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)]))})));
  if(ANK!==vk)return;const HF=anFailed('all',ck);
  const now=Date.now()/1000,series=AN?AN.bases.map((b,k)=>{const s=b.slice(),t=ts[k];if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383)s.push([now-t.age,toL(t.level,AN.cvs[k])]);return s}):[];
- const P=AN?combine(series,ts.map(t=>t.cfg.isolated)):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S);if(ANK!==vk)return;const A=analyse(P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name});
+ const P=AN?combine(series,ts.map(t=>t.cfg.isolated)):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S);if(ANK!==vk)return;const A=anCached(vk,P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name},WV);
  const sum=f=>ts.reduce((a,t)=>a+(f(t)||0),0),lit=sum(t=>t.litres),cap=sum(t=>+t.cfg.capacity_l),un=sum(t=>t.unusable&&t.unusable[0]),known=ts.every(t=>t.litres!=null);
  $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))+(modeOf(t.cfg)==='standby'?' (standby)':'')).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
  $('d_bar').style.width=(known&&cap?Math.max(0,Math.min(100,lit/cap*100)):0)+'%';
@@ -707,6 +710,6 @@ function drawLvl(o,msg){const svg=$('c_lvl');if(!o){noData(svg,msg||'No readings
  hover(svg,xs,(g,b)=>el('circle',{class:'dot',cx:b[0],cy:f.Y(b[2]),r:4,fill:'var(--oil)'},g))}
 
 tab(location.hash.slice(1));
-addEventListener('resize',()=>{if(!$('p_dash').hidden)dash()});
+let RSZ=null;addEventListener('resize',()=>{clearTimeout(RSZ);RSZ=setTimeout(()=>{if(!$('p_dash').hidden)dash()},200)});  /* (once the resizing stops: phones fire it as the address bar comes and goes) */
 load();setInterval(()=>{if(!dlg.open&&!wdlg.open)load()},10000);
 </script></main></body></html>
