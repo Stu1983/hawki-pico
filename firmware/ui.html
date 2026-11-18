@@ -116,6 +116,20 @@ dialog::backdrop{background:#0008}
 <div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Name on the network: <b id="hn" style="white-space:nowrap">…</b></div><div class="mut" id="hn2">&nbsp;</div></div><button onclick="changeHost()">Change</button></div>
 <div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Address: <b id="na" style="white-space:nowrap">…</b></div><div class="mut" id="na2" style="min-height:36px">&nbsp;</div></div><button onclick="openNet()">Change</button></div></div>
 
+<h2>On your phone</h2>
+<div class="card"><b>An icon on your home screen</b>
+<div class="mut" style="margin-top:4px">iPhone or iPad: in Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>. Android: in Chrome's menu, <b>Add to Home screen</b>. It opens this page full screen; sign in with your PIN once there.</div>
+<b style="display:block;margin-top:14px">A widget showing the oil left (iPhone, iPad)</b>
+<ol class="mut" style="margin:6px 0 0;padding-left:20px">
+<li>Install the free <a class="lnk" style="margin:0" href="https://apps.apple.com/app/scriptable/id1405459188" target="_blank" rel="noopener">Scriptable</a> app.</li>
+<li>Tap <b>Copy the widget script</b> below.</li>
+<li>In Scriptable, tap <b>+</b>, paste, and tap the title to name it <b>Oil</b>. Tap <b>&#9654;</b> and allow it to find devices on your local network.</li>
+<li>Press and hold your home screen, tap <b>Edit</b>, <b>Add Widget</b>, pick <b>Scriptable</b> and add it. Press and hold the new widget, <b>Edit Widget</b>, and choose <b>Oil</b> as its Script.</li>
+<li>Lock screen too: press and hold it, <b>Customize</b>, and add Scriptable the same way.</li></ol>
+<div class="acts" style="justify-content:flex-start;align-items:center"><button onclick="copyWidget()">Copy the widget script</button><a class="lnk" href="/widget.js" target="_blank" rel="noopener">Show it</a></div>
+<div class="mut" id="wjst" style="min-height:36px;margin-top:6px"></div>
+<div class="hint">It shows the oil left, % full and the order-by date, and opens this page when tapped. iOS updates it now and then (usually every 15 to 30 minutes) while your phone is on your home Wi-Fi; away from home it shows the last figures it had.</div></div>
+
 <h2>Notifications</h2>
 <div class="card"><div class="mut" style="margin-bottom:10px">Alerts go to your phone through <b>Pushover</b> (pushover.net) or <b>ntfy</b> (free, no account: install the ntfy app and subscribe to the topic below), or both.</div>
 <div class="grid">
@@ -301,7 +315,7 @@ function readAt(t){const r=t.misread!=null||t.saved?t.good_at:t.listen&&t.listen
  return (late?'<b style="color:var(--bad)">no new reading since ':'read at ')+(late&&now-r>20*3600?d.toLocaleDateString([], {day:'numeric',month:'short'})+' ':'')+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(late?'</b>':'')}
 const okMac=m=>/^[0-9a-f:]{17}$/.test(m)?m:'';
 async function api(p,body){const r=await authFetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(r.status===401)throw new Error("The PIN is needed to change this.");if(!r.ok)throw new Error((await r.text()).replace(/^"|"$/g,''));return r.json()}  /* (the Pico's message, without its JSON quotes) */
-let LDN=0,FIRST=true;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render();
+let LDN=0,FIRST=true;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render();if(!$('p_cfg').hidden)wjsLoad();
  if(FIRST&&!SU){FIRST=false;if(!location.hash&&!S.tanks.length){history.replaceState(null,'','#tanks');tab('tanks')}}}catch(e){if(g===LDN){if(SU==='try'){$('s_tryM').textContent='Waiting for the monitor to answer (your phone may be rejoining the setup Wi-Fi)…';suFar()}else if(!FAR)$('status').textContent='Cannot reach the Pico: '+e.message}}}  /* (an older answer arriving after a newer one is dropped) */
 function render(){
  if(suCheck())return;
@@ -503,8 +517,19 @@ async function importBackup(f){$('impf').value='';if(!f)return;let o;
 // ---------- tabs ----------
 function tab(p){if(SU){for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=true;return}if(!['dash','tanks','cfg'].includes(p))p='dash';
  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.p===p));
- for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash();if(p==='cfg')seek()}
+ for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash();if(p==='cfg'){seek();wjsLoad()}}
 // Sensors nearby: the Pico normally only listens when a reading is due; ask it to look around while this is open
+/* the widget script for Scriptable: fetched when Config opens, so a tap can copy it at once (iPhones only allow
+   copying during the tap itself, not after waiting for a download) */
+let WJS=null,WJSH=null,WJSP=null,WJSG=0;  /* the script, the Pico name it was fetched for, the fetch under way, which fetch is current */
+function wjsLoad(){if(!S||!S.update)return;const h=S.hostname;  /* (only once the Pico's details are in: the script carries its name) */if(WJS&&WJSH!==h){WJS=null;WJSP=null}  /* (renamed: fetch it again, with the new name in it) */
+ if(WJS||WJSP)return;const g=++WJSG;
+ WJSP=fetch('/widget.js').then(r=>r.ok?r.text():null).then(t=>{if(g===WJSG){WJS=t||null;WJSH=h}}).catch(()=>{}).finally(()=>{if(g===WJSG)WJSP=null})}
+function copyWidget(){const M=$('wjst');wjsLoad();if(!WJS){M.textContent='Getting it from the monitor: tap Copy again in a moment.';return}
+ let done=false;try{const t=document.createElement('textarea');t.value=WJS;t.readOnly=true;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);
+  t.focus();t.select();t.setSelectionRange(0,WJS.length);done=document.execCommand('copy');t.remove()}catch(x){}
+ if(!done&&navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(WJS).then(()=>{M.textContent='Copied. Now paste it into Scriptable (step 3).'}).catch(()=>{});return}
+ M.textContent=done?'Copied. Now paste it into Scriptable (step 3).':'Your browser wouldn\'t copy it here: tap Show it, then press and hold the text, Select All, Copy.'}
 function seek(){if((!$('p_cfg').hidden||!$('p_tanks').hidden&&S&&S.tanks&&!S.tanks.length)&&!document.hidden)fetch('/api/discover').catch(()=>{})}
 setInterval(seek,60000);
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{history.replaceState(null,'','#'+b.dataset.p);tab(b.dataset.p)});

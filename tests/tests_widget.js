@@ -1,8 +1,8 @@
-// node tests/tests_widget.js  - the Scriptable widget (tools/hawki-widget.js), run against stand-ins for Scriptable's
+// node tests/tests_widget.js  - the Scriptable widget (firmware/widget.js.html), run against stand-ins for Scriptable's
 // classes: what it shows for one tank, several, a tank switched off, no tanks, the monitor out of reach (the last figures,
 // marked as old), the order-by colours, the lock-screen sizes, and the address from the widget's parameter.
 const fs = require('fs'), path = require('path');
-const src = fs.readFileSync(path.join(__dirname, '..', 'tools', 'hawki-widget.js'), 'utf8');
+const src = fs.readFileSync(path.join(__dirname, '..', 'firmware', 'widget.js.html'), 'utf8');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) fails++ };
 
 function run({ state, fail, family = 'small', param = '', cache = null, now = Date.parse('2026-11-18T12:00:00Z') }) {

@@ -1,11 +1,11 @@
 {
- "version": "1.3.7",
- "ref": "v1.3.7",
- "notes": "Add to Home Screen gives a proper icon and opens full screen like an app; a home/lock-screen widget for iPhone (Scriptable) showing the oil left, % and the order-by date: see the README.",
+ "version": "1.3.8",
+ "ref": "v1.3.8",
+ "notes": "Config has an On your phone card: how to add the home-screen icon and the iPhone widget, with a button that copies the widget script (already set to this Pico's name).",
  "files": {
   "app.py": [
-   "bb71ec56cf6e2a71e0ca660aa469f7acd1b9e425e22fbc794f264af90d4fdedb",
-   147804
+   "b1c55f543be45db38ed3eacea22587525fb55c1746f3a49087a1422ddd538b36",
+   148144
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -60,8 +60,8 @@
    14435
   ],
   "ui.html": [
-   "35cd709e1f6110506c00ca805e9ddeb4bc00a3234e2ae25c68080b525f30058f",
-   114173
+   "4c3d73e06c312ad43447b44bee71183d55a9cb79f2a12f84e5828003e9b89df2",
+   117434
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -72,16 +72,20 @@
    13431
   ],
   "version.py": [
-   "e4667b9e203ac55ddd4fc29e05a47a28882588cbe578175a52db80997d0de205",
+   "7e16fedbc2559b5d8f23286386eac7e949026c9163702162d3dde3ec44c0661b",
    18
   ],
   "weather.py": [
    "4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a",
    8744
+  ],
+  "widget.js.html": [
+   "5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d",
+   7193
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"bb71ec56cf6e2a71e0ca660aa469f7acd1b9e425e22fbc794f264af90d4fdedb\", 147804], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"4d47b50dd8c7dfa7312eb83aef12a6b9eff28d521462eaee2a80e9ecb712b3ec\", 26034], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"f51bc03cbbe15e529cfa07e97a26947c796984820e26f88c78c422296999cd35\", 62495], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"35cd709e1f6110506c00ca805e9ddeb4bc00a3234e2ae25c68080b525f30058f\", 114173], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"e4667b9e203ac55ddd4fc29e05a47a28882588cbe578175a52db80997d0de205\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744]}, \"notes\": \"Add to Home Screen gives a proper icon and opens full screen like an app; a home/lock-screen widget for iPhone (Scriptable) showing the oil left, % and the order-by date: see the README.\", \"ref\": \"v1.3.7\", \"version\": \"1.3.7\"}",
-  "sig": "3b087eabbcea9017fbfc3c9c732773d77002127de1f3059a81017836ca9eec51c908c17d33f9b2dda04de0546de9f40f6ec0ba9a060d80b90bbaacbc80157bf2b3a4c284cc44779f56fbb9eb0c63fd127adf9fcb54987a9cdce926a2071b5258dff43d52cdc70250aecaade4eb647db3e657f3ef8c60e6afe1d206469fcde100b701dcca55edad18ecbda1e54f1ef91085408fa01bc1469b61410d35c8e6a95feaaf1937fff77dc8f4e22b5eab421971f6b3423de5a9d8f49c33051c73199206a68c0ce19bafa8640264b06592c295beae4fddf062a021fb29ebdfb9c165b16c827d15fa54c4979ecfbf88769c65369e6cfbdfa4d89d9c8238091d9bfee60fb3"
+  "body": "{\"files\": {\"app.py\": [\"b1c55f543be45db38ed3eacea22587525fb55c1746f3a49087a1422ddd538b36\", 148144], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"4d47b50dd8c7dfa7312eb83aef12a6b9eff28d521462eaee2a80e9ecb712b3ec\", 26034], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"f51bc03cbbe15e529cfa07e97a26947c796984820e26f88c78c422296999cd35\", 62495], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"4c3d73e06c312ad43447b44bee71183d55a9cb79f2a12f84e5828003e9b89df2\", 117434], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"7e16fedbc2559b5d8f23286386eac7e949026c9163702162d3dde3ec44c0661b\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Config has an On your phone card: how to add the home-screen icon and the iPhone widget, with a button that copies the widget script (already set to this Pico's name).\", \"ref\": \"v1.3.8\", \"version\": \"1.3.8\"}",
+  "sig": "58d369b0aefaaf031bd5d51627e7bc25954585a4b23437ae1f6eec6c829d6213f27f7da6d1d8e4991aa7528cd94e6a4b80ebd647641ed5c3d6f37eb3a894b4a30afac0dd5101706c8017a2682edf2e4121a49bb78ee32ab3b7ea6b5b707d357e1e6ef08e7f82004c91450eb3d49aabc50639ad1bea581c3df5763f6ed4bc3c886d12f51167ab9259939cfd5604dfa6b7df3c05403a5467287256041397ff510a55a3aac0910165b2e5486958bfcc5d4a6d77eda342e7944500973b5dc7b5ea04bd70f358b0da83e7d89718d2b703835ce33041886aaa5c0e35f9f54b9547c69d31bef77866de6b428c1a295c30cec9b993e46692d9707933948930d1a86aaff2"
  }
 }

@@ -208,6 +208,38 @@ const until=async(f,ms=3000)=>{for(let t=0;t<ms;t+=20){if(f())return true;await 
   w28.Date.now=()=>now;w28.suGo=u=>{went=u};w28.fetch=(f=>async(u,o)=>{if(u.startsWith('http://192.168.1.57/')||u.includes('.local/'))throw new TypeError('x');return f(u,o)})(w28.fetch);
   await until(()=>vis(w28,'s_done'));await w28.suFinish();await wait(100);now+=181000;
   ok(await until(()=>/hasn't come back yet/.test($(w28,'s_byeM').textContent))&&!went,'never back within 3 minutes: says so, with the address to tap')}
+ /* Config, On your phone: the widget script copied with one tap (fetched beforehand: iPhones only copy during the tap) */
+ {const w31=open(()=>base({via_ap:false,ssid:'HomeNet',ip:'192.168.1.57',pin_set:true}),u=>u==='/widget.js'?{status:200,body:'const PICO = 1; // widget'}:null);
+  w31.fetch=(f=>async(u,o)=>{if(u==='/widget.js')return {ok:true,status:200,text:async()=>'const PICO = 1; // widget'};return f(u,o)})(w31.fetch);
+  let copied=null;w31.document.execCommand=c=>{if(c==='copy'){copied=w31.document.activeElement&&w31.document.activeElement.value;return true}return false};
+  await until(()=>/Updated/.test($(w31,'status').textContent));
+  ok(vis(w31,'p_tanks')||vis(w31,'p_dash'),'(starts on its usual page)');
+  w31.tab('cfg');await wait(50);
+  ok(/On your phone/.test($(w31,'p_cfg').textContent)&&/Add to Home Screen/.test($(w31,'p_cfg').textContent)&&/Scriptable/.test($(w31,'p_cfg').textContent),'Config has an On your phone card: the icon and the widget, step by step');
+  w31.copyWidget();ok(copied==='const PICO = 1; // widget'&&/Copied/.test($(w31,'wjst').textContent),'Copy the widget script: copied there and then ("'+$(w31,'wjst').textContent+'")');
+  w31.document.execCommand=()=>false;w31.copyWidget();ok(/press and hold the text/.test($(w31,'wjst').textContent),'a browser that won\'t copy: says how to copy it from Show it');
+  ok($(w31,'p_cfg').querySelector('a[href="/widget.js"]'),'...with a Show it link to the script')}
+ {const w32=open(()=>base({via_ap:false,ssid:'HomeNet',ip:'192.168.1.57',pin_set:true}));let n=0;
+  w32.fetch=(f=>async(u,o)=>{if(u==='/widget.js'){n++;throw new TypeError('x')}return f(u,o)})(w32.fetch);
+  await until(()=>/Updated/.test($(w32,'status').textContent));w32.tab('cfg');await wait(50);w32.copyWidget();
+  ok(/tap Copy again/.test($(w32,'wjst').textContent)&&n>=2,'not fetched yet (or it failed): says to tap again, and fetches it ('+n+' tries)')}
+ /* renamed after the script was fetched: fetched again, with the new name; a late failure of an old fetch doesn't wipe it */
+ {let st33=base({via_ap:false,ssid:'HomeNet',ip:'192.168.1.57',pin_set:true,hostname:'hawki-pico'}),hold=[];const w33=open(()=>st33);
+  w33.fetch=(f=>async(u,o)=>{if(u==='/widget.js'){const h=st33.hostname;return new Promise((res,rej)=>hold.push({res:()=>res({ok:true,status:200,text:async()=>'name '+h}),rej:()=>rej(new TypeError('x'))}))}return f(u,o)})(w33.fetch);
+  let copied=null;w33.document.execCommand=c=>{copied=w33.document.activeElement&&w33.document.activeElement.value;return true};
+  await until(()=>/Updated/.test($(w33,'status').textContent));w33.tab('cfg');await wait(20);
+  w33.copyWidget();w33.copyWidget();ok(hold.length===1,'taps while it is still fetching: one fetch, not one per tap ('+hold.length+')');
+  hold[0].res();await wait(20);w33.copyWidget();ok(copied==='name hawki-pico','fetched: copies it');
+  st33=base({via_ap:false,ssid:'HomeNet',ip:'192.168.1.57',pin_set:true,hostname:'oil-shed'});await w33.load();w33.copyWidget();await wait(20);
+  ok(hold.length===2,'renamed: fetched again');hold[1].res();await wait(20);w33.copyWidget();ok(copied==='name oil-shed','...and the copy has the new name ('+copied+')')}
+ /* opened straight onto Config (#cfg): the first tap copies */
+ {let n=0;const w34=new (require('jsdom').JSDOM)(html,{url:'http://192.168.1.57/#cfg',runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){
+   w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
+   w.fetch=async u=>{if(u==='/widget.js'){n++;return {ok:true,status:200,text:async()=>'script'}}const b=u.startsWith('/api/state')?base({via_ap:false,ssid:'HomeNet',ip:'192.168.1.57',pin_set:true}):{};
+    return {ok:true,status:200,json:async()=>b,text:async()=>JSON.stringify(b),clone(){return this}}}}}).window;
+  let copied=null;w34.document.execCommand=()=>{copied=w34.document.activeElement&&w34.document.activeElement.value;return true};
+  await until(()=>/Updated/.test(w34.document.getElementById('status').textContent));await wait(50);w34.copyWidget();
+  ok(copied==='script'&&n===1,'opened straight onto Config: the first tap copies, fetched once ('+n+')')}
  /* 7. not the setup Wi-Fi, or already connected: the page as before */
  for(const [o,why] of [[{via_ap:false},'on the home network'],[{ssid:'HomeNet',ip:'192.168.1.57',pin_set:true},'connected already']]){
   const w4=open(()=>base(o));await until(()=>/Updated|Setup/.test($(w4,'status').textContent));await wait(60);

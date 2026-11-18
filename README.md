@@ -62,14 +62,9 @@ These work while your phone is on your home Wi-Fi (the Pico isn't reachable from
 
 **An app icon.** In Safari, open the monitor's page (<http://hawki-pico.local/>), tap *Share*, then *Add to Home Screen*. It opens full screen like an app. Sign in with the PIN once in it (it keeps its own sign-in, apart from Safari's). On Android, Chrome's menu has *Add to Home screen*.
 
-**A widget showing the oil left (iPhone, iPad).** The free [Scriptable](https://apps.apple.com/app/scriptable/id1405459188) app runs `tools/hawki-widget.js`, which shows the oil left, % full, the order-by date (amber three weeks ahead, red one week ahead) and how old the reading is. Away from home it shows the last figures it had, marked "as of". Tapping it opens the monitor's page.
+**A widget showing the oil left (iPhone, iPad).** The free [Scriptable](https://apps.apple.com/app/scriptable/id1405459188) app runs the widget script (`firmware/widget.js.html`), which shows the oil left, % full, the order-by date (amber three weeks ahead, red one week ahead) and how old the reading is. Away from home it shows the last figures it had, marked "as of". Tapping it opens the monitor's page.
 
-1. Install **Scriptable** from the App Store.
-2. In Safari, open <https://raw.githubusercontent.com/Stu1983/hawki-pico/main/tools/hawki-widget.js>, select all the text and copy it.
-3. In Scriptable, tap **+**, paste, and tap the title at the top to name it **Oil**.
-4. At home, tap **▶** to try it. Allow it to find devices on your local network when iOS asks. You should see the widget.
-5. On the home screen, press and hold an empty space, tap **Edit** (or **+**), choose **Scriptable**, pick the small or medium size and **Add Widget**. Press and hold the new widget, **Edit Widget**, and set **Script** to **Oil**. If the monitor isn't at `hawki-pico.local`, put its address (e.g. `http://192.168.1.57`) in **Parameter**.
-6. For the lock screen: press and hold the lock screen, **Customize**, tap the widget area, add **Scriptable** (the wide one is best) and choose **Oil** the same way.
+The steps are on the Pico's own page, under **Config → On your phone**, with a button that copies the script (already set to the Pico's name) ready to paste into Scriptable. In short: install Scriptable, copy the script, paste it into a new Scriptable script named **Oil** and run it once at home (allow it to find devices on your local network), then add a Scriptable widget to the home or lock screen and choose **Oil**. If your phone can't reach the monitor by its name, put its address (e.g. `http://192.168.1.57`) in the widget's **Parameter**.
 
 iOS decides how often a widget refreshes (usually every 15 to 30 minutes). The order-by date appears once the dashboard has been opened, since it's worked out there.
 
@@ -100,7 +95,7 @@ git push origin main vX.Y.Z
 - **Forgot the PIN, or a fixed address that doesn't work.** Hold the Pico's BOOTSEL button for 5 seconds while it's running: the PIN is cleared (set a new one within 30 minutes) and the address goes back to automatic.
 - **Lost Wi-Fi.** Whenever it isn't on your Wi-Fi (after its first minute running), the setup network **HAWKi-Setup-XXXX** comes up so you can put it right.
 - **Rescue mode.** If the app can't start (and it isn't a fresh update to roll back), `main.py` starts `rescue.py`: a minimal server that stays on your Wi-Fi, or opens **HAWKi-Rescue** (password `oiltanks`), so new files can still be uploaded with the maintenance token (in rescue mode the token alone is enough).
-- **Maintenance token.** It's in the Pico's `config.json` (read it over USB with `mpremote fs cat :config.json`). While the app is running, uploading files over Wi-Fi (`curl -T app.py "http://PICO/file?name=app.py&t=TOKEN"`) only works with **maintenance access** switched on under **Config → Software**; it's off by default.
+- **Maintenance token.** It's in the Pico's `config.json` (read it over USB with `mpremote fs cat :config.json`). While the app is running, uploading files over Wi-Fi (`curl -T app.py "http://PICO/file?name=app.py&t=TOKEN"`) only works with **Allow maintenance uploads** switched on under **Config → Security**; it's off by default.
 
 ## How it works
 

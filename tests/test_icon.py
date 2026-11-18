@@ -64,5 +64,12 @@ for page in ('ui.html', 'hist.html'):
     ok('rel="apple-touch-icon" href="/apple-touch-icon.png"' in h and 'rel="manifest"' in h and 'apple-mobile-web-app-title' in h,
        '%s names the icon, the manifest and the app\'s name' % page)
 ok('href="/"' in open(os.path.join(FW, 'hist.html')).read(), 'the history page links back to the dashboard (no browser back button full screen)')
+# the widget script, served by the Pico with its own name in it
+os.chdir(FW)
+g['HOSTNAME'] = 'oil-shed'
+head, body = get('/widget.js')
+js = body.decode()
+ok(head.startswith('HTTP/1.0 200') and 'text/plain' in head and "'http://oil-shed.local'" in js and 'hawki-pico.local' not in js
+   and 'ListWidget' in js, '/widget.js: the Scriptable widget, set to this Pico\'s own name (oil-shed.local)')
 print('all ok' if not fails else '%d FAILED' % fails)
 raise SystemExit(1 if fails else 0)

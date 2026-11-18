@@ -2456,6 +2456,10 @@ async def handle(r, w):
                      'Connection: close\r\n\r\n' % len(png)).encode())
             w.write(png)
             return await asyncio.wait_for(w.drain(), 20)
+        if path == '/widget.js':  # (the Scriptable widget, with this Pico's own name already in it: Config, On your phone)
+            with open('widget.js.html') as f:
+                js = f.read().replace("'http://hawki-pico.local'", "'http://%s.local'" % HOSTNAME)
+            return await send(w, 200, js, 'text/plain; charset=utf-8')
         if path == '/manifest.webmanifest':  # (Android's "Install app"; iPhones use the page's apple-* tags)
             return await send(w, 200, WEB_MANIFEST, 'application/manifest+json')
         if path == '/api/state':
