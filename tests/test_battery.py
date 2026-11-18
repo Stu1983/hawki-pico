@@ -7,7 +7,7 @@ keep = [n for n in tree.body if isinstance(n, ast.AsyncFunctionDef) and n.name =
 sent, saves = [], []
 
 
-async def send_alert(title, msg, urgent=False):
+async def send_alert(title, msg, urgent=False, mark=None):
     sent.append(title)
     return {'ntfy': g['result']}
 

@@ -7,7 +7,7 @@ keep = [n for n in ast.parse(src).body if isinstance(n, ast.AsyncFunctionDef) an
 sent = []
 
 
-async def send_alert(title, msg, urgent=False):
+async def send_alert(title, msg, urgent=False, mark=None):
     sent.append((title, msg))
     return {'pushover': g['result']}
 

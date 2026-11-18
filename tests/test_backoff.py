@@ -99,10 +99,10 @@ except OSError as ex:
 mono = [0]
 sent = []
 res = [{'po': 'error'}]
-g = {'asyncio': asyncio, 'mono_s': lambda: mono[0], 'make_room': lambda: None, 'print': lambda *a: None, 'cfg': {'notify': {}},
-     'notify': types.SimpleNamespace(send=lambda n, t, m, u: sent.append(t) or dict(res[0]))}
-exec(compile(ast.Module([n for n in tree.body if isinstance(n, ast.AsyncFunctionDef) and n.name == 'send_alert'
-                         or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') == 'alert_back' for t in n.targets)], []), 'app.py', 'exec'), g)
+g = {'asyncio': asyncio, 'mono_s': lambda: mono[0], 'make_room': lambda: None, 'note_oom': lambda hit: None, 'print': lambda *a: None, 'cfg': {'notify': {}},
+     'notify': types.SimpleNamespace(oom=[False], send=lambda n, t, m, u: sent.append(t) or dict(res[0]))}
+exec(compile(ast.Module([n for n in tree.body if isinstance(n, ast.AsyncFunctionDef) and n.name in ('send_alert', '_send_alert')
+                         or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('alert_back', 'sending') for t in n.targets)], []), 'app.py', 'exec'), g)
 asyncio.run(g['send_alert']('a', 'm'))
 r = asyncio.run(g['send_alert']('b', 'm'))
 ok(sent == ['a'] and 'held' in r, 'a failed send: the next one 5 minutes later waits')

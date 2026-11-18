@@ -146,16 +146,77 @@ def make_room():
     gc.collect()
 
 
+def is_oom(ex):
+    # out of memory: MemoryError, or mbedtls' OSError ENOMEM (TLS needs one big unbroken block)
+    # (OSError only: on MicroPython every exception made with a number has .errno, ValueError(12) too)
+    return isinstance(ex, MemoryError) or isinstance(ex, OSError) and (
+        getattr(ex, 'errno', None) == 12 or bool(ex.args and ex.args[0] == 12))
+
+
+# MicroPython never moves memory, so after days up the free memory is in pieces too small for TLS: only a restart
+# joins them up again. A fetch or alert that still runs out after making room twice in a row (with nothing working
+# in between) restarts the Pico, once it has been up an hour (a fresh start that runs out isn't fragmentation, and
+# restarting again wouldn't help). The alert that failed is sent after the restart (resend_cut_off).
+# After a memory restart the next needs 6 hours up: memory that is really short (not in pieces) can't make the
+# Pico restart every hour for ever.
+OOM_UP_S = 3600
+OOM_AGAIN_S = 6 * 3600
+oom_run = [0]
+
+
+def note_oom(hit, redo=None):
+    # redo: the alert that failed, kept for after the restart (its check's counts start again at a restart: the
+    # quiet clock alone would hold a "no readings" alert for 6 more hours)
+    if not hit:
+        oom_run[0] = 0
+        return
+    oom_run[0] += 1
+    if oom_run[0] >= 2 and mono_s() >= (OOM_AGAIN_S if boot_why == 'memory' else OOM_UP_S) and not installing[0]:
+        print('out of memory twice: restarting to free it up')
+        leave_note('boot.why', {'why': 'memory'})
+        if redo:
+            leave_note('alert.redo', dict(redo, t=int(time.time())))
+        restart()
+
+
+def leave_note(name, d):
+    # a small note for the next start (read once by take_note)
+    try:
+        with open(name, 'w') as f:
+            json.dump(d, f)
+        return True
+    except Exception as ex:
+        print('note err', name, ex)
+        return False
+
+
+def take_note(name):
+    try:
+        with open(name) as f:
+            d = json.load(f)
+    except Exception:
+        d = None
+    rm(name)  # (read once: a note that crashes the start must not be acted on at every start)
+    return d if isinstance(d, dict) else None
+
+
 def with_room(fn, *a):
-    # one retry when the heap was too chopped up for TLS (MemoryError, or mbedtls' OSError ENOMEM)
+    # one retry when the heap was too chopped up for TLS
     make_room()
     try:
-        return fn(*a)
+        r = fn(*a)
     except Exception as ex:
-        if not (isinstance(ex, MemoryError) or getattr(ex, 'errno', None) == 12 or (ex.args and ex.args[0] == 12)):
+        if not is_oom(ex):
             raise
-    make_room()
-    return fn(*a)
+        make_room()
+        try:
+            r = fn(*a)
+        except Exception as ex2:
+            if is_oom(ex2):
+                note_oom(True)
+            raise
+    note_oom(False)
+    return r
 boot = time.time()
 # Seconds since boot that never wrap. ticks_ms wraps every 12.4 days and ticks_diff of two values more than
 # 6.2 days apart comes out negative, so no elapsed time may keep a ticks value for long: this adds up the short
@@ -856,7 +917,7 @@ def rm(name):
 
 
 MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
-            '/api/update/install', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location', '/api/price', '/api/net', '/api/mqtt')
+            '/api/update/install', '/api/restart', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location', '/api/price', '/api/net', '/api/mqtt')
 
 
 # ---------- views ----------
@@ -1181,7 +1242,25 @@ def set_notify(b):
 alert_back = [0, 0]  # after a send where every channel failed: mono_s() of the next try, and the wait
 
 
-async def send_alert(title, msg, urgent=False, force=False):
+sending = []  # (mac, k) of warnings being sent right now
+
+
+async def send_alert(title, msg, urgent=False, force=False, mark=None):
+    # mark: {'mac', 'k': the alerted key its caller sets once sent}: for an alert a memory restart cuts off, and so
+    # the same warning is never sent twice at once (its own check and the replay after a restart, both waiting here)
+    key = (mark.get('mac'), mark.get('k')) if mark else None
+    if key in sending:
+        return {'held': 'already being sent'}
+    if key:
+        sending.append(key)
+    try:
+        return await _send_alert(title, msg, urgent, force, mark)
+    finally:
+        if key in sending:
+            sending.remove(key)
+
+
+async def _send_alert(title, msg, urgent, force, mark):
     # a failed send is tried again by the caller every 5 minutes; while the internet is down each try blocks the
     # Pico on DNS and TLS for nothing, so after a failure wait 5 minutes, doubling to 30 (the test button: always)
     if not (force or urgent) and mono_s() < alert_back[0]:  # (urgent: a sudden drop is only checked on new readings, so never held)
@@ -1192,9 +1271,12 @@ async def send_alert(title, msg, urgent=False, force=False):
     print('notify', title, res)
     if 'ok' in res.values():
         alert_back[0] = alert_back[1] = 0
+        note_oom(False)
     elif res:
         alert_back[1] = min(1800, max(300, alert_back[1] * 2))
         alert_back[0] = mono_s() + alert_back[1]
+        if notify.oom[0]:
+            note_oom(True, None if force else {'title': title, 'msg': msg, 'urgent': urgent, 'mark': mark})
     return res
 
 
@@ -1237,7 +1319,8 @@ async def drop_check(mac, t, lvl):
     if hit and time.time() - a.get('drop', 0) > 12 * 3600:
         res = await send_alert('%s: oil dropping fast' % tank.get('name', mac),
                                '%d L gone in %.0f hours, more than the burner can use (%s L/h). Check for a leak or theft.'
-                               % (hit[0], max(1, hit[1]), n.get('burner_lph', 6)), urgent=True)
+                               % (hit[0], max(1, hit[1]), n.get('burner_lph', 6)), urgent=True,
+                               mark={'mac': mac, 'k': 'drop'})
         if 'ok' in res.values():
             a['drop'] = int(time.time())
             save_cfg(cfg)
@@ -1265,7 +1348,8 @@ async def battery_check(n, mac, t, d, a):
         save_cfg(cfg)
     if n.get('battery', True) and not a.get('battery') and st[1] >= 3:
         res = await send_alert('%s: monitor battery low' % t.get('name', mac),
-                               'The HAWKi monitor reports %d%% battery. Replace it soon, or readings will stop.' % b)
+                               'The HAWKi monitor reports %d%% battery. Replace it soon, or readings will stop.' % b,
+                               mark={'mac': mac, 'k': 'battery'})
         if 'ok' in res.values():
             a['battery'] = int(time.time())
             save_cfg(cfg)
@@ -1300,7 +1384,8 @@ async def silent_check(n, mac, t, e, now, start, a):
     if n.get('silent', True) and not a.get('silent') and now - since > SILENT_H * 3600:
         res = await send_alert('%s: no readings' % t.get('name', mac),
                                'Nothing new from the monitor for %d hours. Its battery may be flat, or it may be out of '
-                               'range of the Pico.' % ((now - since) // 3600))
+                               'range of the Pico.' % ((now - since) // 3600),
+                               mark={'mac': mac, 'k': 'silent', 'raw': None if e is None else e.get('raw')})
         if 'ok' in res.values():
             a['silent'] = int(now)
             if e is not None:
@@ -1355,6 +1440,79 @@ def reorder_alert(mac, t, lit):
     return ('%s: time to order oil' % name, '%d L left, at or below your reorder level of %d L.' % (lit, reserve))
 
 
+def read_note(name):
+    try:
+        with open(name) as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else None
+    except Exception:
+        return None
+
+
+# an alert a memory restart cut off (note_oom). Its file stays until it is sent or no longer true, so another
+# restart before then doesn't lose it.
+alert_redo = [read_note('alert.redo')]
+REDO_SETTING = {'drop': 'drops', 'battery': 'battery', 'silent': 'silent', 'reorder': 'reorder'}
+
+
+def redo_stale(r, n, now):
+    # still worth sending? Not if old, its tank has gone or been turned off, its warning was turned off, its own
+    # check has sent it meanwhile, or what it warns about is over (a new measurement; the tank filled up)
+    m = r.get('mark') or {}
+    k, mac = m.get('k'), m.get('mac')
+    if now - (r.get('t') or 0) > 6 * 3600:
+        return 'old'
+    if not m:
+        return None
+    t = cfg['tanks'].get(mac)
+    if t is None or mode_of(t) == 'off':
+        return 'tank gone or off'
+    if not n.get(REDO_SETTING.get(k, k), True):
+        return 'warning turned off'
+    a = (cfg.get('alerted') or {}).get(mac) or {}
+    if a.get(k) and a[k] >= (r.get('t') or 0):
+        return 'already sent'
+    e = listener.s.get(mac) or {}
+    if k == 'silent' and (e.get('chg') is not None or e.get('raw') is not None and e['raw'] != m.get('raw')):
+        return 'readings again'  # (a new measurement since this start, or the first one heard isn't the stuck one)
+    if k == 'reorder' and mode_of(t) != 'use':
+        return 'not in use'  # (standby: no warning of its own)
+    d = hawki.get(mac) or {}
+    if k == 'battery' and d.get('battery') is not None and d['battery'] > BATT_LOW:
+        return 'battery fine now'
+    if k == 'reorder' and d.get('level') not in (None, 16383):
+        lit = reading(t, d['level'])[0]
+        if lit is not None and lit > reserve_of(t):
+            return 'filled up'
+    return None
+
+
+async def resend_cut_off():
+    # ...once the clock is set, then marked sent the way its own check would mark it (so that check doesn't send
+    # it again when its counts catch up)
+    r = alert_redo[0]
+    if not r or time.time() < 1700000000:
+        return
+    why = redo_stale(r, cfg.get('notify') or {}, time.time())
+    if why:
+        print('cut-off alert dropped:', why)
+        alert_redo[0] = None
+        rm('alert.redo')
+        return
+    m = r.get('mark') or {}
+    k = m.get('k') if m.get('k') in REDO_SETTING else None
+    res = await send_alert(str(r.get('title', '')), str(r.get('msg', '')), bool(r.get('urgent')), mark=m or None)
+    if 'ok' in res.values():
+        alert_redo[0] = None
+        rm('alert.redo')
+        if k:
+            a = cfg.setdefault('alerted', {}).setdefault(m['mac'], {})
+            a[k] = int(time.time())
+            if k == 'silent' and m.get('raw') is not None:
+                a['silent_raw'] = m['raw']
+            save_cfg(cfg)
+
+
 async def alerts():
     # Every few minutes: tell the phone(s) once when a tank reaches its reorder level, a monitor's battery is low,
     # or a monitor has gone quiet.
@@ -1363,6 +1521,7 @@ async def alerts():
         try:
             n = cfg.get('notify') or {}
             if notify.channels(n) and wlan.isconnected():
+                await resend_cut_off()
                 al = cfg.setdefault('alerted', {})
                 start = quiet_since_start(time.time())
                 for mac, t in list(cfg['tanks'].items()):
@@ -1393,7 +1552,7 @@ async def alerts():
                         a.pop('reorder')  # topped up (in any mode): arm it again
                         save_cfg(cfg)
                     elif mode_of(t) == 'use' and n.get('reorder', True) and not a.get('reorder') and lit <= reserve and low2:  # (standby: no warning of its own)
-                        res = await send_alert(*reorder_alert(mac, t, lit))
+                        res = await send_alert(*reorder_alert(mac, t, lit), mark={'mac': mac, 'k': 'reorder'})
                         if 'ok' in res.values():
                             a['reorder'] = int(time.time())
                             save_cfg(cfg)
@@ -1434,6 +1593,9 @@ def may_setup(auth, peer):
     return authed(auth) or not cfg.get('pin') or on_ap(peer)
 
 
+boot_why = (take_note('boot.why') or {}).get('why')  # 'memory': this start was the Pico freeing up memory
+
+
 def update_info():
     try:
         last = json.load(open('upd.last'))
@@ -1444,7 +1606,7 @@ def update_info():
         pending = True
     except OSError:
         pending = False
-    return {'version': VERSION, 'last': last, 'pending': pending}
+    return {'version': VERSION, 'last': last, 'pending': pending, 'why': boot_why, 'boot': BOOT}
 
 
 class _Req:  # a request handed straight to handle(), no network (the update self-check)
@@ -2151,10 +2313,11 @@ async def handle(r, w):
             if net_restart[0] or net_trial[0]:  # (its restarts would count against the new version)
                 return await send(w, 409, json.dumps('A new address is being tried: update in a few minutes'))
             installing[0] = True
+            want = None
             try:
+                want = (json.loads(body) if body else {}).get('version')
                 import updater
                 m = manifest[0] if manifest_fresh() else with_room(updater.check, VERSION)['manifest']
-                want = (json.loads(body) if body else {}).get('version')
                 if want and m['version'] != want:  # (a newer release since the page showed it: never install unseen)
                     installing[0] = False
                     return await send(w, 409, json.dumps('Version %s is out now: check for updates again' % m['version']))
@@ -2170,11 +2333,30 @@ async def handle(r, w):
             except Exception as ex:
                 gc.collect()
                 installing[0] = False  # updater.install() undoes its own half-done swap
+                # out of memory even after making room: the heap is in pieces (see note_oom). Restart, and install
+                # first thing after the start, before anything else fills it (boot_install). Once only.
+                tid = '%d-%d' % (BOOT, mono_s())
+                if is_oom(ex) and want and not update_info()['pending'] and leave_note('upd.want', {'v': want, 'id': tid}):
+                    try:
+                        await send(w, 202, json.dumps({'restart': True, 'id': tid}))
+                    except Exception:
+                        pass
+                    await asyncio.sleep(1)
+                    restart()
                 return await send(w, 400, json.dumps('Update failed, nothing was changed: %s' % (str(ex) or repr(ex))))
             try:
                 await send(w, 200, json.dumps(v))
             except Exception:
                 pass  # the browser went away: restart onto the new version anyway
+            await asyncio.sleep(1)
+            restart()
+        if path == '/api/restart' and method == 'POST':  # (signed in: in MUTATING)
+            if installing[0]:
+                return await send(w, 409, json.dumps('An update is being installed: wait for it to finish'))
+            try:
+                await send(w, 200, '"ok"')
+            except Exception:
+                pass
             await asyncio.sleep(1)
             restart()
         if path == '/api/deliveries':
@@ -2700,11 +2882,50 @@ def wd_check(_t=None):
         machine.reset()
 
 
+async def boot_install(w):
+    # an install that ran out of memory, tried again first thing after the restart it asked for: the heap is still
+    # in one piece, as only the Wi-Fi is running yet. The outcome goes in upd.last for the page (with w['id']).
+    v = w.get('v')
+    t0 = mono_s()
+    installing[0] = True
+    try:
+        while not (wlan.isconnected() and time.time() >= 1700000000) and mono_s() - t0 < 180:
+            await asyncio.sleep(1)  # (Wi-Fi, then the clock from NTP: certificates are checked against the date)
+        import updater
+        m = with_room(updater.check, VERSION)['manifest']
+        if m['version'] != v:  # (never install a release nobody saw)
+            raise OSError('version %s is out now: check for updates again' % m['version'])
+        if updater.vtuple(v) <= updater.vtuple(VERSION):
+            raise OSError('already up to date')
+        updater.tidy()  # (what the failed try left)
+        make_room()
+        updater.install(m, VERSION)
+    except Exception as ex:
+        print('boot install', repr(ex))
+        installing[0] = False
+        why = str(ex) or repr(ex)
+        if is_oom(ex):
+            why = 'not enough memory even after restarting'
+        leave_note('upd.last', {'ok': False, 'from': VERSION, 'to': v, 'id': w.get('id'), 'reason': why[:200], 'stage': 'install'})
+        gc.collect()
+        return False
+    restart()
+
+
 async def main():
     load_forecasts()
-    for fn, name in ((wifi_keeper, 'wifi'), (recorder, 'recorder'), (scan_scheduler, 'scan'), (alerts, 'alerts'),
+    want = take_note('upd.want')
+    tasks = ((recorder, 'recorder'), (scan_scheduler, 'scan'), (alerts, 'alerts'),
                      (weather_task, 'weather'), (price_task, 'price'), (mqtt_task, 'mqtt'),
-                     (net_trial_guard, 'net trial'), (update_guard, 'update guard'), (bootsel_reset, 'bootsel')):
+                     (net_trial_guard, 'net trial'), (update_guard, 'update guard'), (bootsel_reset, 'bootsel'))
+    asyncio.create_task(keep(wifi_keeper, 'wifi'))
+    if want:
+        try:
+            await boot_install(want)
+        except Exception as ex:  # (never without the other tasks)
+            installing[0] = False
+            print('boot install', repr(ex))
+    for fn, name in tasks:
         asyncio.create_task(keep(fn, name))
     await asyncio.start_server(handle, '0.0.0.0', 80)
     wd_timer = machine.Timer(mode=machine.Timer.PERIODIC, period=60000, callback=wd_check)  # noqa: F841 (kept)

@@ -115,10 +115,18 @@ def channels(n):
     return out
 
 
+oom = [False]  # the last send() had a channel run out of memory (the app restarts if that keeps happening)
+
+
+def _oom(ex):
+    return isinstance(ex, MemoryError) or isinstance(ex, OSError) and (getattr(ex, 'errno', None) == 12 or bool(ex.args and ex.args[0] == 12))
+
+
 def send(n, title, msg, urgent=False):
     """Send to every channel set up. Returns {channel: 'ok' or the error}."""
     n = n or {}
     res = {}
+    oom[0] = False
     if n.get('po_user') and n.get('po_token'):
         try:
             form = 'token=%s&user=%s&title=%s&message=%s&priority=%d' % (
@@ -127,6 +135,7 @@ def send(n, title, msg, urgent=False):
             res['pushover'] = 'ok'
         except Exception as ex:
             res['pushover'] = str(ex) or repr(ex)
+            oom[0] = oom[0] or _oom(ex)
     if n.get('ntfy_topic'):
         try:
             _post(ok_host(n.get('ntfy_host')) or 'ntfy.sh', '/' + ok_topic(n['ntfy_topic']), msg,
@@ -134,4 +143,5 @@ def send(n, title, msg, urgent=False):
             res['ntfy'] = 'ok'
         except Exception as ex:
             res['ntfy'] = str(ex) or repr(ex)
+            oom[0] = oom[0] or _oom(ex)
     return res

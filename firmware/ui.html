@@ -118,7 +118,8 @@ dialog::backdrop{background:#0008}
 
 <h2>Software</h2>
 <div class="card"><div class="row"><div><div id="ver">Version …</div><div class="mut" id="ver2">&nbsp;</div></div><button id="updBtn" onclick="updClick()">Check for updates</button></div>
-<div class="mut" id="updBox" style="white-space:pre-wrap;min-height:18px;margin-top:6px"></div></div>
+<div class="mut" id="updBox" style="white-space:pre-wrap;min-height:18px;margin-top:6px"></div>
+<div class="row" style="margin-top:10px"><div><div>Restart the Pico</div><div class="mut" id="rstM">Saves the latest readings first. Back in about 30 seconds.</div></div><button id="rstBtn" onclick="restartPico()">Restart</button></div></div>
 
 <h2>Security</h2>
 <div class="card"><div class="row"><div><div id="secT">…</div><div class="mut" id="secM">&nbsp;</div></div><span><button id="secB" onclick="secClick()">Set PIN</button> <button id="secOut" onclick="signOut()" style="visibility:hidden">Sign out</button></span></div>
@@ -259,7 +260,7 @@ let LDN=0;async function load(){const g=++LDN;try{const s=await api('/api/state'
 function render(){
  $('status').textContent=S.ap?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
  if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
-  $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
+  $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':u.why==='memory'?'Restarted by itself to free up memory.':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':l.stage==='install'?'The update to '+l.to+' could not be installed: '+l.reason:'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
  secRender();netRender();notifyRender();wxRender();prRender();mqRender();if(!$('p_dash').hidden)dash();
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
  $('tanks').innerHTML=(S.tanks.length>1?`<div class="card"><div class="row" style="min-height:34px"><div><b>Both tanks together</b><div class="mut">Oil, use and forecast for the tanks combined</div></div>${S.primary==='all'?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('all')">Show on dashboard</button>`}</div></div>`:'')+(S.tanks.length?S.tanks.map(t=>{/* the Tanks page shows ALL the oil in the tank (the dashboard shows the usable oil): usable + what's below the outlet */
@@ -395,14 +396,26 @@ async function updClick(){const b=$('updBtn'),box=$('updBox');
   else{box.textContent='Up to date (latest is '+UPD.latest+(UPD.age>=60?', checked '+Math.round(UPD.age/60)+' min ago: sign in to check again now':'')+').';b.textContent='Check for updates'}}
  catch(e){box.textContent='Could not check: '+e.message;b.textContent='Check for updates'}
  b.disabled=false}
+const within=(p,ms)=>Promise.race([p,new Promise((_,j)=>setTimeout(()=>j(new Error('no answer')),ms))]);const stPoll=()=>within(api('/api/state'),6000);  /* (a request to a restarting Pico can hang: give up on it, ask again) */
 async function installUpd(){const b=$('updBtn'),box=$('updBox'),v=UPD.latest;
  if(!confirm('Install version '+v+'?\n\nThe Pico downloads it from GitHub, checks every file, then restarts (about a minute). If the new version won\'t run, it goes back to this one by itself.'))return;
  b.disabled=true;b.textContent='Installing…';box.textContent='Downloading and checking files…';
- try{await api('/api/update/install',{version:v})}catch(e){box.textContent=e.message.replace(/^"|"$/g,'');b.disabled=false;b.textContent='Check for updates';b.className='';UPD=null;return}
- box.textContent='Installed. Restarting…';
- for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,3000));try{S=await api('/api/state');if(S.update&&S.update.version===v){box.textContent='Now running version '+v+'. Reloading the page…';setTimeout(()=>location.reload(),1500);break}}catch(e){}}
- if(!(S.update&&S.update.version===v))box.textContent='The Pico has not come back on version '+v+' yet. Refresh this page in a minute.';
+ let r;try{r=await within(api('/api/update/install',{version:v}),240000)}catch(e){if(e.message==='no answer')r=null;else{box.textContent=e.message.replace(/^"|"$/g,'');b.disabled=false;b.textContent='Check for updates';b.className='';UPD=null;return}}  /* (no answer at all: follow it as a restart) */
+ const tid=r&&r.restart?r.id:null;  /* (the Pico ran short of memory: it restarts, then installs first thing) */
+ box.textContent=tid?'The Pico is short of memory for the download, so it is restarting to make room and then installing. This takes a few minutes.':r===null?'No answer from the Pico yet: waiting to see whether it comes back on version '+v+'…':'Installed. Restarting…';
+ let done=false;for(let i=0;i<(tid?100:40)&&!done;i++){await new Promise(r=>setTimeout(r,3000));try{S=await stPoll();const u=S.update||{};
+  if(u.version===v){box.textContent='Now running version '+v+'. Reloading the page…';setTimeout(()=>location.reload(),1500);done=true}
+  else if(tid&&u.last&&u.last.id===tid&&!u.last.ok){box.textContent='Update failed, nothing was changed: '+u.last.reason;render();done=true}}catch(e){}}
+ if(!done)box.textContent='The Pico has not come back on version '+v+' yet. Refresh this page in a minute.';
  b.disabled=false;b.textContent='Check for updates';b.className='';UPD=null}
+async function restartPico(){const b=$('rstBtn'),m=$('rstM');
+ if(!confirm('Restart the Pico now?\n\nIt saves the latest readings first and is back in about 30 seconds.'))return;
+ b.disabled=true;let b0=null;try{b0=(await stPoll()).update.boot}catch(e){}  /* (which start it is now: "restarted" means a new one) */
+ if(b0==null){m.textContent='Cannot reach the Pico just now: try again in a minute.';b.disabled=false;return}try{await within(api('/api/restart',{}),15000)}catch(e){if(e.message!=='no answer'){m.textContent=e.message;b.disabled=false;return}}
+ m.textContent='Restarting…';await new Promise(r=>setTimeout(r,8000));let back=false;
+ for(let i=0;i<40&&!back;i++){try{const s2=await stPoll();if((s2.update||{}).boot!==b0){S=s2;back=true;m.textContent='Restarted and running again.';render();break}}catch(e){}await new Promise(r=>setTimeout(r,3000))}  /* (back = a new start, not the old one still answering) */
+ if(!back)m.textContent='It has not restarted yet: refresh this page in a minute.';
+ b.disabled=false}
 
 // ---------- backup ----------
 const bst=t=>{$('bkst').textContent=t};
