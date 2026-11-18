@@ -253,7 +253,7 @@ function readAt(t){const r=t.misread!=null||t.saved?t.good_at:t.listen&&t.listen
  return (late?'<b style="color:var(--bad)">no new reading since ':'read at ')+(late&&now-r>20*3600?d.toLocaleDateString([], {day:'numeric',month:'short'})+' ':'')+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(late?'</b>':'')}
 const okMac=m=>/^[0-9a-f:]{17}$/.test(m)?m:'';
 async function api(p,body){const r=await authFetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(r.status===401)throw new Error("The PIN is needed to change this.");if(!r.ok)throw new Error(await r.text());return r.json()}
-async function load(){try{S=await api('/api/state');render()}catch(e){$('status').textContent='Cannot reach the Pico: '+e.message}}
+let LDN=0;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render()}catch(e){if(g===LDN)$('status').textContent='Cannot reach the Pico: '+e.message}}  /* (an older answer arriving after a newer one is dropped) */
 function render(){
  $('status').textContent=S.ap?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
  if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
@@ -557,7 +557,8 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
  $('d_hist').style.visibility=t?'visible':'hidden';if(t)$('d_hist').href='/history?mac='+okMac(t.mac);
  if(!t){['d_l','d_r','d_w','d_c'].forEach(i=>$(i).textContent='–');$('d_c2').textContent=$('d_c3').textContent=' ';$('d_l2').textContent=S.tanks.length?'Set a tank to In use: Tanks → Edit.':'Add a tank under Config → Sensors nearby.';$('d_r2').textContent=$('d_r3').textContent=$('d_w2').textContent=' ';DKEY='';drawTank(null);drawRate(null);drawLvl(null);return}
  const ck=JSON.stringify(t.cfg),fresh=AN&&AN.mac===t.mac&&AN.ck===ck&&Date.now()/1000-AN.t<600,vk=t.mac+'|'+ck;ANK=vk;if(fresh)ANW=0;
- if(!fresh)await anLoad(t.mac,ck,()=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])
+ const cv0=AN&&AN.mac===t.mac&&AN.ck===ck?AN.cv:null;  /* the curve only changes with the settings: keep it */
+ if(!fresh)await anLoad(t.mac,ck,()=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),cv0||fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])
    .then(([buf,cv])=>({mac:t.mac,ck,t:Date.now()/1000,cv,base:parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)])})));
  if(ANK!==vk)return;const HF=anFailed(t.mac,ck);  /* (another tank or setting asked for meanwhile: its render draws) */
  const now=Date.now()/1000;let P=AN?AN.base.slice():[];
@@ -604,7 +605,8 @@ function todayCost(A,ok,mac){
  $('d_c3').textContent='7d '+(av(7)!=null?c(av(7)):'–')+' · '+(+A.recentDays.toFixed(1))+'d '+c(A.recent)}
 async function dashAll(ts){$('d_name').textContent=ts.length>2?'All tanks':'Both tanks';$('d_hist').style.visibility='visible';$('d_hist').href='/history?mac=all';
  const ck=JSON.stringify(ts.map(t=>[t.mac,t.cfg])),fresh=AN&&AN.mac==='all'&&AN.ck===ck&&Date.now()/1000-AN.t<600,vk='all|'+ck;ANK=vk;if(fresh)ANW=0;
- if(!fresh)await anLoad('all',ck,()=>Promise.all(ts.map(t=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])))
+ const cvs0=AN&&AN.mac==='all'&&AN.ck===ck?AN.cvs:null;
+ if(!fresh)await anLoad('all',ck,()=>Promise.all(ts.map((t,k)=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),cvs0&&cvs0[k]||fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])))
    .then(got=>({mac:'all',ck,t:Date.now()/1000,cvs:got.map(g=>g[1]),bases:got.map(([buf,cv])=>parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)]))})));
  if(ANK!==vk)return;const HF=anFailed('all',ck);
  const now=Date.now()/1000,series=AN?AN.bases.map((b,k)=>{const s=b.slice(),t=ts[k];if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383)s.push([now-t.age,toL(t.level,AN.cvs[k])]);return s}):[];
@@ -711,5 +713,5 @@ function drawLvl(o,msg){const svg=$('c_lvl');if(!o){noData(svg,msg||'No readings
 
 tab(location.hash.slice(1));
 let RSZ=null;addEventListener('resize',()=>{clearTimeout(RSZ);RSZ=setTimeout(()=>{if(!$('p_dash').hidden)dash()},200)});  /* (once the resizing stops: phones fire it as the address bar comes and goes) */
-load();setInterval(()=>{if(!dlg.open&&!wdlg.open)load()},10000);
+load();setInterval(()=>{if(!dlg.open&&!wdlg.open&&!document.hidden)load()},10000);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!dlg.open&&!wdlg.open)load()});  /* (no polling in a hidden tab: each one costs the Pico; up to date again the moment it's back) */
 </script></main></body></html>

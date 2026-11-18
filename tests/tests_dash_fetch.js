@@ -55,4 +55,17 @@ function page(o){const hits=[];const dom=new JSDOM(html,{url:'http://pico/#dash'
   state.tanks[0].age=60;
   ok(n===0,'3 refreshes 10 s apart with nothing new: the forecast isn\'t worked out again ('+n+')');
   ok(/day/.test(p.d.getElementById('d_r2').textContent)&&p.d.getElementById('d_w').textContent!=='–','...and the page still shows it: '+p.d.getElementById('d_w').textContent)}
+ /* 6. a hidden tab doesn't poll; after 10 minutes the history comes again but the curve is kept (settings unchanged) */
+ {const p=page({});await wait(400);const clock=[0];p.w.Date.now=()=>NOW*1000+clock[0];
+  Object.defineProperty(p.w.document,'hidden',{configurable:true,get:()=>true});const n0=p.hits.length;
+  p.w.document.dispatchEvent(new p.w.Event('visibilitychange'));await wait(50);
+  ok(p.hits.length===n0,'tab hidden: nothing fetched');
+  Object.defineProperty(p.w.document,'hidden',{configurable:true,get:()=>false});clock[0]+=601000;p.hits.length=0;
+  p.w.document.dispatchEvent(new p.w.Event('visibilitychange'));await wait(400);
+  ok(p.hits.some(u=>u.startsWith('/api/hist'))&&!p.hits.some(u=>u.startsWith('/api/curve')),'back after 10 min: refreshed at once, history again, curve kept ('+p.hits.join(' ')+')')}
+ /* 7. an older state answer arriving after a newer one doesn't put the old one back */
+ {const p=page({});await wait(400);let slow=true;const real=p.w.fetch;
+  p.w.fetch=async(u,o)=>{if(u.startsWith('/api/state')&&slow){slow=false;await wait(300);return {ok:true,status:200,json:async()=>Object.assign({},state,{tanks:[Object.assign({},state.tanks[0],{name:'OLD'})]})}}return real(u,o)};
+  p.w.load();await wait(20);state.tanks[0].name='NEW';p.w.load();await wait(600);state.tanks[0].name='Tank 1';
+  ok(p.d.getElementById('d_name').textContent==='NEW','the older answer is dropped: '+p.d.getElementById('d_name').textContent)}
  process.exit(fails?1:0)})();

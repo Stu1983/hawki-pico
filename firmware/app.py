@@ -1802,9 +1802,10 @@ async def send(w, code, body, ctype='application/json'):
     await asyncio.wait_for(w.drain(), 20)  # a client that stops reading can't hold a slot forever
 
 
-async def send_file(w, name, ctype):
+async def send_file(w, name, ctype, cache='no-store', etag=None):
     size = os.stat(name)[6]
-    w.write(('HTTP/1.0 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n' % (ctype, size)).encode())
+    w.write(('HTTP/1.0 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\nCache-Control: %s\r\n%sConnection: close\r\n\r\n'
+             % (ctype, size, cache, 'ETag: %s\r\n' % etag if etag else '')).encode())
     with open(name, 'rb') as f:
         while True:
             chunk = f.read(1024)
@@ -1812,6 +1813,18 @@ async def send_file(w, name, ctype):
                 break
             w.write(chunk)
             await asyncio.wait_for(w.drain(), 20)
+
+
+async def send_page(w, name, ctype, inm=''):
+    # the pages and common.js only change with an update: the browser keeps its copy and asks each time
+    # (no-cache + ETag), and gets a tiny 304 instead of up to 87 KB over weak Wi-Fi when nothing changed
+    st = os.stat(name)  # (version, size and modified time: a file put on by maintenance, or swapped in by an update
+    tag = '"%s-%d-%d"' % (VERSION, st[6], st[8])  # before the restart, gets a new tag; littlefs keeps mtimes, checked on the Pico)
+    if inm and (tag in inm or inm.strip() == '*'):  # (a W/ weak tag or a list of them match too)
+        w.write(('HTTP/1.0 304 Not Modified\r\nETag: %s\r\nCache-Control: no-cache\r\nConnection: close\r\n\r\n' % tag).encode())
+        await asyncio.wait_for(w.drain(), 20)
+        return
+    await send_file(w, name, ctype, 'no-cache', tag)
 
 
 conns = [0]
@@ -1852,7 +1865,7 @@ async def handle(r, w):
             peer = ''
         line = (await rl()).decode()
         method, path, _ = line.split(' ', 2)
-        clen, auth = 0, ''
+        clen, auth, inm = 0, '', ''
         for _ in range(40):
             h = await rl()
             if h in (b'\r\n', b'\n', b''):
@@ -1864,6 +1877,8 @@ async def handle(r, w):
                     raise ValueError('bad length')
             elif hl.startswith(b'x-auth:'):
                 auth = h.split(b':', 1)[1].strip().decode()
+            elif hl.startswith(b'if-none-match:'):
+                inm = h.split(b':', 1)[1].strip().decode()
         path, q = parse_q(path)
         if peer and not on_ap(peer) and not me:
             net_proof()
@@ -1923,7 +1938,7 @@ async def handle(r, w):
                 body += await asyncio.wait_for(r.readexactly(clen - len(body)), 20)
 
         if path in ('/', '/index.html'):
-            return await send_file(w, 'ui.html', 'text/html; charset=utf-8')
+            return await send_page(w, 'ui.html', 'text/html; charset=utf-8', inm)
         if path == '/api/state':
             return await send(w, 200, json.dumps(state()))
         if path == '/api/auth':
@@ -2153,9 +2168,9 @@ async def handle(r, w):
         if path == '/hawki':
             return await send(w, 200, hawki_json())
         if path == '/history':
-            return await send_file(w, 'hist.html', 'text/html; charset=utf-8')
+            return await send_page(w, 'hist.html', 'text/html; charset=utf-8', inm)
         if path == '/common.js':
-            return await send_file(w, 'common.js.html', 'text/javascript; charset=utf-8')
+            return await send_page(w, 'common.js.html', 'text/javascript; charset=utf-8', inm)
         if path in ('/api/hist', '/api/curve'):
             mac = q.get('mac', '').replace('%3A', ':').replace('%3a', ':').lower()
             if mac not in cfg['tanks']:
