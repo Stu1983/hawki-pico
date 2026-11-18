@@ -1,19 +1,19 @@
 {
- "version": "1.3.1",
- "ref": "v1.3.1",
- "notes": "Running short of memory after days up: an update install restarts the Pico and installs straight after, alerts and fetches that keep running out restart it (the alert is sent after), and a Restart button in Settings.",
+ "version": "1.3.2",
+ "ref": "v1.3.2",
+ "notes": "Usage by month runs July to June with the forecast carried past December and an average year to compare with; an optional typical year's oil in Config for where the forecast starts.",
  "files": {
   "app.py": [
-   "4e11822a7c2ea42f44202cac2f44c89a728b60568b8340d38c2c591e1d661382",
-   130899
+   "ee8d85f1872d907f7fbefa83affcd7fc5afb52803a2739fee66f30796ce340aa",
+   131907
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
    7065
   ],
   "common.js.html": [
-   "9b3ec748a1477d8dfba6c716be46e21951787d66380ef192c3d76ad71bf38caa",
-   20015
+   "0ce0ad14b44a10cc7a4bbf5bf71773b2214b07c33cb382c5b7565142f64589eb",
+   24191
   ],
   "drops.py": [
    "7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062",
@@ -24,8 +24,8 @@
    2120
   ],
   "hist.html": [
-   "536701cb3e471b6cd11068e6e1ec786ae7c836e8c93605ab23a905e1a4ea2356",
-   60317
+   "7a6a269a915bd49ba03f2c0d82782d8a871c6e6ff1f0afd2572c78f2b1342fe6",
+   62275
   ],
   "histstore.py": [
    "bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80",
@@ -56,8 +56,8 @@
    14435
   ],
   "ui.html": [
-   "a6d07e66bcaa1ada75bdb1dc74c06dac2e35943f7b2d30ffaba6374c5a583696",
-   96550
+   "2e18a54373a12a7877f8759dd159de9fa79b2cad38bb0ee1d0eff213d78541de",
+   97931
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -68,7 +68,7 @@
    13431
   ],
   "version.py": [
-   "d23db18405955734314716eb22abb4949166d8661c29baffd608e96346429f0f",
+   "9c54f73b575c1fa19ece002f50d26e180d426c126defc56a498d580e94c4998c",
    18
   ],
   "weather.py": [
@@ -77,7 +77,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"4e11822a7c2ea42f44202cac2f44c89a728b60568b8340d38c2c591e1d661382\", 130899], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9b3ec748a1477d8dfba6c716be46e21951787d66380ef192c3d76ad71bf38caa\", 20015], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"536701cb3e471b6cd11068e6e1ec786ae7c836e8c93605ab23a905e1a4ea2356\", 60317], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"a6d07e66bcaa1ada75bdb1dc74c06dac2e35943f7b2d30ffaba6374c5a583696\", 96550], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"d23db18405955734314716eb22abb4949166d8661c29baffd608e96346429f0f\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744]}, \"notes\": \"Running short of memory after days up: an update install restarts the Pico and installs straight after, alerts and fetches that keep running out restart it (the alert is sent after), and a Restart button in Settings.\", \"ref\": \"v1.3.1\", \"version\": \"1.3.1\"}",
-  "sig": "211ce4ef2b2799fb842e163d07fa3dee189fc20fab24d44c37059bd8ca90d72ab21f5a948569e33b79b942fab051ffee48e88f836a4af9552e99f531fc24623b71bb59ea0906ba4e8adc7ec11c6c358906b65d0616813cf9939b44a07051d61c91f332c5a61907e2bd105d1b3d40ffa90b1d5c59751a583e3bf13c0c2711c58b59dbc770954f866071725c7308b5deae418b4db93c84af9947b509025197d58a51c06956c93979805c8baf39f62caba889d7ac4865afa24c102edd7225be349d171a9a1cd105e69f53052e6dbd7cfe1158d7d24b7037a9252386405e17cc56d4e87dc8d883d51e72a245838f581bc8b571f15e61a57edd8a14d93d4c680b7f11"
+  "body": "{\"files\": {\"app.py\": [\"ee8d85f1872d907f7fbefa83affcd7fc5afb52803a2739fee66f30796ce340aa\", 131907], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"0ce0ad14b44a10cc7a4bbf5bf71773b2214b07c33cb382c5b7565142f64589eb\", 24191], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"7a6a269a915bd49ba03f2c0d82782d8a871c6e6ff1f0afd2572c78f2b1342fe6\", 62275], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"2e18a54373a12a7877f8759dd159de9fa79b2cad38bb0ee1d0eff213d78541de\", 97931], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"9c54f73b575c1fa19ece002f50d26e180d426c126defc56a498d580e94c4998c\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744]}, \"notes\": \"Usage by month runs July to June with the forecast carried past December and an average year to compare with; an optional typical year's oil in Config for where the forecast starts.\", \"ref\": \"v1.3.2\", \"version\": \"1.3.2\"}",
+  "sig": "29ee0fef3ef56bc484bbf055814520e66e8f946ee05efa8e5f2e1fe41471995c065fd9593d1ca7d1edc0b5e35887aa1326bea66c432ae89766c02786dc5ab44d9942fa2819c945634add32363ae885eab57f688a08b3874967c553a5ce4fd59040e128847b13fa14e6c458b28eb028ddf3133a74e691355346c89ff458f3812b31b79f1521530473047c44eb998d1b51b7a08401ea69638ff6f0ebe936af37e87cca3da670dd8c4819da56f5e7745490b6f6d877ecd8ed4c0685df98ab5c462d74cb0931d133b4af10bec98a4310ae40069b8708959b51e52f5c3dccad8c9383ee0a68bf4de54da8f3dea076c9b90364634e0a8e057a9ee2b632ed174d5a5f55"
  }
 }

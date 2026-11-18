@@ -65,7 +65,8 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 
 <h2>Usage by month</h2>
 <div class="card">
- <svg id="c2" viewBox="0 0 640 220" role="img" aria-label="Litres used each month, by year"></svg>
+ <div class="mut" id="c2s" style="min-height:36px;margin-bottom:6px">&nbsp;</div>
+ <svg id="c2" viewBox="0 0 640 220" role="img" aria-label="Litres used and forecast each month from July to June, against an average year"></svg>
  <div class="legend" id="lg2"></div>
  <details><summary>Show as a table</summary><div style="overflow-x:auto"><table id="tbl"></table></div></details>
 </div>
@@ -266,31 +267,44 @@ function drawLevel(){
 
 // ---------- chart 2: monthly usage, a bar per year ----------
 function drawMonths(){
- const svg=$('c2');svg.textContent='';$('lg2').textContent='';$('tbl').textContent='';
+ /* an oil year, July to June: the heating season in one piece and the forecast carried past December. Bars: this oil year (used, then forecast). The line across each month: an average year (A.avg) */
+ const svg=$('c2');svg.textContent='';$('lg2').textContent='';$('tbl').textContent='';$('c2s').textContent=' ';
  const Hh=220,W=fit(svg,Hh),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
- const ms=Object.values((A&&A.months)||{}),cy=new Date(now*1000).getFullYear(),cm=new Date(now*1000).getMonth();
- let years=[...new Set(ms.map(m=>m.y).concat([cy]))].sort().slice(-3);
- const fc={};if(A&&A.fmonths)for(const k in A.fmonths){const[y,m]=k.split('-').map(Number);if(y===cy&&m>=cm)fc[m]=A.fmonths[k]}
- const val=(y,m)=>ms.find(o=>o.y===y&&o.m===m);
- let max=10;for(const o of ms)max=Math.max(max,o.used);for(const m in fc)max=Math.max(max,fc[m]+(val(cy,+m)?.used||0));
+ const M=(A&&A.months)||{},d0=new Date(now*1000),cy=d0.getFullYear(),cm=d0.getMonth(),y0=cm>=6?cy:cy-1,oy=y=>y+'/'+String(y+1).slice(2);
+ const mo=Array.from({length:12},(_,i)=>{const y=i<6?y0:y0+1,m=(i+6)%12,k=y+'-'+m,o=M[k],fut=y>cy||(y===cy&&m>=cm),dim=new Date(y,m+1,0).getDate();
+  let avg=null;if(A&&A.avg){avg=0;for(let dd=1;dd<=dim;dd++)avg+=A.avg(new Date(y,m,dd,12).getTime()/1000)}
+  return{y,m,o,dim,cur:y===cy&&m===cm,used:o?Math.max(0,o.used):0,fc:fut&&A&&A.fmonths&&A.fmonths[k]>0?A.fmonths[k]:0,avg}});
+ let max=10;for(const q of mo)max=Math.max(max,q.used+q.fc,q.avg||0);
  const st=niceStep(max,4);max=Math.ceil(max/st)*st;const y=v=>mt+ph-Math.max(0,v)/max*ph;
  for(let v=0;v<=max;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},svg);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},svg,v.toLocaleString())}
  el('line',{x1:ml,x2:W-mr,y1:mt+ph,y2:mt+ph,class:'ax'},svg);
- const gw=pw/12,bw=Math.min(18,(gw-6)/years.length-2),col=i=>'var(--s'+(i+1)+')';
- const colour=yr=>col(yr%3);  // a year keeps its colour as new years arrive
- for(let m=0;m<12;m++){const gx=ml+m*gw+(gw-years.length*(bw+2))/2;el('text',{x:ml+m*gw+gw/2,y:Hh-6,'text-anchor':'middle'},svg,gw<30?MON[m][0]:MON[m]);
-  years.forEach((yr,i)=>{const o=val(yr,m),bx=gx+i*(bw+2),f=yr===cy?fc[m]:null;let top=mt+ph;
-   if(o&&o.used>0){const h=Math.max(1,ph-(y(o.used)-mt));top=y(o.used);
-    const r=el('path',{d:bar(bx,top,bw,h),fill:colour(yr),class:'bar',tabindex:0,opacity:o.days<new Date(yr,m+1,0).getDate()-1?.55:1},svg);
-    const pc=priceAt(new Date(yr,m+1,0).getTime()/1000),lines=[L0(Math.max(0,o.used)),MON[m]+' '+yr+(o.days<new Date(yr,m+1,0).getDate()?' · '+o.days+' days of data':''),(o.used/o.days).toFixed(1)+' L/day'+(pc!=null?' · ≈ '+gbp0(o.used*pc/100):'')];
-    r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip);r.addEventListener('focus',e=>{const b=r.getBoundingClientRect();showTip({clientX:b.right,clientY:b.top},lines)});r.addEventListener('blur',hideTip)}
-   if(f>0){const h=ph-(y(f)-mt);const r=el('rect',{x:bx+1,y:top-h+1,width:bw-2,height:Math.max(0,h-2),rx:3,fill:'none',stroke:colour(yr),'stroke-width':2,'stroke-dasharray':'4 3',class:'bar',tabindex:0},svg);
-    const pc=priceAt(now),lines=['≈ '+L0(f)+(pc!=null?' · ≈ '+gbp0(f*pc/100):''),'forecast for the rest of '+MON[m]+' '+yr];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}})}
- years.forEach(yr=>{const s=document.createElement('span'),i=document.createElement('i');i.style.background=colour(yr);s.appendChild(i);s.appendChild(document.createTextNode(String(yr)));$('lg2').appendChild(s)});
- {const s=document.createElement('span'),i=document.createElement('i');i.style.cssText='border:2px dashed var(--mut);background:none';s.appendChild(i);s.appendChild(document.createTextNode('forecast'));$('lg2').appendChild(s)}
- const hr=document.createElement('tr');['Month'].concat(years.map(String)).forEach(h=>{const th=document.createElement('th');th.textContent=h;hr.appendChild(th)});$('tbl').appendChild(hr);
- for(let m=0;m<12;m++){const tr=document.createElement('tr'),td=document.createElement('td');td.textContent=MON[m];tr.appendChild(td);
-  years.forEach(yr=>{const o=val(yr,m),c=document.createElement('td');const pc=o&&priceAt(new Date(yr,m+1,0).getTime()/1000);c.textContent=o?Math.round(Math.max(0,o.used))+' L'+(pc!=null?' · '+gbp0(Math.max(0,o.used)*pc/100):'')  /* (warm oil can read a few litres up: never '-5 L') */+(o.days<new Date(yr,m+1,0).getDate()?' ('+o.days+'d)':''):(yr===cy&&fc[m]>0?'≈'+Math.round(fc[m])+' L':'–');tr.appendChild(c)});$('tbl').appendChild(tr)}}
+ const gw=pw/12,bw=Math.min(30,gw*.56),C='var(--s2)',hasAvg=mo.some(q=>q.avg!=null);
+ mo.forEach((q,i)=>{const cx=ml+i*gw+gw/2,bx=cx-bw/2;let top=mt+ph;
+  el('text',{x:cx,y:Hh-6,'text-anchor':'middle','font-weight':q.cur?700:400},svg,gw<30?MON[q.m][0]:MON[q.m]);
+  if(q.used>0){const h=Math.max(1,ph-(y(q.used)-mt));top=y(q.used);el('path',{d:bar(bx,top,bw,h),fill:C,opacity:q.o.days<q.dim-1&&!q.cur?.55:1},svg)}
+  if(q.fc>0){const h=ph-(y(q.fc)-mt);el('rect',{x:bx+1,y:top-h+1,width:bw-2,height:Math.max(0,h-2),rx:3,fill:'none',stroke:C,'stroke-width':2,'stroke-dasharray':'4 3'},svg)}
+  if(q.avg!=null){const ay=y(q.avg),a={x1:cx-gw*.42,x2:cx+gw*.42,y1:ay,y2:ay};el('line',Object.assign({stroke:'var(--card)','stroke-width':6},a),svg);el('line',Object.assign({stroke:'var(--fg)','stroke-width':2},a),svg)}
+  const pc=priceAt(Math.min(now,new Date(q.y,q.m+1,0).getTime()/1000)),lines=[MON[q.m]+' '+q.y];
+  if(q.o)lines.push('Used '+L0(q.used)+(q.o.days<q.dim?' in '+q.o.days+' days':'')+(pc!=null?' · ≈ '+gbp0(q.used*pc/100):''));
+  if(q.fc>0)lines.push('Forecast ≈ '+L0(q.fc)+(q.o?' more':'')+(pc!=null?' · ≈ '+gbp0(q.fc*pc/100):''));
+  if(q.avg!=null)lines.push('Average year '+L0(q.avg));
+  if(lines.length>1){const r=el('rect',{x:ml+i*gw,y:mt,width:gw,height:ph,fill:'transparent',class:'bar',tabindex:0},svg);
+   r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip);r.addEventListener('focus',()=>{const b=r.getBoundingClientRect();showTip({clientX:b.right,clientY:b.top},lines)});r.addEventListener('blur',hideTip)}});
+ const avgName=!A?'':A.avgFrom==='own'?'Average of your earlier years':A.avgFrom==='given'?'Typical year you gave ('+Math.round(A.yearL).toLocaleString()+' L)':'Average year (usual weather)';
+ const lg=(css,cls,txt)=>{const s=document.createElement('span'),i=document.createElement('i');if(cls)i.className=cls;i.style.cssText=css;s.appendChild(i);s.appendChild(document.createTextNode(txt));$('lg2').appendChild(s)};
+ lg('background:'+C,'','Used '+oy(y0));lg('border:2px dashed '+C+';background:none','','Forecast');if(hasAvg)lg('border-color:var(--fg)','l',avgName);
+ const used=mo.reduce((a,q)=>a+q.used,0),fc=mo.reduce((a,q)=>a+q.fc,0),avg=mo.reduce((a,q)=>a+(q.avg||0),0);
+ /* readings that began part-way through the oil year: say so, and compare with the same months of an average year (never a part year against a whole one) */
+ const i0=mo.findIndex(q=>q.o),t1st=A&&A.days?Math.min(...Object.keys(A.days).map(Number)):Infinity,part=i0>0||i0===0&&t1st>new Date(y0,6,3).getTime()/1000,avgS=mo.reduce((a,q,i)=>a+(i>=i0?q.avg||0:0),0);
+ if(used>0||fc>0)$('c2s').textContent='Since '+(part?MON[mo[i0].m]:'July')+': '+L0(used)+' used'+(fc>0?' · about '+L0(fc)+' more by June':'')+(hasAvg?part?' · the same months of an average year '+L0(avgS):' · average year '+L0(avg):'');
+ /* the table: earlier oil years too (up to two), then this one and the average */
+ const prev=[y0-2,y0-1].filter(yy=>mo.some((q,i)=>M[(i<6?yy:yy+1)+'-'+q.m]));
+ const hr=document.createElement('tr');['Month'].concat(prev.map(oy),[oy(y0)],hasAvg?['Average year']:[]).forEach(h=>{const th=document.createElement('th');th.textContent=h;hr.appendChild(th)});$('tbl').appendChild(hr);
+ const cell=(tr,t)=>{const c=document.createElement('td');c.textContent=t;tr.appendChild(c)},usedTxt=(o,yy,m)=>{const pc=priceAt(new Date(yy,m+1,0).getTime()/1000),u=Math.max(0,o.used);  /* (warm oil can read a few litres up: never '-5 L') */
+  return Math.round(u)+' L'+(pc!=null?' · '+gbp0(u*pc/100):'')+(o.days<new Date(yy,m+1,0).getDate()?' ('+o.days+'d)':'')};
+ mo.forEach((q,i)=>{const tr=document.createElement('tr');cell(tr,MON[q.m]);
+  prev.forEach(yy=>{const y2=i<6?yy:yy+1,o=M[y2+'-'+q.m];cell(tr,o?usedTxt(o,y2,q.m):'–')});
+  cell(tr,(q.o?usedTxt(q.o,q.y,q.m):'')+(q.fc>0?(q.o?' + ':'')+'≈'+Math.round(q.fc)+' L':'')||'–');if(hasAvg)cell(tr,q.avg!=null?Math.round(q.avg)+' L':'–');$('tbl').appendChild(tr)})}
 // Average L/hour for each hour of the day over the last 30 days, from consecutive hourly readings
 // (deliveries skipped). Readings move in ~5 L steps and with temperature, so single hours mean little;
 // a month of them averages out to a usable pattern.
@@ -500,8 +514,9 @@ async function load(){const g=++LG;FITGEN++;
  else{t1=s0.tanks.find(t=>t.mac===mac);const[buf,cv]=await Promise.all([fetch('/api/hist?mac='+mac).then(r=>r.arrayBuffer()),fetch('/api/curve?mac='+mac).then(r=>r.json())]);if(g!==LG)return;
   cv1=cv;p1=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);const l=live(t1,cv);if(l)if(!p1.length||l[0]>p1[p1.length-1][0])p1.push(l);  /* (the live reading only if it is newer than the last saved one: out of order it read as a delivery) */if(t1.cfg.isolated)p1=holdIsolated(p1,t1.cfg.isolated)}  /* valve closed: its readings never count as use */
  const d0=(await dlP)||{};if(g!==LG)return;
- const WV=await wxLoad(s0);if(g!==LG)return;const a=analyse(p1,{now:nw,reserve:t1.cfg.reserve_l??200,heat:WV&&WV.heat,wxName:WV&&WV.name});
+ const WV=await wxLoad(s0);if(g!==LG)return;const a=analyse(p1,{now:nw,reserve:t1.cfg.reserve_l??200,heat:WV&&WV.heat,wxName:WV&&WV.name,yearL:yearFor(s0,t1.all?t1.tanks.map(t=>t.mac):[mac]),yearDone:s0.year_done});
  if(!(a.recent!=null&&a.span>=2))a.fc=null;  /* no forecast line until there's a forecast */
+ if(a.fc&&a.yearL&&a.ownW>=1&&!a.useOwn&&!s0.year_done)fetch('/api/forecast',{method:'POST',body:JSON.stringify(fcBody(a,t1.all?'all':mac,t1.cfg.reserve_l??200))}).catch(()=>{});  /* the typical-year figure has done its job: the Pico remembers (the dashboard says so too) */
  S=s0;now=nw;T=t1;CV=cv1;P=p1;D=d0;A=a;if(cvs){CVS=cvs;TF=tf}FITGEN++;  /* the page's data, all at once (and any capacity fit still running for the last one is dropped) */
  $('ttl').textContent=T.name;
  $('sub').textContent=(P.length?'Readings since '+fmtDY(P[0][0])+' · '+(A.span<1?Math.round(A.span*24)+' hours':Math.round(A.span)+' days'):'No readings saved yet')+(late.length?' · readings for '+late.join(', ')+' (held level before then)':'');

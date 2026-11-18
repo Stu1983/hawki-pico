@@ -55,6 +55,17 @@ for body in (b'[]', b'not json', b'null'):
 body = b'{"on": true}'
 r = req(b'POST /api/maint HTTP/1.0\r\nX-Auth: good\r\nContent-Length: %d\r\n\r\n' % len(body) + body)
 ok(r.startswith('HTTP/1.0 200') and saved and saved[-1].get('maint') is True, 'a good body still works (%s)' % r)
+# a typical year's oil (where the forecast starts): saved as a whole number, cleared by null, checked
+g['num'] = lambda v, lo, hi: (float(v) if lo <= float(v) <= hi else (_ for _ in ()).throw(ValueError('out of range')))
+for body, want, code in ((b'{"litres": 2100}', 2100, '200'), (b'{"litres": "1850.6"}', 1850, '200'), (b'{"litres": 5}', 1850, '400'),
+                         (b'{"litres": "lots"}', 1850, '400'), (b'{"litres": null}', None, '200')):
+    r = req(b'POST /api/year HTTP/1.0\r\nX-Auth: good\r\nContent-Length: %d\r\n\r\n' % len(body) + body)
+    ok(r.startswith('HTTP/1.0 ' + code) and g['cfg'].get('year_l') == want, 'POST /api/year %r: %s, kept %r' % (body, r, g['cfg'].get('year_l')))
+    ok(('year_done' in g['cfg']) == (code == '400'), '...%s' % ('refused: the figure stays done' if code == '400' else 'accepted: starts afresh'))
+    g['cfg']['year_done'] = 1
+r = req(b'POST /api/year HTTP/1.0\r\nX-Auth: bad\r\nContent-Length: 16\r\n\r\n{"litres": 2100}')
+ok(r.startswith('HTTP/1.0 401') and 'year_l' not in g['cfg'], 'the typical year needs the PIN (%s)' % r)
+g['cfg'].pop('year_done', None)
 # deleting one of two linked tanks: the other is no longer linked, and the deleted one's alert state goes
 A, B = 'c0:04:56:c4:0c:71', 'c6:76:1b:dc:39:1c'
 g['cfg'].update(tanks={A: {'group': 'g1'}, B: {'group': 'g1'}}, alerted={A: {'reorder': 1}, B: {}})
