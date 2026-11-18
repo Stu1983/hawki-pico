@@ -1,11 +1,11 @@
 {
- "version": "1.3.4",
- "ref": "v1.3.4",
- "notes": "With a typical year given: hot water in it is your own summer figure once measured (more in winter), only the heating is scaled, and the comparison runs over heating-season days only.",
+ "version": "1.3.5",
+ "ref": "v1.3.5",
+ "notes": "Setup made easy: the setup Wi-Fi opens its page by itself (captive portal); a step-by-step setup screen (PIN, then Wi-Fi from a list, tried while you wait so a wrong password is said at once, then where to find the monitor); joins the nearest access point of the home Wi-Fi and stays on it (mesh networks); a new monitor opens on Tanks with the sensors nearby.",
  "files": {
   "app.py": [
-   "e1bfae12a88440604b656e0236a716352248df315584913a7c19f48bfa877f04",
-   131610
+   "97af729b8362c075985f5b392eebf96acbe8da9981b1ed8aa8835db7be94d781",
+   146472
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -56,8 +56,8 @@
    14435
   ],
   "ui.html": [
-   "f959166c4a781017019e6493ece4c36dc5602d7857d97bf03b1c272eef28802c",
-   97916
+   "0ac8b8132ae9ccb72925ac28e2127cf51d10129450a72994dd0848eef56e38ad",
+   113738
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -68,7 +68,7 @@
    13431
   ],
   "version.py": [
-   "0869730c7c645d9f151e07d54b4de0bcd397a5f57c02d97a56017c0c56682d83",
+   "d374a4db14eb9b893f09a739c7d260384db5ce14450cfba7bdaa762e7cd937d8",
    18
   ],
   "weather.py": [
@@ -77,7 +77,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"e1bfae12a88440604b656e0236a716352248df315584913a7c19f48bfa877f04\", 131610], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"4d47b50dd8c7dfa7312eb83aef12a6b9eff28d521462eaee2a80e9ecb712b3ec\", 26034], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"5f31ed909a9a2e11cd6dfa579087dbf58991dcade922221a03ecd532717e285a\", 62168], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"f959166c4a781017019e6493ece4c36dc5602d7857d97bf03b1c272eef28802c\", 97916], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"0869730c7c645d9f151e07d54b4de0bcd397a5f57c02d97a56017c0c56682d83\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744]}, \"notes\": \"With a typical year given: hot water in it is your own summer figure once measured (more in winter), only the heating is scaled, and the comparison runs over heating-season days only.\", \"ref\": \"v1.3.4\", \"version\": \"1.3.4\"}",
-  "sig": "6ed875e7d98cb7361293464d0eb262e037e40ad2cd8bcd28a8686deb4437b5b8aeb47403c22940d316e164a0d639d80723169eb3d3fbf91b84e80f0635b36c05026798f689b71bbc9987f985af11b983e990b0a0c681d51eff8fa2c764cd4959c9315f0f8daacee722dd6f64afbe19aa9c6ca9ec614983b6771e7a20eab487623456a13b31e936d782d63c98768e87363aba899c26a26c23a83a23355fdc32653f4f047c986b4569fc93d093502c963239fddab4a52dfe1079819728e6aeebd3ce014fd29ddcc58b788f5d559fe82eb06e78b14f82ec2a4c78b36b4ef5ecf347527c92b858169546e705fde72cc37f7c9624a9975ff23d4a511ccf9180c87b81"
+  "body": "{\"files\": {\"app.py\": [\"97af729b8362c075985f5b392eebf96acbe8da9981b1ed8aa8835db7be94d781\", 146472], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"4d47b50dd8c7dfa7312eb83aef12a6b9eff28d521462eaee2a80e9ecb712b3ec\", 26034], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"5f31ed909a9a2e11cd6dfa579087dbf58991dcade922221a03ecd532717e285a\", 62168], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"0ac8b8132ae9ccb72925ac28e2127cf51d10129450a72994dd0848eef56e38ad\", 113738], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"d374a4db14eb9b893f09a739c7d260384db5ce14450cfba7bdaa762e7cd937d8\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744]}, \"notes\": \"Setup made easy: the setup Wi-Fi opens its page by itself (captive portal); a step-by-step setup screen (PIN, then Wi-Fi from a list, tried while you wait so a wrong password is said at once, then where to find the monitor); joins the nearest access point of the home Wi-Fi and stays on it (mesh networks); a new monitor opens on Tanks with the sensors nearby.\", \"ref\": \"v1.3.5\", \"version\": \"1.3.5\"}",
+  "sig": "5c7b862d4b5280e4db7f196f8697824f6be7da456cb1f8870353147a455eb8db35f7a3c82a89805e3174a4334a8d43ca81fc0093a54733c944cdc98cab0d15f3d73c2cc78b769bdb9888ca1ccf0dbb49874c2f40ea621d3bd8bc8bdce359f02cb32f94af72e7faa1ae2a0d05657a117aa423e7dc151a4fa00412ced8cffedad03cb01c21204ff7b60c56cb8528dce4dd7c8055e559cbaa63ffaa4d78d2bd172fc1a695ff614b4ad01c45ff628999d2d8ea34f4a4462af214b77844f8677d61cc028ddd0d67165b2450eab8e159b85a3a15063bd9f1baf8b205c4392e8e2cc266bbd544c6a2c04967c79af4733fe93f76eaa9f3919787e7bc55798c760341d555"
  }
 }

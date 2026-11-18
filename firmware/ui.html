@@ -40,10 +40,45 @@ dialog::backdrop{background:#0008}
 .lg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:6px}.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .sw.ln{height:2px;width:14px;vertical-align:3px}.sw.dot{background:repeating-linear-gradient(90deg,var(--bad) 0 2px,transparent 2px 5px)}.sw.gpk{background:repeating-linear-gradient(90deg,var(--oil) 0 2px,transparent 2px 6px)}.sw.dash{background:repeating-linear-gradient(90deg,var(--mut) 0 5px,transparent 5px 9px)}
 #tip{position:fixed;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:13px;box-shadow:0 4px 14px #0003;z-index:5;white-space:nowrap}
+.su [hidden],.tabs[hidden]{display:none!important}.su{max-width:520px;margin:0 auto}.su .card{padding:18px}.su h2{margin:0 0 6px;font-size:18px;color:var(--fg);text-transform:none;letter-spacing:0}
+.su .lead{color:var(--mut);font-size:14px;margin:0 0 14px}.su .msg{min-height:40px;font-size:14px;margin-top:10px}.su .msg.bad{color:var(--bad)}.su .acts{justify-content:stretch}.su .acts button{flex:1;padding:11px}
+.sstep{display:flex;gap:6px;margin:6px 0 14px}.sstep i{flex:1;height:4px;border-radius:2px;background:var(--line)}.sstep i.on{background:var(--acc)}
+.nets{border:1px solid var(--line);border-radius:8px;height:232px;overflow-y:auto;margin-top:4px}.nets label{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid var(--line);color:var(--fg);font-size:15px;cursor:pointer}
+.nets label:last-child{border-bottom:0}.nets input{width:auto;margin:0;accent-color:var(--acc)}.nets .sig{margin-left:auto;color:var(--mut);font-size:13px;white-space:nowrap}.nets .empty{padding:12px}
+.chk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px}.chk input{width:auto;margin:0}
+.addr{font-size:18px;font-weight:700;word-break:break-all;margin:2px 0 0}.su ol{padding-left:20px;margin:10px 0 0}.su li{margin:0 0 8px}.ok{font-size:40px;line-height:1;color:var(--acc)}
 .pill{font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:2px 8px;margin-right:8px}
 </style></head><body><main>
 <h1>Oil Tanks</h1><div class="sub" id="status">Loading…</div>
 <nav class="tabs" role="tablist"><button role="tab" data-p="dash">Dashboard</button><button role="tab" data-p="tanks">Tanks</button><button role="tab" data-p="cfg">Config</button></nav>
+
+<section id="p_setup" class="su" hidden>
+<div class="sstep" aria-hidden="true"><i id="ss1"></i><i id="ss2"></i><i id="ss3"></i></div>
+<div class="card" id="s_pin" hidden><form onsubmit="return suPin(event)">
+ <h2 id="s_pinT">Step 1: choose a PIN</h2><p class="lead" id="s_pinM">The PIN protects this oil monitor: you'll need it to change its settings. Use 4 to 12 characters.</p>
+ <label>PIN<input id="s_p1" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12"></label>
+ <label id="s_p2l" style="margin-top:8px">Type it again<input id="s_p2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12"></label>
+ <div class="msg bad" id="s_pinE"></div><div class="acts"><button class="pri">Next</button></div></form></div>
+<div class="card" id="s_wifi" hidden><form onsubmit="return suJoin(event)">
+ <h2>Step 2: connect to your Wi-Fi</h2><p class="lead">Pick your home Wi-Fi. If it has two names (one often ends in 5G), choose the other one: the monitor uses 2.4 GHz.</p>
+ <div class="row"><span class="mut">Networks the monitor can see</span><button type="button" id="s_scan" onclick="suScan()">Scan again</button></div>
+ <div class="nets" id="s_nets" role="radiogroup" aria-label="Wi-Fi networks"><div class="empty">Looking for networks…</div></div>
+ <label style="margin-top:10px">Network name<input id="s_own" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="32" oninput="suOwn()" placeholder="Tap one above, or type its name"></label>
+ <label style="margin-top:10px">Wi-Fi password<input id="s_pw" type="password" autocomplete="off" autocapitalize="none" maxlength="63"></label>
+ <label class="chk"><input type="checkbox" onchange="$('s_pw').type=this.checked?'text':'password'">Show password</label>
+ <div class="msg bad" id="s_wifiE"></div><div class="acts"><button class="pri" id="s_go">Connect</button></div></form></div>
+<div class="card" id="s_try" hidden>
+ <h2 id="s_tryT">Connecting…</h2><p class="lead">This usually takes a few seconds, at most a minute. Your phone may drop off the setup Wi-Fi for a moment: it comes back by itself, and this page carries on.</p>
+ <div class="msg" id="s_tryM"></div></div>
+<div class="card" id="s_done" hidden>
+ <div class="ok" aria-hidden="true">&#10003;</div><h2 id="s_doneT" style="margin-top:8px">Connected</h2>
+ <p class="lead" style="margin:0"><b>Take a screenshot of this screen</b> before you tap Finish: this window may close when the setup Wi-Fi switches off. On your home Wi-Fi, the monitor is at:</p><div class="addr"><a id="s_addr" class="lnk" style="font-size:inherit;margin:0" target="_blank" rel="noopener"></a></div><div class="mut" id="s_addr2"></div>
+ <div class="mut" id="s_far" hidden style="margin-top:8px"></div>
+ <ol><li id="s_li1">Tap <b>Finish</b>. The monitor restarts, its setup Wi-Fi switches off, and your phone goes back to <span id="s_home">your Wi-Fi</span>.</li>
+ <li>Then open the address above in your browser (Safari, Chrome…), and bookmark it.</li><li>Enter your PIN there, then add your tanks under <b>Config</b>.</li></ol>
+ <div class="msg bad" id="s_finE"></div><div class="acts" style="margin-top:4px"><button class="pri" id="s_fin" onclick="suFinish()">Finish</button></div></div>
+<div class="card" id="s_bye" hidden><h2>All done</h2><p class="lead" style="margin:0">The monitor is restarting on your Wi-Fi, and its setup Wi-Fi switches off. Give it half a minute; once your phone is back on your home Wi-Fi, tap <a id="s_addr3" class="lnk" style="font-size:inherit;margin:0" target="_blank" rel="noopener"></a> to open the monitor.</p><div class="msg" id="s_byeM"></div></div>
+</section>
 
 <section id="p_dash">
 <div class="row dh"><b id="d_name">&nbsp;</b><a class="lnk" id="d_hist" href="/history">History &amp; forecast</a></div>
@@ -63,7 +98,9 @@ dialog::backdrop{background:#0008}
 
 <section id="p_tanks" hidden>
 <div id="tanks"><div class="empty">Loading…</div></div>
-<div class="mut" style="margin-top:4px">New sensors show under <a class="lnk" href="#cfg" style="margin:0">Config → Sensors nearby</a>.</div>
+<div id="tk0" hidden><div class="card"><b>No tanks yet</b><div class="mut" style="margin-top:4px">Add yours from the HAWKi sensors the monitor can hear. Yours is usually the strongest signal (the number nearest zero); neighbours' may show too. A new one can take a minute to appear.</div></div>
+<h2>Sensors nearby</h2><div id="found2"><div class="empty">Loading…</div></div></div>
+<div class="mut" id="tk1" style="margin-top:4px">New sensors show under <a class="lnk" href="#cfg" style="margin:0">Config → Sensors nearby</a>.</div>
 </section>
 
 <section id="p_cfg" hidden>
@@ -261,9 +298,11 @@ function readAt(t){const r=t.misread!=null||t.saved?t.good_at:t.listen&&t.listen
  return (late?'<b style="color:var(--bad)">no new reading since ':'read at ')+(late&&now-r>20*3600?d.toLocaleDateString([], {day:'numeric',month:'short'})+' ':'')+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(late?'</b>':'')}
 const okMac=m=>/^[0-9a-f:]{17}$/.test(m)?m:'';
 async function api(p,body){const r=await authFetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(r.status===401)throw new Error("The PIN is needed to change this.");if(!r.ok)throw new Error((await r.text()).replace(/^"|"$/g,''));return r.json()}  /* (the Pico's message, without its JSON quotes) */
-let LDN=0;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render()}catch(e){if(g===LDN)$('status').textContent='Cannot reach the Pico: '+e.message}}  /* (an older answer arriving after a newer one is dropped) */
+let LDN=0,FIRST=true;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render();
+ if(FIRST&&!SU){FIRST=false;if(!location.hash&&!S.tanks.length){history.replaceState(null,'','#tanks');tab('tanks')}}}catch(e){if(g===LDN){if(SU==='try'){$('s_tryM').textContent='Waiting for the monitor to answer (your phone may be rejoining the setup Wi-Fi)…';suFar()}else if(!FAR)$('status').textContent='Cannot reach the Pico: '+e.message}}}  /* (an older answer arriving after a newer one is dropped) */
 function render(){
- $('status').textContent=S.ap?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
+ if(suCheck())return;
+ $('status').textContent=S.ap&&!S.ssid?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
  if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
   $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':u.why==='memory'?'Restarted by itself to free up memory.':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':l.stage==='install'?'The update to '+l.to+' could not be installed: '+l.reason:'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
  secRender();netRender();notifyRender();wxRender();yrRender();prRender();mqRender();if(!$('p_dash').hidden)dash();
@@ -276,9 +315,9 @@ function render(){
   <div class="mut" style="min-height:36px">${big==null?'&nbsp;':tot==null?'Usable oil only (set the whole-tank capacity under Edit to see all of it)':'All the oil: '+Math.round(t.litres)+' L usable + '+Math.round(tot-t.litres)+' L below the outlet'}${t.total_standard!=null?' · Magnus-style maths (which also counts all the oil): '+Math.round(t.total_standard)+' L':''}</div>
   <div class="row mut" style="flex-wrap:wrap;gap:2px 12px"><span style="white-space:nowrap">${t.level==null||t.level===16383?'no reading yet':t.level===16382?'nearly empty':t.level+' mm to oil'} · battery ${t.battery??'–'}%</span>${t.misread!=null?'<span style="white-space:nowrap;color:var(--warn)">latest reading '+(t.misread<0||t.misread===16383?'had no level':'was a misread ('+t.misread+' mm)')+(t.level!=null&&t.level!==16383?': showing the last good reading':'')+'</span>':''}<span style="white-space:nowrap">${readAt(t)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div>
   <details class="rd" data-mac="${okMac(t.mac)}"${RDO.has(t.mac)?' open':''} ontoggle="rdToggle(this)"><summary>Today's readings</summary><div class="rdb">${RD[t.mac]?RD[t.mac].html:'Loading…'}</div></details></div>`}).join('')
-  :'<div class="empty">No tanks yet: add one from the sensors below.</div>');
+  :'');$('tk0').hidden=!!S.tanks.length;$('tk1').hidden=!S.tanks.length;
  RDO.forEach(m=>rdLoad(m));  /* open ones: refresh when a new reading has come */
- $('found').innerHTML=S.found.length?S.found.slice().sort((a,b)=>a.mac<b.mac?-1:1).map(f=>`<div class="card row"><div><b>${esc(f.name||f.mac)}</b><div class="mut">${f.rssi} dBm · ${ago(f.age)}${f.level!=null?' · '+f.level+' mm':''}</div></div><button class="pri" onclick="add('${okMac(f.mac)}')">Add</button></div>`).join('')
+ $('found').innerHTML=$('found2').innerHTML=S.found.length?S.found.slice().sort((a,b)=>a.mac<b.mac?-1:1).map(f=>`<div class="card row"><div><b>${esc(f.name||f.mac)}</b><div class="mut">${f.rssi} dBm · ${ago(f.age)}${f.level!=null?' · '+f.level+' mm':''}</div></div><button class="pri" onclick="add('${okMac(f.mac)}')">Add</button></div>`).join('')
   :'<div class="empty">None heard right now. HAWKi monitors broadcast every few seconds; give it a minute.</div>';
 }
 const MF={m_wb:'win_bottom_cm',m_wt:'win_top_cm',m_wo:'win_outer_w_cm',m_wi:'win_inner_w_cm',m_hi:'win_inner_h_cm',m_rh:'rib_h_cm',m_rd:'rib_depth_cm'};
@@ -377,7 +416,7 @@ async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').
  try{await api('/api/tank',b);dlg.close();load()}catch(x){alert(x.message)}return false}
 async function delTank(){if(!confirm('Remove this tank? The monitor will show under Sensors nearby again.'))return;try{await api('/api/tank/delete',{mac:cur});dlg.close();load()}catch(x){alert(x.message)}}
 async function openWifi(){$('w_pw').value='';wdlg.showModal();try{const l=await api('/api/wifi/scan');$('w_ssid').innerHTML=l.map(n=>`<option value="${esc(n.ssid)}">${esc(n.ssid)} (${n.rssi} dBm)</option>`).join('')||'<option value="">No networks found</option>'}catch(x){$('w_ssid').innerHTML='<option value="">'+(/PIN/.test(x.message)?'Sign in to scan for networks':'Scan failed')+'</option>'}}
-async function saveWifi(e){e.preventDefault();try{await api('/api/wifi',{ssid:$('w_ssid').value,pw:$('w_pw').value});wdlg.close();$('status').textContent='Restarting to join '+$('w_ssid').value+'…'}catch(x){alert(x.message)}return false}
+async function saveWifi(e){e.preventDefault();try{await api('/api/wifi',{ssid:$('w_ssid').value,pw:$('w_pw').value});wdlg.close();$('status').textContent='Restarting to join '+$('w_ssid').value+'. Then, on that Wi-Fi, open http://'+(S.hostname||'hawki-pico')+'.local/ or find '+(S.hostname||'hawki-pico')+' in your router\'s list of devices.'}catch(x){alert(x.message)}return false}
 $('dlg').addEventListener('input',()=>{draw();uEst()});$('m_nr').addEventListener('change',()=>ribInputs());
 $('dlg').addEventListener('focusin',e=>{focusF=e.target.dataset&&e.target.dataset.f||null;draw()});
 $('dlg').addEventListener('focusout',()=>{focusF=null;draw()});
@@ -459,11 +498,11 @@ async function importBackup(f){$('impf').value='';if(!f)return;let o;
   bst('Imported '+macs.length+' tank(s), '+nD+' deliveries and '+nR+' readings.');anReset();load()}catch(e){bst('Import failed: '+e.message)}}
 
 // ---------- tabs ----------
-function tab(p){if(!['dash','tanks','cfg'].includes(p))p='dash';
+function tab(p){if(SU){for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=true;return}if(!['dash','tanks','cfg'].includes(p))p='dash';
  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.p===p));
  for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash();if(p==='cfg')seek()}
 // Sensors nearby: the Pico normally only listens when a reading is due; ask it to look around while this is open
-function seek(){if(!$('p_cfg').hidden&&!document.hidden)fetch('/api/discover').catch(()=>{})}
+function seek(){if((!$('p_cfg').hidden||!$('p_tanks').hidden&&S&&S.tanks&&!S.tanks.length)&&!document.hidden)fetch('/api/discover').catch(()=>{})}
 setInterval(seek,60000);
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{history.replaceState(null,'','#'+b.dataset.p);tab(b.dataset.p)});
 addEventListener('hashchange',()=>tab(location.hash.slice(1)));
@@ -733,6 +772,95 @@ function drawLvl(o,msg){const svg=$('c_lvl');if(!o){noData(svg,msg||'No readings
  for(const[t,v]of fc.slice(1)){xs.push([f.X(t),[fmtD(t)+' (forecast)','about '+L0(v)+' left'],v])}
  hover(svg,xs,(g,b)=>el('circle',{class:'dot',cx:b[0],cy:f.Y(b[2]),r:4,fill:'var(--oil)'},g))}
 
+/* ---------- setup screen: on the setup Wi-Fi with no home Wi-Fi yet, nothing else is shown until it's done ---------- */
+let SU=null,SUN=[],SUPOLL=null,SUSENT=null,SUK='',SUT=0,FAR=false,FARON=false;
+const suHome=()=>'http://'+(S.hostname||'hawki-pico')+'.local/';
+function suWant(){return !!(S.via_ap&&(!S.ssid||S.join&&(S.join.state==='ok'||S.join.state==='trying')))}
+const suOk=()=>!!(S.join&&S.join.state==='ok'&&S.ssid);
+function suCheck(){if(SU==='bye')return true;
+ if(SU&&!suWant()&&SU!=='done'){suExit();return false}  /* (the home Wi-Fi came back by itself, or not on the setup Wi-Fi now: the normal page) */
+ if(!SU&&!suWant())return false;
+ if(!SU){SU='start';$('p_setup').hidden=false;document.querySelector('h1').textContent='Set up your oil monitor';document.querySelector('.tabs').hidden=true;tab('');suStart()}
+ $('status').textContent='Setting up, on '+(S.ap||'the setup Wi-Fi');suJoinState();return true}
+function suExit(){SU=null;FIRST=true;clearInterval(SUPOLL);$('p_setup').hidden=true;document.querySelector('.tabs').hidden=false;document.querySelector('h1').textContent='Oil Tanks';tab(location.hash.slice(1))}
+async function suStart(){let ok=false;
+ if(S.pin_set&&SESS){try{ok=(await (await fetch('/api/auth',{headers:{'X-Auth':SESS}})).json()).ok}catch(e){}}
+ if(S.join&&S.join.state==='trying'){suShow('try');return}
+ if(suOk()){suDone(S.join);suShow('done');return}
+ if(ok){suShow('wifi');return}
+ const set=!S.pin_set;$('s_pinT').textContent=set?'Step 1: choose a PIN':'Step 1: enter the PIN';
+ $('s_pinM').textContent=set?'The PIN protects this oil monitor: you\'ll need it to change its settings. Use 4 to 12 characters.':'This monitor already has a PIN. Enter it to carry on. (Forgotten? Hold its BOOTSEL button for 5 seconds.)';
+ $('s_p2l').hidden=!set;$('s_p1').autocomplete=set?'new-password':'current-password';suShow('pin')}
+function suShow(k){SU=k;for(const x of['pin','wifi','try','done','bye'])$('s_'+x).hidden=x!==k;
+ const n={pin:1,wifi:2,try:2,done:3,bye:3}[k];['ss1','ss2','ss3'].forEach((id,i)=>$(id).classList.toggle('on',i<n));
+ if(k==='pin')setTimeout(()=>$('s_p1').focus(),50);if(k==='wifi'&&!SUN.length)suScan();
+ clearInterval(SUPOLL);if(k==='try'){SUT=Date.now();SUPOLL=setInterval(suTick,2000)}}
+function suTick(){if(SU!=='try')return;if(Date.now()-SUT>75000){$('s_wifiE').textContent='The monitor stopped answering. Check your phone is on '+(S.ap||'the setup Wi-Fi')+', then tap Connect again.';suShow('wifi');return}load()}
+async function suPin(e){e.preventDefault();const p=$('s_p1').value,set=!S.pin_set;$('s_pinE').textContent='';
+ if(set&&p!==$('s_p2').value){$('s_pinE').textContent='The two PINs don\'t match.';return false}
+ if(p.length<4){$('s_pinE').textContent='Use at least 4 characters.';return false}
+ try{const r=await fetch(set?'/api/pin/set':'/api/pin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:p})}),j=await r.json().catch(()=>null);
+  if(!r.ok||!j||!j.session){$('s_pinE').textContent=typeof j==='string'?j.charAt(0).toUpperCase()+j.slice(1)+'.':set?'Could not save the PIN.':'That PIN is not right.';return false}
+  saveSess(j.session);S.pin_set=true;suShow('wifi')}catch(x){$('s_pinE').textContent='Cannot reach the monitor: check your phone is still on '+(S.ap||'the setup Wi-Fi')+'.'}
+ return false}
+const sigWord=r=>r>=-67?'Strong':r>=-75?'Good':r>=-82?'Weak':'Very weak';
+async function suScan(){const b=$('s_scan');b.disabled=true;b.textContent='Scanning…';
+ try{const l=await (await authFetch('/api/wifi/scan')).json();SUN=Array.isArray(l)?l:[];
+  const pick=$('s_own').value||S.wifi_saved||'';
+  $('s_nets').innerHTML=SUN.length?SUN.map(n=>`<label><input type="radio" name="s_net" value="${esc(n.ssid)}">${esc(n.ssid)}<span class="sig">${sigWord(n.rssi)}</span></label>`).join(''):
+   '<div class="empty">No networks found. Move the monitor nearer your router and scan again, or type your network\'s name below.</div>';
+  document.querySelectorAll('input[name=s_net]').forEach(r=>r.onchange=()=>{$('s_own').value=r.value;$('s_wifiE').textContent=''});$('s_own').value=pick;suOwn()}
+ catch(x){$('s_nets').innerHTML='<div class="empty">The scan didn\'t work. Tap Scan again.</div>'}
+ b.disabled=false;b.textContent='Scan again'}
+function suOwn(){const v=$('s_own').value;document.querySelectorAll('input[name=s_net]').forEach(r=>r.checked=r.value===v)}
+async function suJoin(e){e.preventDefault();const E=$('s_wifiE');E.textContent='';
+ const ssid=$('s_own').value,pw=$('s_pw').value;  /* (exactly as listed or typed: a name can end in a space) */
+ if(!ssid.trim()){E.textContent='Tap your Wi-Fi in the list, or type its name.';return false}
+ if(pw&&(pw.length<8||pw.length>63)){E.textContent='A Wi-Fi password is 8 to 63 characters: check it.';return false}
+ $('s_go').disabled=true;SUSENT=ssid;SUK=Math.random().toString(36).slice(2,12);
+ $('s_tryT').textContent='Connecting to '+ssid+'…';$('s_tryM').textContent='';suShow('try');  /* (at once: the 75 s limit runs from here, whatever the request does) */
+ const k=SUK,c=new AbortController(),t=setTimeout(()=>c.abort(),10000);
+ try{const r=await authFetch('/api/wifi/try',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ssid,pw,k}),signal:c.signal});
+  if(!r.ok){const m=(await r.text().catch(()=>'')).replace(/^"|"$/g,'');if(SU==='try'&&SUK===k){E.textContent=m||'It could not start: tap Connect again.';suShow('wifi')}}  /* (a clear no: say why) */
+  else{const j=await r.json().catch(()=>null);if(j&&j.k===k&&SUK===k)S.join=j}}
+ catch(x){}  /* (no answer, or cut off: it may well have got there, the setup Wi-Fi moving as it joins; what the monitor says next decides) */
+ finally{clearTimeout(t);$('s_go').disabled=false}
+ return false}
+function suJoinState(){const j=S.join;
+ if(SU==='done'&&!suOk()){if(!S.ssid){$('s_wifiE').textContent='The monitor lost '+$('s_home').textContent+'. Check the router is on, then connect again.';suShow('wifi')}return}
+ if(!j)return;
+ if(SU==='wifi'&&SUK&&j.k===SUK&&(j.state==='trying'||suOk())){$('s_wifiE').textContent='';$('s_tryT').textContent='Connecting to '+j.ssid+'…';suShow('try')}  /* (the monitor got it though the phone missed its answer) */
+ if(SU==='try'&&SUK&&j.k!==SUK)return;  /* (an earlier attempt's result: not this one's) */
+ if(SU==='try'&&j.state==='trying'){$('s_tryT').textContent='Connecting to '+j.ssid+'…';$('s_tryM').textContent='';return}
+ if(SU==='try'&&suOk()||SU==='done'){suDone(j);if(SU!=='done')suShow('done');return}
+ if(SU==='try'){$('s_wifiE').textContent=j.state==='password'?'That password didn\'t work for '+j.ssid+'. Check it and try again.':
+   j.state==='missing'?'The monitor can\'t see '+j.ssid+'. Move it nearer your router, or check that network is 2.4 GHz.':'Could not join '+j.ssid+'. Check the password and try again.';
+  suShow('wifi');setTimeout(()=>$('s_pw').focus(),50)}}
+function suDone(j){$('s_doneT').textContent='Connected to '+j.ssid;$('s_home').textContent=j.ssid;
+ $('s_li1').hidden=$('s_fin').hidden=FAR;$('s_far').hidden=!FAR;$('s_far').textContent=FAR?'Your phone is already back on '+j.ssid+'. The monitor restarts by itself in a few minutes, switching its setup Wi-Fi off.':'';
+ const ip=/^\d+\.\d+\.\d+\.\d+$/.test(j.ip||'')?'http://'+j.ip+'/':'',main=ip||suHome();for(const id of['s_addr','s_addr3']){$(id).textContent=main;$(id).href=main}
+ $('s_addr2').innerHTML=ip?'or <a class="lnk" style="margin:0" target="_blank" rel="noopener" href="'+esc(suHome())+'">'+esc(suHome())+'</a> (works on most computers and iPhones; the address above can change if your router restarts)':''}
+/* the phone went back to its home Wi-Fi mid-join (iPhones do, when the setup Wi-Fi blinks): ask the monitor there, by name */
+async function suFar(){const k=SUK||(S.join&&S.join.k);if(FARON||SU!=='try'||!k)return;FARON=true;
+ try{const c=new AbortController(),t=setTimeout(()=>c.abort(),4000);
+  const j=await (await fetch(suHome()+'api/setup/status?k='+encodeURIComponent(k),{cache:'no-store',signal:c.signal})).json();clearTimeout(t);
+  if(SU==='try'&&j&&j.k===k&&(SUK||k)===k&&j.state==='ok'){FAR=!j.via_ap;S.join=j;S.ssid=j.ssid;suDone(j);suShow('done')}}catch(x){}  /* (via_ap: the name led to the setup Wi-Fi after all: Finish as usual) */
+ FARON=false}
+/* after Finish: the monitor restarts; watch for it to come back on the home Wi-Fi and open it then */
+function suGo(u){location.href=u}
+function suBack(){const t0=Date.now(),M=$('s_byeM'),b0=S.update&&S.update.boot,me=S.mac,urls=[...new Set([$('s_addr3').href,suHome()])];M.textContent='Restarting…';
+ const probe=async u=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),3000);
+  try{const j=await (await fetch(u+'api/setup/status?t='+Date.now(),{cache:'no-store',signal:c.signal})).json();return j&&me&&j.id===me&&j.boot!=null&&b0!=null&&j.boot!==b0?u:null}  /* (this Pico, started again: not another by the same name) */catch(x){return null}finally{clearTimeout(t)}};
+ const tick=async()=>{if(SU!=='bye')return;
+  const hit=(await Promise.all(urls.map(probe))).find(Boolean);  /* (only a NEW start counts: the old one still answering is not "back") */
+  if(hit){M.textContent='It\'s back: opening it…';suGo(hit);return}
+  if(Date.now()-t0>180000){M.textContent='It hasn\'t come back yet. Check your phone is on your home Wi-Fi, then tap the address above.';return}
+  M.textContent='Restarting… this page opens the monitor as soon as it\'s back.';setTimeout(tick,3000)};
+ setTimeout(tick,3000)}
+async function suFinish(){const b=$('s_fin');b.disabled=true;$('s_finE').textContent='';
+ try{const r=await authFetch('/api/setup/done',{method:'POST'});if(!r.ok)throw 0;suShow('bye');SU='bye';suBack()}
+ catch(x){$('s_finE').textContent='The monitor didn\'t answer. Check your phone is still on '+(S.ap||'the setup Wi-Fi')+', then tap Finish again.'}
+ b.disabled=false}
 tab(location.hash.slice(1));
 let RSZ=null;addEventListener('resize',()=>{clearTimeout(RSZ);RSZ=setTimeout(()=>{if(!$('p_dash').hidden)dash()},200)});  /* (once the resizing stops: phones fire it as the address bar comes and goes) */
 load();setInterval(()=>{if(!dlg.open&&!wdlg.open&&!document.hidden)load()},10000);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!dlg.open&&!wdlg.open)load()});  /* (no polling in a hidden tab: each one costs the Pico; up to date again the moment it's back) */

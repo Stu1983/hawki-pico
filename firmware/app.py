@@ -600,11 +600,252 @@ async def ntp_sync():
     return False
 
 
+def ap_channel(nets, saved):
+    # The Pico has one radio: once it joins the home Wi-Fi, the setup network moves to that channel, and phones on it
+    # are dropped (an iPhone then goes back to its home Wi-Fi, mid-setup). So start it there: the saved network's
+    # channel, else the strongest one heard (nearly always the router beside it). nets: wlan.scan() rows.
+    best = None
+    for n in nets:
+        ch, rssi = n[2], n[3]
+        if not 1 <= ch <= 13:
+            continue
+        key = (bool(saved) and n[0] == saved, rssi)
+        if best is None or key > best[0]:
+            best = (key, ch)
+    return best[1] if best else None
+
+
 def ap_on():
     if not ap.active():
+        ch = None
+        if not wlan.isconnected():  # (joined: it runs on the home channel anyway)
+            try:
+                nets = wlan.scan()
+                note_seen(nets)
+                ch = ap_channel(nets, (cfg.get('ssid') or '').encode())
+            except Exception as ex:
+                print('ap scan', ex)
+        if ch:
+            ap.config(channel=ch)
         ap.config(essid=AP_NAME, password=AP_PASSWORD)
         ap.active(True)
         print('setup AP', AP_NAME)
+
+
+# ---------- captive portal (setup network only) ----------
+# A phone joining HAWKi-Setup asks the Pico (its DNS server, from the AP's DHCP) for names like
+# captive.apple.com; every name gets the Pico's own address, the phone's "is there internet?" check lands on
+# handle(), which sends it to the setup page, and the phone pops that page up on its own (like hotel Wi-Fi).
+def dns_answer(q, ip):
+    # q: one DNS query packet; ip: 4 bytes. The answer (every A name -> ip; other types: no records), or None.
+    if len(q) < 17 or q[2] & 0xf8 or q[4:6] != b'\x00\x01':  # (a reply, not a standard query, or not 1 question)
+        return None
+    i = 12
+    while q[i]:  # the name: length-prefixed labels up to a 0
+        if q[i] > 63:
+            return None  # (a compression pointer: never in a question)
+        i += q[i] + 1
+        if i + 5 > len(q) or i > 12 + 254:  # (cut off, or a name over 255 bytes)
+            return None
+    end = i + 5
+    a = q[i + 1:i + 3] == b'\x00\x01' and q[i + 3:end] == b'\x00\x01'  # (type A, class IN)
+    head = q[:2] + bytes((0x80 | q[2] & 0x01, 0x80)) + b'\x00\x01' + (b'\x00\x01' if a else b'\x00\x00') + b'\x00\x00\x00\x00'
+    return head + q[12:end] + (b'\xc0\x0c\x00\x01\x00\x01\x00\x00\x00\x0a\x00\x04' + ip if a else b'')
+
+
+async def dns_task():
+    import socket
+    s = None
+    try:
+        while True:
+            if not ap.active():
+                if s:
+                    s.close()
+                    s = None
+                await asyncio.sleep(2)
+                continue
+            if s is None:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                s.bind(('0.0.0.0', 53))
+                s.setblocking(False)
+                print('setup DNS on')
+            for _ in range(8):  # (a phone asks a handful of names at once)
+                try:
+                    q, peer = s.recvfrom(512)
+                except OSError as ex:
+                    if ex.errno in (11, 110):  # (nothing waiting)
+                        break
+                    raise  # (anything else: keep() starts it again with a fresh socket)
+                ip = ap.ifconfig()[0]
+                if not on_ap(peer[0]):
+                    continue  # (only phones on the setup network, never the home one)
+                a = dns_answer(q, bytes(int(x) for x in ip.split('.')))
+                if a:
+                    try:
+                        s.sendto(a, peer)
+                    except OSError:
+                        pass
+            await asyncio.sleep(0.1)
+    finally:
+        if s:
+            s.close()
+
+
+def captive_to(method, path, host, peer):
+    # where a page asked for on the setup network from some other site (a phone's internet check) is sent; else None.
+    # Only page loads (GET/HEAD, never /api/): the setup page's own requests always run, by whatever name.
+    if method not in ('GET', 'HEAD') or path.startswith('/api/') or not host or not on_ap(peer):
+        return None
+    me = ap.ifconfig()[0]
+    h = host.split(':')[0].lower()
+    if h in (me, wlan.ifconfig()[0], HOSTNAME.lower(), HOSTNAME.lower() + '.local'):
+        return None
+    return 'http://%s/' % me
+
+
+# The setup screen's "connect to this Wi-Fi": tried while the setup network stays up, so a wrong password is
+# said there and then, and on success the phone is shown the Pico's new address (no restart, no guessing).
+join = [None]  # {'ssid', 'pw', 'state': 'trying'|'ok'|'password'|'missing'|'failed', 'ip'}; joined by wifi_keeper
+ap_hold = [0]  # mono_s(): after joining from the setup network, it stays up until then for the phone to see it
+
+
+def join_view():
+    j = join[0]
+    return j and {'ssid': j['ssid'], 'state': j['state'], 'ip': j.get('ip'), 'k': j.get('k')}
+
+
+wifi_seen = {}  # ssid (bytes) -> {bssid: (rssi, channel, mono_s() last heard)}: each access point heard lately
+SEEN_S = 600     # (a scan with the setup network up can miss the nearest one: what was heard 10 minutes back still counts)
+
+
+def note_seen(nets):
+    now = mono_s()
+    for n in nets:
+        if 1 <= n[2] <= 13:
+            wifi_seen.setdefault(n[0], {})[n[1]] = (n[3], n[2], now)
+    for ssid in list(wifi_seen):
+        aps = wifi_seen[ssid]
+        for b in [b for b, v in aps.items() if now - v[2] > SEEN_S]:
+            del aps[b]
+        if not aps:
+            del wifi_seen[ssid]
+
+
+def aps_of(ssid):
+    # the network's access points heard lately, strongest first, as (rssi, channel, bssid). Joining a far one (or a
+    # join that changes point) left phones on the Wi-Fi unable to reach it for minutes on a mesh system.
+    return sorted(((v[0], v[1], b) for b, v in (wifi_seen.get(ssid) or {}).items() if mono_s() - v[2] <= SEEN_S),
+                  key=lambda a: -a[0])
+
+
+def best_ap(ssid):
+    a = aps_of(ssid)
+    return a[0] if a else None
+
+
+STICK_DB = 10  # the access point it was on is kept unless another is this much stronger
+
+
+def pick_ap(ssid):
+    # The one it was on last time (cfg 'ap_b'), unless it has gone or another is STICK_DB stronger: signals on a mesh
+    # sit within a few dB and change from scan to scan, and changing point leaves phones unable to reach it for minutes.
+    aps = aps_of(ssid)
+    want = cfg.get('ap_b')
+    for a in aps:
+        if want and binascii.hexlify(a[2]).decode() == want and a[0] >= aps[0][0] - STICK_DB:
+            return a
+    return aps[0] if aps else None
+
+
+def keep_ap(hit):
+    # remember the access point a join worked on (None: joined anyhow, which one unknown)
+    b = binascii.hexlify(hit[2]).decode() if hit else None
+    if cfg.get('ap_b') != b:
+        if b:
+            cfg['ap_b'] = b
+        else:
+            cfg.pop('ap_b', None)
+        save_cfg(cfg)
+
+
+def join_wifi(ssid, pw, hit):
+    # Join the network's STRONGEST access point (hit: from wifi_seen), else whichever answers. Left to itself the
+    # chip takes the first it hears: on a house with several (mesh, extenders) that was a far one at -80, where the
+    # chip keeps scanning to roam and the connection went half-dead (joined, but nothing got through).
+    if hit:
+        wlan.connect(ssid, pw, bssid=hit[2], channel=hit[1])
+    else:
+        wlan.connect(ssid, pw)
+
+
+async def try_join(j):
+    keeper_hit[1] = False  # (the keeper's own join is dropped here: never recorded over this one)
+    # Joined on the channel it was heard on: a join that looks on every channel takes the setup network off the
+    # air while it does, and an iPhone's sign-in window stops talking to it after that. Not found there: anywhere.
+    st, i = 'failed', 0
+    for hit in aps_of(j['ssid'].encode())[:2] + [None]:  # (the nearest two, then any: one that has gone isn't the end)
+        hit_used = hit
+        st, i, ch = 'failed', 0, hit and hit[1]
+        try:
+            wlan.disconnect()  # (always: also drops a connect of the keeper's own still under way)
+            ap_on()  # (the phone waiting for the answer is on it)
+            net_apply()
+            join_wifi(j['ssid'], j['pw'], hit)
+            for i in range(24 if hit else 60):  # (12 s at a known access point, ~3 s is usual; 30 s at any: 54 s at most,
+                await asyncio.sleep(0.5)          # inside the page's 75)
+                led.toggle()
+                if wlan.isconnected():
+                    st = 'ok'
+                    break
+                s = wlan.status()
+                if s == getattr(network, 'STAT_WRONG_PASSWORD', -3):
+                    st = 'password'
+                    break
+                if s == getattr(network, 'STAT_NO_AP_FOUND', -2) and i >= (10 if hit else 20):
+                    st = 'missing'
+                    break
+                if s == getattr(network, 'STAT_CONNECT_FAIL', -1) and i >= 10:
+                    break
+        except Exception as ex:
+            print('join err', ex)
+        if st in ('ok', 'password'):
+            break
+        if hit:
+            wifi_seen.get(j['ssid'].encode(), {}).pop(hit[2], None)  # (that one didn't work: not first choice again)
+    print('join', j['ssid'], st, i)
+    if st == 'ok':
+        cfg['ssid'], cfg['pw'] = j['ssid'], j['pw']
+        keep_ap(hit_used)  # (saves; the restart after Finish goes back to this same access point)
+        save_cfg(cfg)
+        j['ip'] = wlan.ifconfig()[0]
+        ap_hold[0] = mono_s() + 600
+        first_pin_until[0] = max(first_pin_until[0], mono_s() + FIRST_PIN_SECS)
+        ntp_wait[0] = ntp_wait[1] = 0
+    else:
+        try:
+            wlan.disconnect()
+        except Exception:
+            pass
+    j['state'] = st
+    j.pop('pw', None)
+    if st == 'ok':
+        await ntp_sync()
+
+
+def joining():
+    return bool(join[0]) and join[0]['state'] == 'trying'
+
+
+def setup_restart_ok():
+    # the restart that ends a setup waits for an update being installed, or one not yet confirmed (a restart then
+    # would count against the new version, and could put the old one back)
+    return not installing[0] and not update_info()['pending']
+
+
+keeper_hit = [None, False]  # the access point wifi_keeper's last join went to (None: any), and whether that join
+                            # is still to be seen through (then the first sight of it joined records the point)
+wifi_try = [0]  # failed joins in a row by wifi_keeper (every third goes to whichever access point answers)
 
 
 async def wifi_keeper():
@@ -613,25 +854,53 @@ async def wifi_keeper():
     net_apply()
     while True:
         mono_s()
+        if joining():
+            await try_join(join[0])
         if cfg.get('ssid') and not wlan.isconnected():
             try:
+                wlan.disconnect()  # (a connect still under way from the last try: never a second on top)
                 net_apply()
-                wlan.connect(cfg['ssid'], cfg.get('pw', ''))
+                try:
+                    note_seen(wlan.scan())  # (~2 s: which of its access points is nearest, before every join)
+                except Exception as ex:
+                    print('scan err', ex)
+                wifi_try[0] += 1
+                if wifi_try[0] % 3 == 0:  # (every third try: any access point, in case the nearest one is the trouble)
+                    keeper_hit[:] = [None, True]
+                    join_wifi(cfg['ssid'], cfg.get('pw', ''), None)
+                else:
+                    keeper_hit[:] = [pick_ap(cfg['ssid'].encode()), True]
+                    join_wifi(cfg['ssid'], cfg.get('pw', ''), keeper_hit[0])
             except Exception as ex:
                 print('wifi err', ex)
             for _ in range(20):
+                if joining():
+                    break  # (the setup screen's network goes first; try_join drops this attempt)
                 if wlan.isconnected():
                     print('wifi ok', wlan.ifconfig())
+                    wifi_try[0] = 0  # (the count is of failed tries in a row)
                     ntp_wait[0] = ntp_wait[1] = 0  # (a fresh join: try straight away)
                     await ntp_sync()
                     break
                 led.toggle()
                 await asyncio.sleep(0.5)
+        if join[0] and join[0]['state'] == 'ok' and (not wlan.isconnected() or mono_s() >= ap_hold[0]):
+            join[0] = None  # (that setup is over: never shown again as "connected" later)
         if wlan.isconnected():
             led.value(1)
+            wifi_try[0] = 0  # (however late the join came: it worked)
+            if keeper_hit[1]:
+                keeper_hit[1] = False
+                keep_ap(keeper_hit[0])
             if await net_check():
                 ap_on()
-            elif ap.active():
+            elif ap.active() and mono_s() >= ap_hold[0] and not joining():
+                if ap_hold[0]:
+                    if not setup_restart_ok():
+                        await asyncio.sleep(10)
+                        continue  # (the setup network stays until it can)
+                    restart()  # (after joining from the setup screen: start afresh on the home Wi-Fi, the way it always
+                    # starts; switching the setup network off under the new connection once left it joined but dead)
                 ap.active(False)
             if time.time() < 1700000000 and ntp_due():
                 await ntp_sync()  # clock still unset; retry (backing off)
@@ -639,7 +908,10 @@ async def wifi_keeper():
             led.value(0)
             if not cfg.get('ssid') or boot_grace_over():
                 ap_on()
-        await asyncio.sleep(10)
+        for _ in range(20):
+            if joining():
+                break
+            await asyncio.sleep(0.5)
 
 
 # ---------- history ----------
@@ -917,7 +1189,8 @@ def rm(name):
 
 
 MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
-            '/api/update/install', '/api/restart', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location', '/api/price', '/api/year', '/api/net', '/api/mqtt')
+            '/api/update/install', '/api/restart', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location', '/api/price', '/api/year', '/api/net', '/api/mqtt',
+            '/api/wifi/try', '/api/setup/done')
 
 
 # ---------- views ----------
@@ -1710,7 +1983,7 @@ def name_key(name):
     return out
 
 
-def state():
+def state(peer=''):
     now = time.time()
     tanks = sorted((tank_view(m, t, now) for m, t in cfg['tanks'].items()), key=lambda v: name_key(v['name']))
     found = []
@@ -1728,7 +2001,8 @@ def state():
             'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint')),
             'primary': cfg.get('primary') if cfg.get('primary') in cfg['tanks'] or cfg.get('primary') == 'all' and len(tanks) > 1
                        else (tanks[0]['mac'] if tanks else None),
-            'hostname': HOSTNAME, 'net': net_view(), 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'price': price_view(), 'year_l': cfg.get('year_l'), 'mqtt': mqtt_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac'))}
+            'hostname': HOSTNAME, 'net': net_view(), 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'price': price_view(), 'year_l': cfg.get('year_l'), 'mqtt': mqtt_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac')),
+            'via_ap': on_ap(peer), 'wifi_saved': cfg.get('ssid') or None, 'join': join_view()}
 
 
 def num(v, lo, hi):
@@ -2084,7 +2358,7 @@ async def handle(r, w):
             peer = ''
         line = (await rl()).decode()
         method, path, _ = line.split(' ', 2)
-        clen, auth, inm = 0, '', ''
+        clen, auth, inm, host = 0, '', '', ''
         for _ in range(100):
             h = await rl()
             if h in (b'\r\n', b'\n', b''):
@@ -2098,8 +2372,15 @@ async def handle(r, w):
                 auth = h.split(b':', 1)[1].strip().decode()
             elif hl.startswith(b'if-none-match:'):
                 inm = h.split(b':', 1)[1].strip().decode()
+            elif hl.startswith(b'host:'):
+                host = h.split(b':', 1)[1].strip().decode()
         else:  # (no blank line after 100: never take headers for the body)
             return await send(w, 431, '"too many headers"')
+        to = None if me else captive_to(method, path, host, peer)
+        if to:  # (a phone's "is there internet?" check on the setup network: show it the setup page)
+            w.write(('HTTP/1.0 302 Found\r\nLocation: %s\r\nContent-Length: 0\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n'
+                     % to).encode())
+            return await asyncio.wait_for(w.drain(), 20)
         path, q = parse_q(path)
         if peer and not on_ap(peer) and not me:
             net_proof()
@@ -2161,7 +2442,7 @@ async def handle(r, w):
         if path in ('/', '/index.html'):
             return await send_page(w, 'ui.html', 'text/html; charset=utf-8', inm)
         if path == '/api/state':
-            return await send(w, 200, json.dumps(state()))
+            return await send(w, 200, json.dumps(state(peer)))
         if path == '/api/auth':
             return await send(w, 200, json.dumps({'pin_set': bool(cfg.get('pin')), 'ok': authed(auth)}))
         if path in ('/api/pin/login', '/api/pin/set', '/api/pin/logout') and method == 'POST':
@@ -2407,12 +2688,37 @@ async def handle(r, w):
             if not may_setup(auth, peer):  # (it blocks for seconds: not for anyone on the Wi-Fi to repeat)
                 return await send(w, 401, json.dumps({'auth': 'login'}))
             nets = {}
-            for n in wlan.scan():
+            found_nets = wlan.scan()
+            note_seen(found_nets)
+            for n in found_nets:
                 s = n[0].decode('utf-8', 'replace')
                 if s and (s not in nets or n[3] > nets[s]):
                     nets[s] = n[3]
             return await send(w, 200, json.dumps([{'ssid': s, 'rssi': v} for s, v in
                                                   sorted(nets.items(), key=lambda x: -x[1])]))
+        if path == '/api/wifi/try' and method == 'POST':  # (signed in: in MUTATING)
+            b = jb(body)
+            ssid, pw = str(b.get('ssid') or ''), str(b.get('pw') or '')
+            if not 0 < len(ssid.encode()) <= 32:
+                return await send(w, 400, '"Pick a network"')
+            if pw and not 8 <= len(pw) <= 63:
+                return await send(w, 400, '"A Wi-Fi password is 8 to 63 characters"')
+            if joining():
+                return await send(w, 409, '"Already trying a network: wait a moment"')
+            k = str(b.get('k') or '')[:16]  # (the page's own name for this attempt: how it knows the answer is its own)
+            join[0] = {'ssid': ssid, 'pw': pw, 'state': 'trying', 'k': k}
+            return await send(w, 200, json.dumps(join_view()))
+        if path == '/api/setup/status':  # (the setup page, its phone already back on the home Wi-Fi, asking by name)
+            j = join_view()  # only to the page that started it (its attempt key): nothing for anyone else
+            j = dict(j, via_ap=on_ap(peer)) if j and j['k'] and q.get('k') == j['k'] else {}
+            j['boot'] = BOOT  # (and which start this is, of which Pico: after Finish, the page waits for its next one)
+            j['id'] = ':'.join('%02x' % c for c in wlan.config('mac'))
+            return await send(w, 200, json.dumps(j), 'application/json\r\nAccess-Control-Allow-Origin: *')
+        if path == '/api/setup/done' and method == 'POST':  # the setup network can go now (once joined): restart
+            if not (wlan.isconnected() and cfg.get('ssid')):
+                return await send(w, 409, '"Not on your Wi-Fi yet"')
+            ap_hold[0] = 1  # (wifi_keeper restarts it within seconds, once no update is under way: one place decides)
+            return await send(w, 200, '"ok"')
         if path == '/api/wifi' and method == 'POST':
             b = jb(body)
             if not b.get('ssid'):
@@ -2931,7 +3237,7 @@ async def main():
     want = take_note('upd.want')
     tasks = ((recorder, 'recorder'), (scan_scheduler, 'scan'), (alerts, 'alerts'),
                      (weather_task, 'weather'), (price_task, 'price'), (mqtt_task, 'mqtt'),
-                     (net_trial_guard, 'net trial'), (update_guard, 'update guard'), (bootsel_reset, 'bootsel'))
+                     (net_trial_guard, 'net trial'), (update_guard, 'update guard'), (bootsel_reset, 'bootsel'), (dns_task, 'setup dns'))
     asyncio.create_task(keep(wifi_keeper, 'wifi'))
     if want:
         try:
