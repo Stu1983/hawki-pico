@@ -1,7 +1,7 @@
 {
- "version": "1.3.3",
- "ref": "v1.3.3",
- "notes": "A typical year's oil (Config) now stands in for last year: each month is forecast from it, scaled by how you are running against it, and replaced by your own readings once you have had that month.",
+ "version": "1.3.4",
+ "ref": "v1.3.4",
+ "notes": "With a typical year given: hot water in it is your own summer figure once measured (more in winter), only the heating is scaled, and the comparison runs over heating-season days only.",
  "files": {
   "app.py": [
    "e1bfae12a88440604b656e0236a716352248df315584913a7c19f48bfa877f04",
@@ -12,8 +12,8 @@
    7065
   ],
   "common.js.html": [
-   "2cc6e9d3d67d1cc7d25164817b0928bc32f930e2fc69fe974ab6c293a3def7b9",
-   24425
+   "4d47b50dd8c7dfa7312eb83aef12a6b9eff28d521462eaee2a80e9ecb712b3ec",
+   26034
   ],
   "drops.py": [
    "7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062",
@@ -68,7 +68,7 @@
    13431
   ],
   "version.py": [
-   "7705fa757d9dbf290c3b71b476b97242192ebbfca792d7ff1045b956b4a91eb7",
+   "0869730c7c645d9f151e07d54b4de0bcd397a5f57c02d97a56017c0c56682d83",
    18
   ],
   "weather.py": [
@@ -77,7 +77,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"e1bfae12a88440604b656e0236a716352248df315584913a7c19f48bfa877f04\", 131610], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"2cc6e9d3d67d1cc7d25164817b0928bc32f930e2fc69fe974ab6c293a3def7b9\", 24425], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"5f31ed909a9a2e11cd6dfa579087dbf58991dcade922221a03ecd532717e285a\", 62168], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"f959166c4a781017019e6493ece4c36dc5602d7857d97bf03b1c272eef28802c\", 97916], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"7705fa757d9dbf290c3b71b476b97242192ebbfca792d7ff1045b956b4a91eb7\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744]}, \"notes\": \"A typical year's oil (Config) now stands in for last year: each month is forecast from it, scaled by how you are running against it, and replaced by your own readings once you have had that month.\", \"ref\": \"v1.3.3\", \"version\": \"1.3.3\"}",
-  "sig": "02fd6ded6471eae23562acaaae6b04f62a0d2cb602c8794941eb0aca7bd286c54b473dcacde7ad256e2142124cd46d8423178721d99937f857c043dfa3534118d325f67d360f3b0dfd77195f421ac59835adc37dca3bd3680ffc95476ef4cee02a88725cbb57f6b0338394347be97c0ce3642abb41a1cfa8ccd8aa7e65d5e360735c778534b0fe0c07d1a4163bee6e9fc75816c3bd7251ef9763452356d2b2c7aeae13bcf2b2723300aa50062f5156dae76c84d94ca673189ce9e48543da98c05fd19267e0826ba64f45f01908aaac69ab21c6771d55b2b5adf6f0a79173c09181cff4c34f02ca1aed1d48ec3b1f6837ab865b67776d493d173ded22268215ac"
+  "body": "{\"files\": {\"app.py\": [\"e1bfae12a88440604b656e0236a716352248df315584913a7c19f48bfa877f04\", 131610], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"4d47b50dd8c7dfa7312eb83aef12a6b9eff28d521462eaee2a80e9ecb712b3ec\", 26034], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"5f31ed909a9a2e11cd6dfa579087dbf58991dcade922221a03ecd532717e285a\", 62168], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"f959166c4a781017019e6493ece4c36dc5602d7857d97bf03b1c272eef28802c\", 97916], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"0869730c7c645d9f151e07d54b4de0bcd397a5f57c02d97a56017c0c56682d83\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744]}, \"notes\": \"With a typical year given: hot water in it is your own summer figure once measured (more in winter), only the heating is scaled, and the comparison runs over heating-season days only.\", \"ref\": \"v1.3.4\", \"version\": \"1.3.4\"}",
+  "sig": "6ed875e7d98cb7361293464d0eb262e037e40ad2cd8bcd28a8686deb4437b5b8aeb47403c22940d316e164a0d639d80723169eb3d3fbf91b84e80f0635b36c05026798f689b71bbc9987f985af11b983e990b0a0c681d51eff8fa2c764cd4959c9315f0f8daacee722dd6f64afbe19aa9c6ca9ec614983b6771e7a20eab487623456a13b31e936d782d63c98768e87363aba899c26a26c23a83a23355fdc32653f4f047c986b4569fc93d093502c963239fddab4a52dfe1079819728e6aeebd3ce014fd29ddcc58b788f5d559fe82eb06e78b14f82ec2a4c78b36b4ef5ecf347527c92b858169546e705fde72cc37f7c9624a9975ff23d4a511ccf9180c87b81"
  }
 }
