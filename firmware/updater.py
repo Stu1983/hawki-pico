@@ -14,7 +14,7 @@ Install is journalled: upd.pending (stage "swapping") is written BEFORE any file
 so a power cut part-way is undone at the next boot (main.py -> rollback.undo). Only the person
 at the web page (with the PIN) can start an install; nothing updates by itself.
 """
-import gc, json, os, socket, ssl
+import gc, json, os, socket, ssl, time
 try:
     import hashlib
 except ImportError:
@@ -97,18 +97,34 @@ def _get(path, sink=None, limit=200000):
                 raise
 
 
-def _get1(path, sink, limit):
+def _within(s, raw, t0, deadline, what, cap=20):
+    # a deadline for the whole fetch, not per read: each read may only wait for the time left (a server trickling
+    # a byte now and then, or gone silent, held the Pico for 15 s per read)
+    left = deadline - (time.time() - t0)
+    if left <= 0:
+        raise OSError(what + ' took too long')
+    for o in (s, raw):  # (the TLS socket if it takes a timeout, else the one under it)
+        try:
+            o.settimeout(max(1, min(cap, left)))  # (and never longer than one read used to wait)
+            return
+        except Exception:
+            pass
+
+
+def _get1(path, sink, limit, deadline=120):
+    t0 = time.time()
     ai = socket.getaddrinfo(HOST, 443, 0, socket.SOCK_STREAM)[0]
     s = socket.socket(ai[0], socket.SOCK_STREAM, ai[2])
     s.settimeout(20)
     try:
         s.connect(ai[-1])
-        s = _ctx().wrap_socket(s, server_hostname=HOST)
+        raw, s = s, _ctx().wrap_socket(s, server_hostname=HOST)
         req = 'GET %s HTTP/1.0\r\nHost: %s\r\nUser-Agent: hawki-pico\r\nConnection: close\r\n\r\n' % (path, HOST)
         (s.write if hasattr(s, 'write') else s.sendall)(req.encode())
         rd = s.read if hasattr(s, 'read') else s.recv
         buf = b''
         while b'\r\n\r\n' not in buf:
+            _within(s, raw, t0, deadline, 'GitHub')
             c = rd(512)
             if not c:
                 raise OSError('no reply')
@@ -129,6 +145,7 @@ def _get1(path, sink, limit):
                     sink(body)
                 else:
                     out.append(body)
+            _within(s, raw, t0, deadline, 'GitHub')
             body = rd(1024)
             if not body:
                 break

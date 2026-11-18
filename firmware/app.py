@@ -1178,11 +1178,23 @@ def set_notify(b):
     save_cfg(cfg)
 
 
-async def send_alert(title, msg, urgent=False):
+alert_back = [0, 0]  # after a send where every channel failed: mono_s() of the next try, and the wait
+
+
+async def send_alert(title, msg, urgent=False, force=False):
+    # a failed send is tried again by the caller every 5 minutes; while the internet is down each try blocks the
+    # Pico on DNS and TLS for nothing, so after a failure wait 5 minutes, doubling to 30 (the test button: always)
+    if not (force or urgent) and mono_s() < alert_back[0]:  # (urgent: a sudden drop is only checked on new readings, so never held)
+        return {'held': 'waiting after a failed send'}
     await asyncio.sleep(0)
     make_room()
     res = notify.send(cfg.get('notify'), title, msg, urgent)  # blocks ~1-2 s per channel (TLS)
     print('notify', title, res)
+    if 'ok' in res.values():
+        alert_back[0] = alert_back[1] = 0
+    elif res:
+        alert_back[1] = min(1800, max(300, alert_back[1] * 2))
+        alert_back[0] = mono_s() + alert_back[1]
     return res
 
 
@@ -2055,7 +2067,7 @@ async def handle(r, w):
                     return await send(w, 200, json.dumps(notify_view()))
                 if not notify.channels(cfg.get('notify')):
                     raise ValueError('set up Pushover or ntfy first')
-                res = await send_alert('Oil Monitor test', 'Notifications from %s are working.' % HOSTNAME)
+                res = await send_alert('Oil Monitor test', 'Notifications from %s are working.' % HOSTNAME, force=True)
                 return await send(w, 200, json.dumps(res))
             except Exception as ex:
                 return await send(w, 400, json.dumps(str(ex)))
@@ -2276,12 +2288,25 @@ wx_state = {'done': None, 'errs': {}, 'fat': 0, 'norm': None, 'norm_y': None}  #
 # for each month and the year they were worked out for (norm_y set once all 10 years are in)
 
 
+wx_back = {}  # part -> [mono_s() of the next try, wait]: a part that fails waits 20 min, doubling to 6 h
+
+
 def wx_err(part, ex):
     if ex is None:
         wx_state['errs'].pop(part, None)
+        wx_back.pop(part, None)
     else:
         wx_state['errs'][part] = str(ex) or repr(ex)
         print('weather', part, ex)
+        b = wx_back.get(part) or [0, 600]
+        b[1] = min(6 * 3600, b[1] * 2)
+        b[0] = mono_s() + b[1]
+        wx_back[part] = b
+
+
+def wx_due(part):
+    b = wx_back.get(part)
+    return b is None or mono_s() >= b[0]
 
 
 def wx_view():
@@ -2301,6 +2326,7 @@ def set_location(b):
         rm(f)  # a new place (or none): its history, forecast and usual weather are fetched afresh
     wx_state['done'] = None
     wx_state['errs'] = {}
+    wx_back.clear()  # (a new place starts without the old one's waiting after failures)
     wx_state['fat'] = 0
     wx_state['norm'] = None
     wx_state['norm_y'] = None
@@ -2343,7 +2369,7 @@ async def weather_task():
         today = weather.day_of(now)
         yr = time.gmtime(now)[0]
         ready = w and now > 1.7e9 and wlan.isconnected()
-        if ready and wx_state['done'] != today:
+        if ready and wx_state['done'] != today and wx_due('archive'):
             have = None
             try:
                 have = weather.load()
@@ -2367,7 +2393,7 @@ async def weather_task():
                 wx_err('archive', ex)
             have = got = None
             gc.collect()
-        if ready and cfg.get('wx') is w and time.time() - wx_state['fat'] > 6 * 3600:
+        if ready and cfg.get('wx') is w and time.time() - wx_state['fat'] > 6 * 3600 and wx_due('forecast'):
             try:
                 await web_quiet()
                 got = with_room(weather.forecast, w['lat'], w['lon']) if cfg.get('wx') is w else None
@@ -2379,7 +2405,7 @@ async def weather_task():
                 wx_err('forecast', ex)
             got = None
             gc.collect()
-        if ready and cfg.get('wx') is w and (wx_state['norm_y'] != yr or wx_state['norm'] is None):
+        if ready and cfg.get('wx') is w and (wx_state['norm_y'] != yr or wx_state['norm'] is None) and wx_due('normals'):
             nm = None
             try:
                 nm = weather.norm_load(w['lat'], w['lon'])
@@ -2569,14 +2595,15 @@ async def price_task():
                         price_state['pc'] = (cfg.get('price') or {}).get('pc')
                 d = None
             p = cfg.get('price')
+            gap = price_state.get('gap') or 1800  # (after a failure: 30 min, doubling to 8 h; reset by a success)
             if (p is not None and now > 1.7e9 and wlan.isconnected() and price_state['day'] != today
-                    and now - price_state['tried'] > 1800 and time.gmtime(now)[3] >= 9):
+                    and now - price_state['tried'] > gap and time.gmtime(now)[3] >= 9):
                 await web_quiet()
                 now = time.time()  # (after the wait: it may be another day, or prices switched off)
                 today = weather.day_of(now)
                 p = cfg.get('price')
             if (p is not None and now > 1.7e9 and wlan.isconnected() and price_state['day'] != today
-                    and now - price_state['tried'] > 1800 and time.gmtime(now)[3] >= 9):
+                    and now - price_state['tried'] > gap and time.gmtime(now)[3] >= 9):
                 price_state['tried'] = now
                 try:
                     got = with_room(price.fetch, p['pc'])
@@ -2586,8 +2613,10 @@ async def price_task():
                         price_state['now'] = [today, got[0], got[1]]
                         price_state['pc'] = p['pc']
                         price_state['err'] = None
+                        price_state['gap'] = 1800
                 except Exception as ex:
                     price_state['err'] = str(ex) or repr(ex)
+                    price_state['gap'] = min(8 * 3600, (price_state.get('gap') or 1800) * 2)
                     print('price err', ex)
                 gc.collect()
         except Exception as ex:

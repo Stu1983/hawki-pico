@@ -4,7 +4,7 @@ Both are a single HTTPS POST, checked against ca.pem (Pushover: DigiCert Global 
   Pushover: a user key + an application token (pushover.net, one-off app purchase).
   ntfy:     free, no account: subscribe to a hard-to-guess topic in the ntfy app (ntfy.sh, or your own server).
 """
-import socket, ssl
+import socket, ssl, time
 
 POOL = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-'
 
@@ -34,8 +34,21 @@ def _clean(s, n):
     return ''.join(c if ' ' <= c and c != '\x7f' else ' ' for c in str(s))[:n]
 
 
+def _within(s, raw, t0, deadline, what, cap=15):
+    # a deadline for the whole fetch, not per read: each read may only wait for the time left (a server trickling
+    # a byte now and then, or gone silent, held the Pico for 15 s per read)
+    left = deadline - (time.time() - t0)
+    if left <= 0:
+        raise OSError(what + ' took too long')
+    for o in (s, raw):  # (the TLS socket if it takes a timeout, else the one under it)
+        try:
+            o.settimeout(max(1, min(cap, left)))  # (and never longer than one read used to wait)
+            return
+        except Exception:
+            pass
+
+
 def _post(host, path, body, headers, deadline=20):
-    import time
     t0 = time.time()
     body = body.encode() if isinstance(body, str) else body
     ai = socket.getaddrinfo(host, 443, 0, socket.SOCK_STREAM)[0]
@@ -43,7 +56,7 @@ def _post(host, path, body, headers, deadline=20):
     s.settimeout(15)
     try:
         s.connect(ai[-1])
-        s = _ctx().wrap_socket(s, server_hostname=host)
+        raw, s = s, _ctx().wrap_socket(s, server_hostname=host)
         h = 'POST %s HTTP/1.0\r\nHost: %s\r\nUser-Agent: hawki-pico\r\nContent-Length: %d\r\nConnection: close\r\n' % (path, host, len(body))
         for k, v in headers.items():
             h += '%s: %s\r\n' % (k, _clean(v, 200))
@@ -52,8 +65,7 @@ def _post(host, path, body, headers, deadline=20):
         rd = s.read if hasattr(s, 'read') else s.recv
         head = b''
         while b'\r\n' not in head and len(head) < 2048:
-            if time.time() - t0 > deadline:
-                raise OSError('%s took too long' % host)
+            _within(s, raw, t0, deadline, host)
             c = rd(256)
             if not c:
                 break

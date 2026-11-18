@@ -89,6 +89,20 @@ def forecast(lat, lon, deadline=25):
                             '&timezone=auto&past_days=7&forecast_days=16' % (lat, lon), deadline))
 
 
+def _within(s, raw, t0, deadline, what, cap=15):
+    # a deadline for the whole fetch, not per read: each read may only wait for the time left (a server trickling
+    # a byte now and then, or gone silent, held the Pico for 15 s per read)
+    left = deadline - (time.time() - t0)
+    if left <= 0:
+        raise OSError(what + ' took too long')
+    for o in (s, raw):  # (the TLS socket if it takes a timeout, else the one under it)
+        try:
+            o.settimeout(max(1, min(cap, left)))  # (and never longer than one read used to wait)
+            return
+        except Exception:
+            pass
+
+
 def get(host, path, deadline=25):
     """HTTPS GET, checked against ca.pem (Open-Meteo is Let's Encrypt -> ISRG). Returns the body."""
     t0 = time.time()
@@ -105,20 +119,19 @@ def get(host, path, deadline=25):
             ctx.load_verify_locations(cadata=ca)
         except Exception:
             ctx.load_verify_locations(cadata=ca.decode())
-        s = ctx.wrap_socket(s, server_hostname=host)
+        raw, s = s, ctx.wrap_socket(s, server_hostname=host)
         req = 'GET %s HTTP/1.0\r\nHost: %s\r\nUser-Agent: hawki-pico\r\nConnection: close\r\n\r\n' % (path, host)
         (s.write if hasattr(s, 'write') else s.sendall)(req.encode())
         rd = s.read if hasattr(s, 'read') else s.recv
         parts, n = [], 0
         while True:
-            if time.time() - t0 > deadline:
-                raise OSError('weather took too long')
+            _within(s, raw, t0, deadline, host)
             c = rd(1024)
             if not c:
                 break
             n += len(c)
             if n > 60000:
-                raise OSError('weather reply too big')
+                raise OSError(host + ' reply too big')
             parts.append(c)
     finally:
         s.close()
