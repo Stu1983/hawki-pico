@@ -1,79 +1,83 @@
 {
- "version": "1.2.53",
- "ref": "v1.2.53",
- "notes": "Home Assistant over MQTT: the Pico sends readings straight to HA, which finds each tank by itself",
+ "version": "1.3.0",
+ "ref": "v1.3.0",
+ "notes": "Tank modes (In use / Standby / Off, 'switch to' warnings), the order-by date for Home Assistant, readings kept while the clock is unset, and a full audit's fixes: safer updates and rollback, watchdog and self-restarting tasks, settings never lost on a read error, faster pages and forecasts.",
  "files": {
   "app.py": [
-   "066a3d3957271d57763ea597201b882dfcbe553f2de2531f0ac509e07abdace7",
-   83816
+   "12ca1897f01c1b82e0947e518fb928fb602af6f4c317e9b04daca9ef5eaf20ba",
+   121745
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
    7065
   ],
   "common.js.html": [
-   "9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01",
-   17938
+   "9b3ec748a1477d8dfba6c716be46e21951787d66380ef192c3d76ad71bf38caa",
+   20015
   ],
   "drops.py": [
-   "bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81",
-   2030
+   "7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062",
+   2186
   ],
   "hawki_decode.py": [
    "c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266",
    2120
   ],
   "hist.html": [
-   "300f31690b60d9c8efde422e51e6f40a82990bf0b74cf4b12468b1c4381fba9e",
-   57653
+   "536701cb3e471b6cd11068e6e1ec786ae7c836e8c93605ab23a905e1a4ea2356",
+   60317
   ],
   "histstore.py": [
-   "c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01",
-   2073
+   "bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80",
+   2943
   ],
   "listen.py": [
    "f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d",
    3391
   ],
   "mqtt.py": [
-   "2632c500cf025f57ef68e7ba61ec89b10a91b04011ea79053b20883049818b96",
-   7466
+   "cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df",
+   7708
   ],
   "netcfg.py": [
    "a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34",
    3101
   ],
   "notify.py": [
-   "9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8",
-   4530
+   "d37ffab06ed2f4a6d36990b6237c603ed45ce61f7180c2263dfddf138545aa20",
+   5083
   ],
   "price.py": [
    "fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377",
    1851
   ],
   "tankcalc.py": [
-   "e8af3090fc1d602af784e360bc364793c8c9995a519e4ff403e03e8bae094967",
-   14355
+   "6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229",
+   14435
   ],
   "ui.html": [
-   "9f3881dfcf65e2e505658da4687fc14cb0ad04083dd5e32840a871249f198f49",
-   86606
+   "7f4c361fe098125b2657800d0ca5c94f7b91756d3f4432e3b9588dc5ccf0fb66",
+   94320
+  ],
+  "unset.py": [
+   "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
+   3165
   ],
   "updater.py": [
-   "11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187",
-   9943
+   "1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370",
+   13431
   ],
   "version.py": [
-   "0b50d6e4b6d155d6f62bdf8dc1b15d8813c6de2f2023bd4b31a93e48f3636754",
-   19
+   "e7e38503bc7362d0e1c553d18fdad6bb974d0a2a9e41993c7fab51e3db86e9d4",
+   18
   ],
   "weather.py": [
-   "3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4",
-   8179
+   "4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a",
+   8744
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"066a3d3957271d57763ea597201b882dfcbe553f2de2531f0ac509e07abdace7\", 83816], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9f067e6c0e9a576a86a9591e1ec799f8444739a1bc5e2e90efdd293429f47f01\", 17938], \"drops.py\": [\"bc604ba95662a39a7ca3649b262620bc277a05a82924fbf965b838e64833dc81\", 2030], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"300f31690b60d9c8efde422e51e6f40a82990bf0b74cf4b12468b1c4381fba9e\", 57653], \"histstore.py\": [\"c777f5cd6ab8b43751ac17ac8a325a3d2bdd1e66a4fefeb8813a863bbaa33b01\", 2073], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"2632c500cf025f57ef68e7ba61ec89b10a91b04011ea79053b20883049818b96\", 7466], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"9af6de3b97db23b294f30384f1406894efd401801ba6bd5cde0899b41aff76d8\", 4530], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"e8af3090fc1d602af784e360bc364793c8c9995a519e4ff403e03e8bae094967\", 14355], \"ui.html\": [\"9f3881dfcf65e2e505658da4687fc14cb0ad04083dd5e32840a871249f198f49\", 86606], \"updater.py\": [\"11ea030d47eb5e2e7dbf925065522b6d5fa03d1511bf4af3b67d86f1c6d08187\", 9943], \"version.py\": [\"0b50d6e4b6d155d6f62bdf8dc1b15d8813c6de2f2023bd4b31a93e48f3636754\", 19], \"weather.py\": [\"3c63064d7e4ec445d2a0c9b5afa9f69c833eb5c156605db82065583594e293b4\", 8179]}, \"notes\": \"Home Assistant over MQTT: the Pico sends readings straight to HA, which finds each tank by itself\", \"ref\": \"v1.2.53\", \"version\": \"1.2.53\"}",
-  "sig": "1276378a0b140132d7dc0e7024af37f5219bb0beece431411e60e38601b7291de8cf87782edf20d9dc2abd3c15f47c8bde6e0a6ba3df35a3e23a1edef003fc9d87bad473a5b74251b978b91a72a8081dc0da5576c9b62975482d3416cadb7a8849fbbc8c6cafb3de68dddfbdd3540757489d750c50c08e3f70c71748b222f2f03d65c5b0e180759045e106342b759399e970b08ee98a5ae2478adef62a6447823cb078b097749c6abcf87e2cb56336e04d64bc1606ec120cb8c4fddecd5205fd7b1daba8132da4ca3cdfb9da9fa8d2fb5be27319efe145193546f8594934636e628c933edf1577e1421bd5a46d357a05083095ab92ba01f327ea306bc59cef5f"
+  "body": "{\"files\": {\"app.py\": [\"12ca1897f01c1b82e0947e518fb928fb602af6f4c317e9b04daca9ef5eaf20ba\", 121745], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"9b3ec748a1477d8dfba6c716be46e21951787d66380ef192c3d76ad71bf38caa\", 20015], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"536701cb3e471b6cd11068e6e1ec786ae7c836e8c93605ab23a905e1a4ea2356\", 60317], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"d37ffab06ed2f4a6d36990b6237c603ed45ce61f7180c2263dfddf138545aa20\", 5083], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"7f4c361fe098125b2657800d0ca5c94f7b91756d3f4432e3b9588dc5ccf0fb66\", 94320], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"e7e38503bc7362d0e1c553d18fdad6bb974d0a2a9e41993c7fab51e3db86e9d4\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744]}, \"notes\": \"Tank modes (In use / Standby / Off, 'switch to' warnings), the order-by date for Home Assistant, readings kept while the clock is unset, and a full audit's fixes: safer updates and rollback, watchdog and self-restarting tasks, settings never lost on a read error, faster pages and forecasts.\", \"ref\": \"v1.3.0\", \"version\": \"1.3.0\"}",
+  "sig": "0dd09f35572cd4f702fa6b26681ef4dee1d8c0a7b04447c5f3ae0dd5f4173b906d44390b76ccbff525642e4c5e6a14fc4abe719b68aa8549f3bbe7687f5df8c77e328800bf3f31fa468ebc122b637b13b8e54d403148db5cf27bb4d08f7fb6c8a1534cd6b7f879ab48881a75a8f8efbd9b828dbd7696c7253c4b0049250f5756c49fd5be8fa79da0346c9cc7d9ebc117bbbaa8a5d2f2ae864a122812d56b973643e2a31f8da1c4587fd197055363b5e01628e742a5de5633b0d3ffaec190fb963aea662c4cd2ea7e271acb6a0e54f2c41733c8daf12bef8067c0e55368ff78f10855aa6bc2280b3e6d70d4a16c392c4385e13df214fad7c2329610a37c4c6fef"
  }
 }
