@@ -60,4 +60,4 @@ class Listener:
 
     def info(self, mac):
         e = self.s.get(mac)
-        return None if e is None else {'read_at': e['chg'], 'next': e['next'], 'period': e['period']}
+        return None if e is None else {'read_at': e['chg'], 'next': e['next'], 'period': e['period'], 'heard_from': e['first']}

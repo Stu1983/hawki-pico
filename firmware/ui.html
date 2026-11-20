@@ -523,7 +523,7 @@ async function exportCsv(){try{bst('Preparing CSV…');const s=await api('/api/s
    not the life left: a new cell settles at about 3.0 V, "80%", for most of its life, so the % misleads), coloured, and what
    to do about it. The Magnus app says BAD at 2.74 V (62%); the low-battery alert goes at 2.78 V (65%) */
 function battState(b){return b==null?null:b<=65?['bad','replace battery']:b<=72?['warn','order battery']:['good','good']}
-function battTxt(t){if(t.starting)return 'starting up';const s=battState(t.battery);return s?`<b class="bt ${s[0]}">${(2+1.2*t.battery/100).toFixed(2)} V (${s[1]})</b>`:'–'}
+function battTxt(t){if(t.starting)return 'starting up'+(t.poked&&t.poked.at?' (asked it to measure at '+new Date(t.poked.at*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+')':'');const s=battState(t.battery);return s?`<b class="bt ${s[0]}">${(2+1.2*t.battery/100).toFixed(2)} V (${s[1]})</b>`:'–'}
 const pDay=t=>new Date(t*1000).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 /* Earlier readings: pasted in, turned into the distances the monitor would have read, merged into the tank's history */
 function pasteTanks(){const el=$('pTank'),ts=(S&&S.tanks)||[],v=el.value,k=JSON.stringify(ts.map(t=>[t.mac,t.name]));if(el.dataset.k===k)return;el.dataset.k=k;el.textContent='';  /* (only when the tanks changed: a reload never wipes what the card says) */for(const t of ts){const o=document.createElement('option');o.value=t.mac;o.textContent=t.name;el.appendChild(o)}if(ts.some(t=>t.mac===v))el.value=v;pastePrev()}

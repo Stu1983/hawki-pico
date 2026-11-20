@@ -24,7 +24,7 @@ saved = []
 g = {'time': T, 'asyncio': asyncio, 'json': json, 'os': os, 'gc': __import__('gc'), 'conns': [0], 'on_ap': lambda p: False,
      'net_proof': lambda: None, 'page_s': [None], 'mono_s': lambda: 0, 'cfg': {'tanks': {}, 'pin': 'x'}, 'TOKEN': 'tok',
      'authed': lambda a: a == 'good', 'save_cfg': lambda c: saved.append(dict(c)), 'print': lambda *a: None,
-     'unset': types.SimpleNamespace(clear=lambda m: None), 'last_saved': {}}
+     'unset': types.SimpleNamespace(clear=lambda m: None), 'last_saved': {}, 'poke_st': {}, 'poke_info': {}, 'radio_busy': [False]}
 exec(compile(ast.Module([n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n.name in names
                          or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in names for t in n.targets)], []), 'app.py', 'exec'), g)
 

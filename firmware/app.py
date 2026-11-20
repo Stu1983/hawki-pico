@@ -44,6 +44,7 @@ import notify
 import weather
 import price
 import battlog
+import poke
 import netcfg
 import unset
 import mqtt
@@ -1452,7 +1453,7 @@ def tank_view(mac, t, now):
     return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct, 'order_by': ob,
             # misread: the rejected reading (-1: no level at all), or None
             'misread': (-1 if d['bad_level'] is None else d['bad_level']) if 'bad_level' in d else None, 'good_at': d.get('good_at'), 'saved': bool(d.get('saved')), 'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': list(un) if un else un, 'listen': listener.info(mac),
-            'battery': batt_of(d), 'starting': starting(d), 'rssi': d.get('rssi'),
+            'battery': batt_of(d), 'starting': starting(d) or poke.stuck(d), 'poked': poke_info.get(mac), 'rssi': d.get('rssi'),
             'age': (now - d['good_at'] if d.get('good_at') else None) if 'bad_level' in d or d.get('saved') else (now - d['rx']) if d.get('rx') else None,  # after a misread: the shown level's own age
             'cfg': cfg_view(t)}
 
@@ -2722,6 +2723,8 @@ async def handle(r, w):
                 if len(left) == 1:
                     left[0].pop('group', None)
             (cfg.get('alerted') or {}).pop(dm, None)
+            poke_st.pop(dm, None)
+            poke_info.pop(dm, None)
             unset.clear(dm)  # (readings kept aside while the clock was unset: not for a tank that's gone)
             last_saved.pop(dm, None)
             save_cfg(cfg)
@@ -2832,6 +2835,8 @@ async def handle(r, w):
                 await asyncio.sleep(0.5)
                 restart()
             if path == '/run':
+                if radio_busy[0]:  # (the Pico is talking to a monitor: it would cut in on that)
+                    return await send(w, 409, '"busy asking a monitor to measure: try again in a minute"')
                 g = {'ble': ble, 'seen': seen, 'start_scan': start_scan, 'scan_on': scan_on,
                      'hook': hook, 'asyncio': asyncio}
                 try:
@@ -3227,6 +3232,54 @@ async def price_task():
         await asyncio.sleep(600)
 
 
+radio_busy = [False]  # a monitor connected over Bluetooth (poke_task): /run waits
+poke_st = {}    # mac -> how long its monitor has been stuck starting up, and the asks so far (poke.due)
+poke_info = {}  # mac -> {'at': when we last asked it to measure (epoch), 'got': its answers, or 'err'}
+
+
+async def poke_task():
+    # A tank's monitor stuck starting up (just after a battery change, or new): ask it to measure now, as the Magnus
+    # app does (poke.py). One a minute at most; scanning paused while connected.
+    await asyncio.sleep(120)
+    while True:
+        await asyncio.sleep(60)
+        if hook[0] or not scan_on[0] or installing[0]:
+            continue  # (a /run experiment, or an update, has the radio)
+        for mac in list(cfg['tanks']):
+            d, e = hawki.get(mac), seen.get(mac)
+            if not d or not e:
+                continue
+            st = poke_st.setdefault(mac, {})
+            li = listener.info(mac)
+            # (since its last new measurement; none since this start: since it was first heard, so one already stuck
+            # when the Pico started still counts)
+            since = li and (li.get('read_at') or li.get('heard_from'))
+            age = time.time() - since if since and time.time() > 1700000000 else None
+            if not poke.due(d, st, mono_s(), age):
+                continue
+            st['last'] = mono_s()
+            st['n'] = st.get('n', 0) + 1
+            radio_busy[0] = True  # (a /run experiment waits for it)
+            try:
+                scan_on[0] = False
+                stop_scan()
+                await asyncio.sleep_ms(300)
+                poke_info[mac] = {'at': int(time.time()), 'got': await poke.measure(ble, e['at'], mac, set_hook, asyncio)}
+            except Exception as ex:
+                poke_info[mac] = {'at': int(time.time()), 'err': str(ex) or repr(ex)}
+            finally:  # (whatever happens, cancelled too: the hook off, the scan back on)
+                hook[0] = None
+                radio_busy[0] = False
+                scan_on[0] = True
+                start_scan()
+            print('poke', mac, poke_info[mac])
+            break
+
+
+def set_hook(f):
+    hook[0] = f
+
+
 async def keep(fn, name):
     # A task that stops on an error is started again (otherwise it is gone until a restart: a dead Wi-Fi keeper
     # means no reconnect and no setup network). Waits 10 s, doubling to 10 min while it keeps failing quickly.
@@ -3295,7 +3348,8 @@ async def main():
     want = take_note('upd.want')
     tasks = ((recorder, 'recorder'), (scan_scheduler, 'scan'), (alerts, 'alerts'),
                      (weather_task, 'weather'), (price_task, 'price'), (mqtt_task, 'mqtt'),
-                     (net_trial_guard, 'net trial'), (update_guard, 'update guard'), (bootsel_reset, 'bootsel'), (dns_task, 'setup dns'))
+                     (net_trial_guard, 'net trial'), (update_guard, 'update guard'), (bootsel_reset, 'bootsel'), (dns_task, 'setup dns'),
+                     (poke_task, 'measure now'))
     asyncio.create_task(keep(wifi_keeper, 'wifi'))
     if want:
         try:
