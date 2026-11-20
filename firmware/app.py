@@ -9,6 +9,7 @@
 # Web/JSON:
 #   GET  /                    web page (ui.html)
 #   GET  /api/state           tanks + nearby unadded sensors + wifi status
+#   GET  /api/battlog?mac=    each monitor's battery once a day (battlog.py): [[day since 2000, volts, temp C]]
 #   POST /api/tank            add/update a tank (JSON body)       POST /api/tank/delete {"mac"}
 #   GET  /api/wifi/scan       nearby networks                     POST /api/wifi {"ssid","pw"} -> restart
 #   GET  /hawki               decoded readings (+ litres/percent for configured tanks)
@@ -42,6 +43,7 @@ from listen import Listener
 import notify
 import weather
 import price
+import battlog
 import netcfg
 import unset
 import mqtt
@@ -968,6 +970,11 @@ async def recorder():
                     print('hist err', ex)
                     break  # keep it; try again next time
                 pending.pop(0)
+                try:  # the monitor's battery, once a day, for the long run (battlog.py)
+                    d = hawki.get(mac) or {}
+                    battlog.add(mac, weather.day_of(t), batt_of(d), d.get('temperature'))
+                except Exception as ex:
+                    print('battlog err', ex)
                 try:
                     await drop_check(mac, t, lvl)
                 except Exception as ex:
@@ -2609,6 +2616,9 @@ async def handle(r, w):
                 return await send(w, 200, json.dumps(mqtt_view()))
             except Exception as ex:
                 return await send(w, 400, json.dumps(str(ex)))
+        if path == '/api/battlog':  # each monitor's battery once a day: [[day since 2000, volts, temperature C]]
+            bm = q.get('mac', '').replace('%3A', ':').replace('%3a', ':').lower()  # (only a tank's own monitor: the file is named by its last 6 digits)
+            return await send(w, 200, json.dumps([[d, round(2 + 1.2 * b / 100, 2), c] for d, b, c in battlog.read(bm)] if bm in cfg['tanks'] else []))
         if path == '/api/prices':
             try:
                 return await send_file(w, price.HFILE if q.get('h') == '1' else price.FILE, 'application/octet-stream')
