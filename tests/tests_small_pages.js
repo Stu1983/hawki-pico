@@ -39,4 +39,9 @@ function open(url,route){return new JSDOM(pg('ui.html'),{url,runScripts:'dangero
   const w=open('http://pico/#dash',u=>u.startsWith('/api/state')?{ok:true,status:200,json:async()=>s1}:u.startsWith('/api/hist')?{ok:true,status:200,arrayBuffer:async()=>b.buffer.slice(b.byteOffset,b.byteOffset+b.length)}:null);
   let P=null;const real=w.analyse;w.analyse=(p,o)=>{P=p;return real(p,o)};await wait(500);
   ok(P&&P.every((x,i)=>!i||x[0]>P[i-1][0]),'the series stays in time order ('+(P&&P.length)+' points)')}
+ {const w=open('http://pico/#tanks',()=>null);await wait(300);
+  const t=(b,x)=>{const d=w.document.createElement('div');d.innerHTML=w.battTxt(Object.assign({battery:b},x||{}));const e=d.querySelector('.bt');return e?[e.className,d.textContent]:[null,d.textContent]};
+  ok(JSON.stringify([t(82),t(73),t(72),t(66),t(65),t(62)])===JSON.stringify([['bt good','3.82 V (good)'],['bt good','3.73 V (good)'],['bt warn','3.72 V (order battery)'],['bt warn','3.66 V (order battery)'],['bt bad','3.65 V (replace battery)'],['bt bad','3.62 V (replace battery)']]),'battery: green good from 3.73 V, amber order battery 3.66-3.72, red replace battery at 3.65 V and below');
+  ok(t(1,{starting:true})[1]==='starting up'&&t(null)[1]==='–','a monitor starting up says so (not "3.01 V"); none: a dash');
+  ok(/3\.60 V \(replace battery\)/.test(w.document.getElementById('p_tanks').textContent),'the Tanks card shows it: '+(w.document.getElementById('p_tanks').textContent.match(/battery [^·]*/)||[''])[0])}
  process.exit(fails?1:0)})();

@@ -44,8 +44,11 @@ input{width:100%;font:inherit;font-size:16px;padding:8px;border:1px solid var(--
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);width:min(480px,calc(100vw - 32px));padding:16px}dialog::backdrop{background:#0008}
 .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.del{color:var(--bad)}.hint{font-size:12px;color:var(--mut);margin-top:3px;min-height:15px}
 .empty{color:var(--mut);font-size:14px}
+.nav{display:flex;gap:4px;margin:0 0 14px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}.nav::-webkit-scrollbar{display:none}
+.nav a{text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;color:var(--mut);padding:8px 14px;font-weight:600}.nav a:hover{color:var(--fg)}
+.nav a[aria-current=page]{color:var(--fg);border-bottom-color:var(--acc)}@media(max-width:400px){.nav a{padding:8px 9px}}
 </style></head><body><main>
-<a href="/">&larr; Tanks</a>
+<nav class="nav" aria-label="Pages"><a href="/#dash">Dashboard</a><a href="/#tanks">Tanks</a><a href="/history" aria-current="page">Forecast</a><a href="/#cfg">Config</a></nav>
 <h1 id="ttl">History</h1><div class="sub" id="sub">Loading…</div>
 <div class="tabs" id="tabs"></div>
 <div class="seg" id="pgs"><button type="button" data-pg="use" onclick="page('use')">Usage</button><button type="button" data-pg="cost" onclick="page('cost')">Costs</button><button type="button" data-pg="del" onclick="page('del')">Deliveries</button></div>
@@ -197,7 +200,7 @@ function drawWeather(){const c4=$('c4'),c5=$('c5'),c6=$('c6');[c4,c5,c6].forEach
  const has=WX&&Object.keys(WX).length,note=$('wxNote');
  const H4=150,W=fit(c4,H4);fit(c5,H4);const H6=220,W6=fit(c6,H6),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr;
  if(!has){[c4,c5,c6].forEach(x=>el('text',{x:W/2,y:60,'text-anchor':'middle'},x,WX?'No temperatures yet':'Loading…'));
-  note.textContent=S&&S.wx&&S.wx.name?(S.wx.err?'Could not fetch the weather: '+S.wx.err:'Fetching the weather for '+S.wx.name+'…'):'Set your location under Forecast → Weather to compare your use with the outside temperature.';return}
+  note.textContent=S&&S.wx&&S.wx.name?(S.wx.err?'Could not fetch the weather: '+S.wx.err:'Fetching the weather for '+S.wx.name+'…'):'Set your location under Config → Forecast → Weather to compare your use with the outside temperature.';return}
  const t1=midnight(now),t0=addDays(t1,-60),days=[];for(let t=t0;t<t1;t=addDays(t,1))days.push(t);
  const x=t=>ml+(t-t0)/(t1-t0)*pw,bw=Math.max(1,pw/60-2);
  const use=t=>A&&A.days&&A.days[t]!=null?Math.max(0,A.days[t]):null,wx=t=>WX[ymdL(t)]||null;
@@ -347,7 +350,7 @@ function tiles(){
  const h=$('how');h.textContent='';
  const p=s=>{const e=document.createElement('p');e.style.margin='0 0 8px';e.textContent=s;h.appendChild(e)};
  p('The Pico keeps one reading an hour for each tank for 2 years (about 50 KB a year), then one a day (about 2 KB a year), so there is room for decades of history.');
- if(!fo){p('Forecasts start once there are 2 days of readings, or straight away if you give the oil used in a typical year (Forecast tab).');return}
+ if(!fo){p('Forecasts start once there are 2 days of readings, or straight away if you give the oil used in a typical year (Config → Forecast).');return}
  p(howText(A));}
 
 // ---------- deliveries & costs ----------
@@ -450,7 +453,7 @@ function drawPrices(){const c7=$('c7');c7.textContent='';const Hh=200,W=fit(c7,H
  $('prHead').textContent=pr.on?'· '+(pr.pc||'Northern Ireland'):'';
  const paid=receipts().filter(r=>r.c!=null&&r.l).map(r=>[r.t,r.c/r.l*100]);let q=PR||[];
  if(!q.length&&!paid.length){el('text',{x:W/2,y:Hh/2,'text-anchor':'middle'},c7,PR?'No prices yet':'Loading…');
-  $('prNote').textContent=pr.on?'Quotes are saved once a day from now on, so this fills in over time.':'Turn on oil prices under Forecast → Oil prices (Northern Ireland).';return}
+  $('prNote').textContent=pr.on?'Quotes are saved once a day from now on, so this fills in over time.':'Turn on oil prices under Config → Forecast → Oil prices (Northern Ireland).';return}
  const rg=$('prRng');rg.textContent='';const span0=q.length?(now-q[0][0])/DAY:0;
  if(span0>400)[['1','1 year'],['3','3 years'],['all','All']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',k===PRR);b.onclick=()=>{PRR=k;try{localStorage.hawkiPrRange=k}catch(e){}drawPrices()};rg.appendChild(b)});
  const t1=now,t0=span0>400&&PRR!=='all'?now-(+PRR)*365*DAY:Math.min(now-90*DAY,q.length?q[0][0]:now),qa=q,pts=paid.filter(p=>p[0]>=t0);q=q.filter(r=>r[0]>=t0);

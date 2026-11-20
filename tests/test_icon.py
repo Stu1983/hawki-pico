@@ -63,7 +63,7 @@ for page in ('ui.html', 'hist.html'):
     h = open(os.path.join(FW, page)).read().split('</head>')[0]
     ok('rel="apple-touch-icon" href="/apple-touch-icon.png"' in h and 'rel="manifest"' in h and 'apple-mobile-web-app-title' in h,
        '%s names the icon, the manifest and the app\'s name' % page)
-ok('href="/"' in open(os.path.join(FW, 'hist.html')).read(), 'the history page links back to the dashboard (no browser back button full screen)')
+ok('href="/#dash"' in open(os.path.join(FW, 'hist.html')).read(), 'the history page links back to the dashboard, in its top bar (no browser back button full screen)')
 # the widget script, served by the Pico with its own name in it
 os.chdir(FW)
 g['HOSTNAME'] = 'oil-shed'

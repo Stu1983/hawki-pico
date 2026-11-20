@@ -1445,7 +1445,7 @@ def tank_view(mac, t, now):
     return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct, 'order_by': ob,
             # misread: the rejected reading (-1: no level at all), or None
             'misread': (-1 if d['bad_level'] is None else d['bad_level']) if 'bad_level' in d else None, 'good_at': d.get('good_at'), 'saved': bool(d.get('saved')), 'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': list(un) if un else un, 'listen': listener.info(mac),
-            'battery': d.get('battery'), 'rssi': d.get('rssi'),
+            'battery': batt_of(d), 'starting': d.get('timestamp') == 0, 'rssi': d.get('rssi'),
             'age': (now - d['good_at'] if d.get('good_at') else None) if 'bad_level' in d or d.get('saved') else (now - d['rx']) if d.get('rx') else None,  # after a misread: the shown level's own age
             'cfg': cfg_view(t)}
 
@@ -1613,10 +1613,16 @@ BATT_REARM = 75   # 3.75 V: a new battery (back above this) arms it again
 batt_seen = {}    # mac -> [last payload counted, lows in a row, highs in a row]
 
 
+def batt_of(d):
+    # the battery field, or None while the monitor is starting up (just after a battery change: its clock reads 0
+    # and it sends a placeholder, 1 = '3.01 V', until its first measurement)
+    return None if d.get('timestamp') == 0 else d.get('battery')
+
+
 async def battery_check(n, mac, t, d, a):
     # Counts MEASUREMENTS (the monitor repeats each hourly one in between), so it takes three hourly
     # readings in a row to alert (one cold reading doesn't), and three good ones to re-arm.
-    b = d.get('battery')
+    b = batt_of(d)
     if b is None:
         return
     st = batt_seen.setdefault(mac, [None, 0, 0])
@@ -1760,7 +1766,7 @@ def redo_stale(r, n, now):
     if k == 'reorder' and mode_of(t) != 'use':
         return 'not in use'  # (standby: no warning of its own)
     d = hawki.get(mac) or {}
-    if k == 'battery' and d.get('battery') is not None and d['battery'] > BATT_LOW:
+    if k == 'battery' and batt_of(d) is not None and batt_of(d) > BATT_LOW:
         return 'battery fine now'
     if k == 'reorder' and d.get('level') not in (None, 16383):
         lit = reading(t, d['level'])[0]

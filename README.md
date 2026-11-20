@@ -18,7 +18,7 @@ The Pico listens for the monitors' Bluetooth broadcasts, turns each reading into
 - **Costs.** Record the supplier and price for each delivery to track pence per litre, money spent and running cost. In Northern Ireland, today's oil prices from cheapestoil.co.uk can be shown alongside, for your postcode district from the day you switch them on, with the all-Northern Ireland figures for the years before (cheapestoil.co.uk's chart has no history by district). `tools/pricehist.py` keeps that history up to date here, run weekly by a GitHub Action.
 - **Home Assistant (optional).** Built in over MQTT: Home Assistant finds each tank by itself (MQTT discovery), with litres, %, battery voltage, the order-by date and more. (Since 1.3.10 the battery is `sensor.hawki_<last 4>_battery_v`, in volts; the older `_battery` sensor in % is removed.) (`tools/ha-bridge.sh` is the older way, from a separate computer.)
 - **Backup.** Export and import the tanks, deliveries and readings (not the Wi-Fi, PIN or alert settings), or export the readings as CSV.
-- **Earlier readings.** Readings from before the Pico (from the Magnus app's history, for example) can be pasted in under **Forecast → Earlier readings**, one a line: `2026-11-12 08:00 850 L` or `12/11/2026 8:00pm 64%`.
+- **Earlier readings.** Readings from before the Pico (from the Magnus app's history, for example) can be pasted in under **Config → Forecast → Earlier readings**, one a line: `2026-11-12 08:00 850 L` or `12/11/2026 8:00pm 64%`.
 - **Updates.** Press *Check for updates* on the page to install new releases from this repo.
 - **A PIN.** Changing settings needs the admin PIN; looking doesn't.
 
@@ -65,7 +65,7 @@ These work while your phone is on your home Wi-Fi (the Pico isn't reachable from
 
 **A widget showing the oil left (iPhone, iPad).** The free [Scriptable](https://apps.apple.com/app/scriptable/id1405459188) app runs the widget script (`firmware/widget.js.html`), which shows the oil left, % full, the order-by date (amber three weeks ahead, red one week ahead) and how old the reading is. Away from home it shows the last figures it had, marked "as of". Tapping it opens the monitor's page.
 
-The steps are on the Pico's own page, under **Notifications → On your phone**, with a button that copies the script (already set to the Pico's name) ready to paste into Scriptable. In short: install Scriptable, copy the script, paste it into a new Scriptable script named **Oil** and run it once at home (allow it to find devices on your local network), then add a Scriptable widget to the home or lock screen and choose **Oil**. If your phone can't reach the monitor by its name, put its address (e.g. `http://192.168.1.57`) in the widget's **Parameter**.
+The steps are on the Pico's own page, under **Config → Notifications → On your phone**, with a button that copies the script (already set to the Pico's name) ready to paste into Scriptable. In short: install Scriptable, copy the script, paste it into a new Scriptable script named **Oil** and run it once at home (allow it to find devices on your local network), then add a Scriptable widget to the home or lock screen and choose **Oil**. If your phone can't reach the monitor by its name, put its address (e.g. `http://192.168.1.57`) in the widget's **Parameter**.
 
 iOS decides how often a widget refreshes (usually every 15 to 30 minutes). The order-by date appears once the dashboard has been opened, since it's worked out there.
 

@@ -4,8 +4,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Oil Tanks">
 <title>Oil Tanks</title>
 <style>
-:root{--bg:#f4f5f7;--card:#fff;--fg:#1d2433;--mut:#6b7385;--line:#e2e5ea;--acc:#2f6fdb;--acc2:#a9c4f0;--oil:#c9a43f;--bad:#c4423b;--warn:#c98a1a}
-@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--fg:#e8ebf1;--mut:#9aa3b5;--line:#2b3240;--acc:#6aa0ff;--acc2:#2f4a78;--oil:#d8b450;--bad:#ff7a70;--warn:#e0a640}}
+:root{--bg:#f4f5f7;--card:#fff;--fg:#1d2433;--mut:#6b7385;--line:#e2e5ea;--acc:#2f6fdb;--acc2:#a9c4f0;--oil:#c9a43f;--bad:#c4423b;--warn:#c98a1a;--good:#2e8540}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--fg:#e8ebf1;--mut:#9aa3b5;--line:#2b3240;--acc:#6aa0ff;--acc2:#2f4a78;--oil:#d8b450;--bad:#ff7a70;--warn:#e0a640;--good:#5cc47a}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 main{max-width:720px;margin:0 auto;padding:16px}
 h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:22px 0 8px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
@@ -26,11 +26,11 @@ dialog::backdrop{background:#0008}
 #viz .dim,.tkv .dim{stroke:var(--mut);stroke-width:.8;fill:none}#viz text,.tkv text{font:9px system-ui,sans-serif;fill:var(--mut)}#viz .g,.tkv .g{stroke-dasharray:4 3;opacity:.6}
 #viz .hl{stroke-width:2.6!important;opacity:1}#viz .lbl,.tkv .lbl{fill:var(--fg);font-weight:600}.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .lnk{color:var(--acc);font-size:14px;margin-right:8px;text-decoration:none}.empty{color:var(--mut);font-size:14px;padding:6px 2px}.hint{font-size:12px;color:var(--mut);margin-top:3px}
-.tabs{display:flex;gap:4px;margin:12px 0 14px;border-bottom:1px solid var(--line)}.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mut);padding:8px 14px;font-weight:600}
-.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}
-.tabs{overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs button{white-space:nowrap;flex:0 0 auto}
-/* five tabs on a phone: edge to edge, a little smaller, sharing the width (a very narrow screen scrolls them) */
-@media(max-width:520px){.tabs{margin-left:-16px;margin-right:-16px;padding:0 4px;gap:0}.tabs button{flex:1 0 auto;padding:8px 4px;font-size:13px}}
+.tabs{display:flex;gap:4px;margin:12px 0 14px;border-bottom:1px solid var(--line)}.tabs a{text-decoration:none;display:inline-block}.tabs button,.tabs a{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mut);padding:8px 14px;font-weight:600}
+.tabs a:hover{color:var(--fg)}.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}
+.tabs{overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs button,.tabs a{white-space:nowrap;flex:0 0 auto}
+@media(max-width:400px){.tabs button,.tabs a{padding:8px 9px}}
+.sub{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 6px}.sub button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:var(--card)}
 .ftabs{display:flex;margin:10px 0 12px;border-bottom:1px solid var(--line)}.ftabs button{flex:1;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mut);padding:8px 4px;font-weight:600;font-size:14px}
 .ftabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}.ftabs button:disabled{opacity:.4;cursor:default}#dlg{height:min(860px,calc(100dvh - 24px));max-height:none;padding:14px 16px}#dlg form{display:flex;flex-direction:column;height:100%;overflow-y:auto}#dlg #viz{flex:0 1 auto;min-height:0;margin-bottom:6px}#dlg .acts{flex:none;margin-top:10px}
 .fpg{flex:1 0 150px;min-height:150px;overflow-y:auto;overscroll-behavior:contain;padding:2px 2px 8px}.fpg[hidden]{display:none}.ftabs{flex:none}
@@ -58,9 +58,10 @@ dialog::backdrop{background:#0008}
 #tfull{width:100vw;height:100vh;max-width:none;max-height:none;margin:0;padding:12px;box-sizing:border-box;border:0;border-radius:0;background:var(--bg)}
 #tfull[open]{display:flex;flex-direction:column}#tfull svg{flex:1;min-height:0;width:100%;height:100%;background:var(--bg)}
 #tfull .row{flex:none}
+.bt{font-weight:600;white-space:nowrap}.bt.good{color:var(--good)}.bt.warn{color:var(--warn)}.bt.bad{color:var(--bad)}
 </style></head><body><main>
 <h1>Oil Tanks</h1><div class="sub" id="status">Loading…</div>
-<nav class="tabs" role="tablist"><button role="tab" data-p="dash">Dashboard</button><button role="tab" data-p="tanks">Tanks</button><button role="tab" data-p="fc">Forecast</button><button role="tab" data-p="ntf">Notifications</button><button role="tab" data-p="cfg">Config</button></nav>
+<nav class="tabs" role="tablist"><button role="tab" data-p="dash">Dashboard</button><button role="tab" data-p="tanks">Tanks</button><a role="tab" id="navHist" href="/history">Forecast</a><button role="tab" data-p="cfg">Config</button></nav>
 
 <section id="p_setup" class="su" hidden>
 <div class="sstep" aria-hidden="true"><i id="ss1"></i><i id="ss2"></i><i id="ss3"></i></div>
@@ -92,7 +93,7 @@ dialog::backdrop{background:#0008}
 </section>
 
 <section id="p_dash">
-<div class="row dh"><b id="d_name">&nbsp;</b><a class="lnk" id="d_hist" href="/history">History &amp; forecast</a></div>
+<div class="row dh"><b id="d_name">&nbsp;</b></div>
 <div id="d_sw" class="mut" style="display:flex;gap:8px;align-items:center;height:0;overflow:hidden"></div>
 <div class="tiles">
  <div class="card tile"><div class="tl">Usable oil left</div><div class="big" id="d_l">–</div><div class="mut" id="d_l2">&nbsp;</div><div class="bar"><i id="d_bar" style="width:0"></i></div></div>
@@ -111,10 +112,37 @@ dialog::backdrop{background:#0008}
 <div id="tanks"><div class="empty">Loading…</div></div>
 <div id="tk0" hidden><div class="card"><b>No tanks yet</b><div class="mut" style="margin-top:4px">Add yours from the HAWKi sensors the monitor can hear. Yours is usually the strongest signal (the number nearest zero); neighbours' may show too. A new one can take a minute to appear.</div></div>
 <h2>Sensors nearby</h2><div id="found2"><div class="empty">Loading…</div></div></div>
-<div class="mut" id="tk1" style="margin-top:4px">New sensors show under <a class="lnk" href="#cfg" style="margin:0">Config → Sensors nearby</a>.</div>
+<div class="mut" id="tk1" style="margin-top:4px">New sensors show under <a class="lnk" href="#sys" style="margin:0">Config → Sensors nearby</a>.</div>
 </section>
 
-<section id="p_fc" hidden>
+<section id="p_cfg" hidden>
+<div class="sub" role="tablist"><button type="button" data-s="sys" onclick="sub('sys')">Config</button><button type="button" data-s="fc" onclick="sub('fc')">Forecast</button><button type="button" data-s="ntf" onclick="sub('ntf')">Notifications</button></div>
+<div id="p_sys">
+<h2>Sensors nearby</h2>
+<div class="mut" style="margin:-4px 0 8px">HAWKi monitors the Pico can hear that aren't added yet. The strongest signal is usually yours; neighbours' monitors may show here too.</div>
+<div id="found"><div class="empty">Loading…</div></div>
+
+<h2>Software</h2>
+<div class="card"><div class="row"><div><div id="ver">Version …</div><div class="mut" id="ver2">&nbsp;</div></div><button id="updBtn" onclick="updClick()">Check for updates</button></div>
+<div class="mut" id="updBox" style="white-space:pre-wrap;min-height:18px;margin-top:6px"></div>
+<div class="row" style="margin-top:10px"><div><div>Restart the Pico</div><div class="mut" id="rstM">Saves the latest readings first. Back in about 30 seconds.</div></div><button id="rstBtn" onclick="restartPico()">Restart</button></div></div>
+
+<h2>Wi-Fi &amp; network</h2>
+<div class="card"><div class="row"><div><div id="wifi">…</div><div class="mut" id="wifi2">&nbsp;</div></div><button onclick="openWifi()">Change</button></div>
+<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Name on the network: <b id="hn" style="white-space:nowrap">…</b></div><div class="mut" id="hn2">&nbsp;</div></div><button onclick="changeHost()">Change</button></div>
+<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Address: <b id="na" style="white-space:nowrap">…</b></div><div class="mut" id="na2" style="min-height:36px">&nbsp;</div></div><button onclick="openNet()">Change</button></div></div>
+
+<h2>Security</h2>
+<div class="card"><div class="row"><div><div id="secT">…</div><div class="mut" id="secM">&nbsp;</div></div><span><button id="secB" onclick="secClick()">Set PIN</button> <button id="secOut" onclick="signOut()" style="visibility:hidden">Sign out</button></span></div>
+<label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--fg)"><input type="checkbox" id="maint" style="width:auto;margin:0" onchange="setMaint(this)"> Allow maintenance uploads</label>
+<div class="hint">Lets someone with this Pico's maintenance token (it's in config.json, readable over USB) upload files and run code over Wi-Fi. Leave it off unless you're fixing something.</div></div>
+
+<h2>Backup</h2>
+<div class="card"><div class="mut">A backup holds every tank's settings, deliveries (supplier and price) and all saved readings. It doesn't include the Wi-Fi password. Importing one onto this or a new Pico replaces those tanks' settings and deliveries and merges the readings.</div>
+<div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button onclick="exportBackup()">Export backup</button><button onclick="exportCsv()">Export readings (CSV)</button><button onclick="$('impf').click()">Import backup</button>
+<input type="file" id="impf" accept=".json,application/json" hidden onchange="importBackup(this.files[0])"></div><div class="mut" id="bkst" style="min-height:18px;margin-top:6px"></div></div>
+</div>
+<div id="p_fc" hidden>
 <h2>Forecast</h2>
 <div class="card"><div>Oil used in a typical year</div><div class="mut" style="margin:4px 0 10px">Optional. It stands in for last year until you have one of your own: each month is forecast from it, scaled by how you are running against it so far, and it is the average year on the history page. A month you have real readings for goes by those from then on, never mixed with this. Leave it empty if you don't know.</div>
 <div class="row" style="gap:8px;justify-content:flex-start"><input id="yr_l" type="number" inputmode="numeric" min="100" max="50000" step="50" placeholder="Litres, e.g. 2100" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')yrSave()"><button onclick="yrSave()">Save</button></div>
@@ -138,9 +166,8 @@ dialog::backdrop{background:#0008}
 <textarea id="pTxt" rows="6" spellcheck="false" autocapitalize="off" style="width:100%;box-sizing:border-box;margin-top:8px;font:inherit;font-size:16px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)" placeholder="2026-11-12 08:00 850 L" oninput="pastePrev()"></textarea>
 <div class="mut" id="pPrev" style="min-height:18px;margin-top:6px"></div>
 <div class="acts" style="justify-content:flex-start"><button id="pBtn" onclick="pasteAdd()" disabled>Add readings</button></div></div>
-</section>
-
-<section id="p_ntf" hidden>
+</div>
+<div id="p_ntf" hidden>
 <h2>Notifications</h2>
 <div class="card"><div class="mut" style="margin-bottom:10px">Alerts go to your phone through <b>Pushover</b> (pushover.net) or <b>ntfy</b> (free, no account: install the ntfy app and subscribe to the topic below), or both.</div>
 <div class="grid">
@@ -182,32 +209,7 @@ dialog::backdrop{background:#0008}
 <label>Password<input id="mq_pw" type="password" autocomplete="new-password"></label>
 </div>
 <div class="acts"><button class="pri" onclick="mqSave()">Save</button></div></div>
-</section>
-
-<section id="p_cfg" hidden>
-<h2>Sensors nearby</h2>
-<div class="mut" style="margin:-4px 0 8px">HAWKi monitors the Pico can hear that aren't added yet. The strongest signal is usually yours; neighbours' monitors may show here too.</div>
-<div id="found"><div class="empty">Loading…</div></div>
-
-<h2>Software</h2>
-<div class="card"><div class="row"><div><div id="ver">Version …</div><div class="mut" id="ver2">&nbsp;</div></div><button id="updBtn" onclick="updClick()">Check for updates</button></div>
-<div class="mut" id="updBox" style="white-space:pre-wrap;min-height:18px;margin-top:6px"></div>
-<div class="row" style="margin-top:10px"><div><div>Restart the Pico</div><div class="mut" id="rstM">Saves the latest readings first. Back in about 30 seconds.</div></div><button id="rstBtn" onclick="restartPico()">Restart</button></div></div>
-
-<h2>Wi-Fi &amp; network</h2>
-<div class="card"><div class="row"><div><div id="wifi">…</div><div class="mut" id="wifi2">&nbsp;</div></div><button onclick="openWifi()">Change</button></div>
-<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Name on the network: <b id="hn" style="white-space:nowrap">…</b></div><div class="mut" id="hn2">&nbsp;</div></div><button onclick="changeHost()">Change</button></div>
-<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Address: <b id="na" style="white-space:nowrap">…</b></div><div class="mut" id="na2" style="min-height:36px">&nbsp;</div></div><button onclick="openNet()">Change</button></div></div>
-
-<h2>Security</h2>
-<div class="card"><div class="row"><div><div id="secT">…</div><div class="mut" id="secM">&nbsp;</div></div><span><button id="secB" onclick="secClick()">Set PIN</button> <button id="secOut" onclick="signOut()" style="visibility:hidden">Sign out</button></span></div>
-<label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--fg)"><input type="checkbox" id="maint" style="width:auto;margin:0" onchange="setMaint(this)"> Allow maintenance uploads</label>
-<div class="hint">Lets someone with this Pico's maintenance token (it's in config.json, readable over USB) upload files and run code over Wi-Fi. Leave it off unless you're fixing something.</div></div>
-
-<h2>Backup</h2>
-<div class="card"><div class="mut">A backup holds every tank's settings, deliveries (supplier and price) and all saved readings. It doesn't include the Wi-Fi password. Importing one onto this or a new Pico replaces those tanks' settings and deliveries and merges the readings.</div>
-<div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button onclick="exportBackup()">Export backup</button><button onclick="exportCsv()">Export readings (CSV)</button><button onclick="$('impf').click()">Import backup</button>
-<input type="file" id="impf" accept=".json,application/json" hidden onchange="importBackup(this.files[0])"></div><div class="mut" id="bkst" style="min-height:18px;margin-top:6px"></div></div>
+</div>
 </section>
 <dialog id="tfull" onclick="if(event.target===this||event.target.closest('svg'))this.close()"><div class="row"><b id="tfullT"></b><span class="mut" id="tfullC"></span><button type="button" onclick="$('tfull').close()">Close</button></div><svg class="tkv" role="img" aria-label="The tank, full screen"></svg></dialog>
 <dialog id="dlg"><form method="dialog" novalidate onsubmit="return saveTank(event)">
@@ -335,14 +337,16 @@ function readAt(t){const r=t.misread!=null||t.saved?t.good_at:t.listen&&t.listen
  return (late?'<b style="color:var(--bad)">no new reading since ':'read at ')+(late&&now-r>20*3600?d.toLocaleDateString([], {day:'numeric',month:'short'})+' ':'')+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(late?'</b>':'')}
 const okMac=m=>/^[0-9a-f:]{17}$/.test(m)?m:'';
 async function api(p,body){const r=await authFetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(r.status===401)throw new Error("The PIN is needed to change this.");if(!r.ok)throw new Error((await r.text()).replace(/^"|"$/g,''));return r.json()}  /* (the Pico's message, without its JSON quotes) */
-let LDN=0,FIRST=true;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render();if(!$('p_ntf').hidden)wjsLoad();if(!$('p_fc').hidden)pasteTanks();
+let LDN=0,FIRST=true;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render();if(!$('p_cfg').hidden&&SUB==='ntf')wjsLoad();if(!$('p_cfg').hidden&&SUB==='fc')pasteTanks();
  if(FIRST&&!SU){FIRST=false;if(!location.hash&&!S.tanks.length){history.replaceState(null,'','#tanks');tab('tanks')}}}catch(e){if(g===LDN){if(SU==='try'){$('s_tryM').textContent='Waiting for the monitor to answer (your phone may be rejoining the setup Wi-Fi)…';suFar()}else if(!FAR)$('status').textContent='Cannot reach the Pico: '+e.message}}}  /* (an older answer arriving after a newer one is dropped) */
+/* the Forecast tab opens the history page (forecast and history) for what the dashboard shows: its tank, or all tanks together (every refresh, whichever page is open) */
+function navHist(){const ts=S.tanks.filter(t=>modeOf(t.cfg)!=='off'),p=S.primary,t=p==='all'?(ts.length>1?'all':ts[0]&&ts[0].mac):S.tanks.some(x=>x.mac===p)?p:null;$('navHist').href=t?'/history?mac='+(t==='all'?'all':okMac(t)):'/history'}
 function render(){
  if(suCheck())return;
  $('status').textContent=S.ap&&!S.ssid?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
  if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
   $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':u.why==='memory'?'Restarted by itself to free up memory.':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':l.stage==='install'?'The update to '+l.to+' could not be installed: '+l.reason:'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
- secRender();netRender();notifyRender();wxRender();yrRender();prRender();mqRender();if(!$('p_dash').hidden)dash();
+ secRender();netRender();notifyRender();wxRender();yrRender();prRender();mqRender();navHist();if(!$('p_dash').hidden)dash();
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
  $('tanks').innerHTML=(S.tanks.length>1?`<div class="card"><div class="row" style="min-height:34px"><div><b>Both tanks together</b><div class="mut">Oil, use and forecast for the tanks combined</div></div>${S.primary==='all'?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('all')">Show on dashboard</button>`}</div></div>`:'')+(S.tanks.length?S.tanks.map(t=>{/* the Tanks page shows ALL the oil in the tank (the dashboard shows the usable oil): usable + what's below the outlet */
   const tot=t.total,whole=+t.cfg.tank_l,pc=tot!=null&&whole?Math.round(tot/whole*1000)/10:t.percent,big=tot??t.litres,p=pc??0;  /* total: worked out on the Pico from the reading, floor to surface */const md=modeOf(t.cfg);return `<div class="card"><div class="row"><b>${esc(t.name)}${md==='use'||S.tanks.length<2?'':' <span class="mut">('+(md==='off'?'off':'standby')+')</span>'}</b><button onclick="edit('${okMac(t.mac)}')">Edit</button></div>
@@ -350,7 +354,7 @@ function render(){
   <div class="row" style="margin-top:6px"><span class="big">${big==null?'–':Math.round(big)+' L'}</span><span class="big">${pc==null?'':pc+'%'}</span></div>
   <div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div>
   <div class="mut" style="min-height:36px">${big==null?'&nbsp;':tot==null?'Usable oil only (set the whole-tank capacity under Edit to see all of it)':'All the oil: '+Math.round(t.litres)+' L usable + '+Math.round(tot-t.litres)+' L below the outlet'}${t.total_standard!=null?' · Magnus-style maths (which also counts all the oil): '+Math.round(t.total_standard)+' L':''}</div>
-  <div class="row mut" style="flex-wrap:wrap;gap:2px 12px"><span style="white-space:nowrap">${t.level==null||t.level===16383?'no reading yet':t.level===16382?'nearly empty':t.level+' mm to oil'} · battery ${t.battery==null?'–':(3+t.battery/100).toFixed(2)+' V'+(t.battery<=65?' (low: replace soon)':'')}</span>${t.misread!=null?'<span style="white-space:nowrap;color:var(--warn)">latest reading '+(t.misread<0||t.misread===16383?'had no level':'was a misread ('+t.misread+' mm)')+(t.level!=null&&t.level!==16383?': showing the last good reading':'')+'</span>':''}<span style="white-space:nowrap">${readAt(t)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div>
+  <div class="row mut" style="flex-wrap:wrap;gap:2px 12px"><span style="white-space:nowrap">${t.level==null||t.level===16383?'no reading yet':t.level===16382?'nearly empty':t.level+' mm to oil'} · battery ${battTxt(t)}</span>${t.misread!=null?'<span style="white-space:nowrap;color:var(--warn)">latest reading '+(t.misread<0||t.misread===16383?'had no level':'was a misread ('+t.misread+' mm)')+(t.level!=null&&t.level!==16383?': showing the last good reading':'')+'</span>':''}<span style="white-space:nowrap">${readAt(t)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div>
   <details class="rd" data-mac="${okMac(t.mac)}"${RDO.has(t.mac)?' open':''} ontoggle="rdToggle(this)"><summary>Today's readings</summary><div class="rdb">${RD[t.mac]?RD[t.mac].html:'Loading…'}</div></details></div>`}).join('')
   :'');$('tk0').hidden=!!S.tanks.length;$('tk1').hidden=!S.tanks.length;
  RDO.forEach(m=>rdLoad(m));  /* open ones: refresh when a new reading has come */
@@ -515,6 +519,10 @@ async function exportCsv(){try{bst('Preparing CSV…');const s=await api('/api/s
   const recs=[];for(let i=0;i+6<=v.byteLength;i+=6)recs.push([v.getUint32(i,true),v.getUint16(i+4,true)]);recs.sort((a,b)=>a[0]-b[0]);
   for(const[ts,mm]of recs){const L=toL(mm),d=new Date(ts*1000);rows.push([q(t.name),t.mac,d.toISOString(),mm===16382?'':mm,L.toFixed(1),(100*L/cap).toFixed(1)].join(','))}}
  download('oil-tanks-readings-'+day()+'.csv',rows.join('\n')+'\n','text/csv');bst('CSV saved: '+(rows.length-1)+' readings. Times are UTC.')}catch(e){bst('Export failed: '+e.message)}}
+/* the monitor's battery: volts (the field is hundredths over 3), coloured, and what to do about it. A new cell reads
+   about 3.80 V; the Magnus app says BAD by 3.62 V and the low-battery alert goes at 3.65 V */
+function battState(b){return b==null?null:b<=65?['bad','replace battery']:b<=72?['warn','order battery']:['good','good']}
+function battTxt(t){if(t.starting)return 'starting up';const s=battState(t.battery);return s?`<b class="bt ${s[0]}">${(3+t.battery/100).toFixed(2)} V (${s[1]})</b>`:'–'}
 const pDay=t=>new Date(t*1000).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 /* Earlier readings: pasted in, turned into the distances the monitor would have read, merged into the tank's history */
 function pasteTanks(){const el=$('pTank'),ts=(S&&S.tanks)||[],v=el.value,k=JSON.stringify(ts.map(t=>[t.mac,t.name]));if(el.dataset.k===k)return;el.dataset.k=k;el.textContent='';  /* (only when the tanks changed: a reload never wipes what the card says) */for(const t of ts){const o=document.createElement('option');o.value=t.mac;o.textContent=t.name;el.appendChild(o)}if(ts.some(t=>t.mac===v))el.value=v;pastePrev()}
@@ -551,13 +559,17 @@ async function importBackup(f){$('impf').value='';if(!f)return;let o;
   bst('Imported '+macs.length+' tank(s), '+nD+' deliveries and '+nR+' readings.');anReset();load()}catch(e){bst('Import failed: '+e.message)}}
 
 // ---------- tabs ----------
-const PAGES=['dash','tanks','fc','ntf','cfg'];
-function tab(p){if(SU){for(const k of PAGES)$('p_'+k).hidden=true;return}if(!PAGES.includes(p))p='dash';
+const PAGES=['dash','tanks','cfg'],SUBS=['sys','fc','ntf'];let SUB='sys';try{if(SUBS.includes(localStorage.hawkiSub))SUB=localStorage.hawkiSub}catch(e){}
+function tab(p){if(SU){for(const k of PAGES)$('p_'+k).hidden=true;return}if(SUBS.includes(p)){SUB=p;p='cfg'}  /* (#fc, #ntf, #sys: Config, on that sub-tab) */if(!PAGES.includes(p))p='dash';
  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.p===p));
  {const sb=document.querySelector('.tabs button[data-p="'+p+'"]');if(sb&&sb.scrollIntoView&&sb.parentNode.scrollWidth>sb.parentNode.clientWidth)sb.scrollIntoView({block:'nearest',inline:'nearest'})}
- for(const k of PAGES)$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash();if(p==='cfg')seek();if(p==='ntf')wjsLoad();if(p==='fc')pasteTanks()}
+ for(const k of PAGES)$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash();if(p==='cfg')sub(SUB,true)}
+/* Config's three sub-tabs: Config (sensors nearby first: what a new monitor needs), Forecast, Notifications. The last one used is remembered */
+function sub(k,keep){if(!SUBS.includes(k))k='sys';SUB=k;try{localStorage.hawkiSub=k}catch(e){}if(!keep)history.replaceState(null,'','#'+(k==='sys'?'cfg':k));
+ document.querySelectorAll('.sub button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===k));for(const x of SUBS)$('p_'+x).hidden=x!==k;
+ if(k==='sys')seek();if(k==='ntf')wjsLoad();if(k==='fc')pasteTanks()}
 // Sensors nearby: the Pico normally only listens when a reading is due; ask it to look around while this is open
-/* the widget script for Scriptable: fetched when Notifications opens, so a tap can copy it at once (iPhones only allow
+/* the widget script for Scriptable: fetched when Config → Notifications opens, so a tap can copy it at once (iPhones only allow
    copying during the tap itself, not after waiting for a download) */
 let WJS=null,WJSH=null,WJSP=null,WJSG=0;  /* the script, the Pico name it was fetched for, the fetch under way, which fetch is current */
 function wjsLoad(){if(!S||!S.update)return;const h=S.hostname;  /* (only once the Pico's details are in: the script carries its name) */if(WJS&&WJSH!==h){WJS=null;WJSP=null}  /* (renamed: fetch it again, with the new name in it) */
@@ -568,7 +580,7 @@ function copyWidget(){const M=$('wjst');wjsLoad();if(!WJS){M.textContent='Gettin
   t.focus();t.select();t.setSelectionRange(0,WJS.length);done=document.execCommand('copy');t.remove()}catch(x){}
  if(!done&&navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(WJS).then(()=>{M.textContent='Copied. Now paste it into Scriptable (step 3).'}).catch(()=>{});return}
  M.textContent=done?'Copied. Now paste it into Scriptable (step 3).':'Your browser wouldn\'t copy it here: tap Show it, then press and hold the text, Select All, Copy.'}
-function seek(){if((!$('p_cfg').hidden||!$('p_tanks').hidden&&S&&S.tanks&&!S.tanks.length)&&!document.hidden)fetch('/api/discover').catch(()=>{})}
+function seek(){if((!$('p_cfg').hidden&&SUB==='sys'||!$('p_tanks').hidden&&S&&S.tanks&&!S.tanks.length)&&!document.hidden)fetch('/api/discover').catch(()=>{})}
 setInterval(seek,60000);
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{history.replaceState(null,'','#'+b.dataset.p);tab(b.dataset.p)});
 addEventListener('hashchange',()=>tab(location.hash.slice(1)));
@@ -681,7 +693,7 @@ function swHint(){const el=$('d_sw'),h=S.switch,sb=S.tanks.some(x=>modeOf(x.cfg)
 async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.tanks.filter(x=>modeOf(x.cfg)!=='off');  /* off tanks are left out of 'all tanks together' */
  if(S.primary==='all'&&act.length>1)return dashAll(act);const t=S.primary==='all'?act[0]:S.tanks.find(x=>x.mac===S.primary);
  $('d_name').textContent=t?t.name:S.tanks.length?'All tanks are off':'No tanks yet';
- $('d_hist').style.visibility=t?'visible':'hidden';if(t)$('d_hist').href='/history?mac='+okMac(t.mac);
+ $('navHist').href=t?'/history?mac='+okMac(t.mac):'/history';
  if(!t){['d_l','d_r','d_w','d_c'].forEach(i=>$(i).textContent='–');$('d_c2').textContent=$('d_c3').textContent=' ';$('d_l2').textContent=S.tanks.length?'Set a tank to In use: Tanks → Edit.':'Add a tank under Config → Sensors nearby.';$('d_r2').textContent=$('d_r3').textContent=$('d_w2').textContent=' ';DKEY='';drawTank(null);drawRate(null);drawLvl(null);return}
  const ck=JSON.stringify(t.cfg),fresh=AN&&AN.mac===t.mac&&AN.ck===ck&&Date.now()/1000-AN.t<600,vk=t.mac+'|'+ck;ANK=vk;if(fresh)ANW=0;
  const cv0=AN&&AN.mac===t.mac&&AN.ck===ck?AN.cv:null;  /* the curve only changes with the settings: keep it */
@@ -730,7 +742,7 @@ function todayCost(A,ok,mac){
  const a3=av(3)!=null?av(3):A.recent;$('d_c').textContent=c(a3)+'/day';
  $('d_c2').textContent=(av(3)!=null?'3-day':(+A.recentDays.toFixed(1))+'-day')+' · '+pr.src;
  $('d_c3').textContent='7d '+(av(7)!=null?c(av(7)):'–')+' · '+(+A.recentDays.toFixed(1))+'d '+c(A.recent)}
-async function dashAll(ts){$('d_name').textContent=ts.length>2?'All tanks':'Both tanks';$('d_hist').style.visibility='visible';$('d_hist').href='/history?mac=all';
+async function dashAll(ts){$('d_name').textContent=ts.length>2?'All tanks':'Both tanks';$('navHist').href='/history?mac=all';
  const ck=JSON.stringify(ts.map(t=>[t.mac,t.cfg])),fresh=AN&&AN.mac==='all'&&AN.ck===ck&&Date.now()/1000-AN.t<600,vk='all|'+ck;ANK=vk;if(fresh)ANW=0;
  const cvs0=AN&&AN.mac==='all'&&AN.ck===ck?AN.cvs:null;
  if(!fresh)await anLoad('all',ck,()=>Promise.all(ts.map((t,k)=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),cvs0&&cvs0[k]||fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])))

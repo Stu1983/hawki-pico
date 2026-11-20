@@ -2,7 +2,7 @@
 import ast, asyncio, os, sys, time
 src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
 tree = ast.parse(src)
-keep = [n for n in tree.body if isinstance(n, ast.AsyncFunctionDef) and n.name == 'battery_check'
+keep = [n for n in tree.body if isinstance(n, (ast.AsyncFunctionDef, ast.FunctionDef)) and n.name in ('battery_check', 'batt_of')
         or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('BATT_LOW', 'BATT_REARM', 'batt_seen') for t in n.targets)]
 sent, saves, msgs = [], [], []
 
@@ -63,4 +63,9 @@ ok(asyncio.run(g['battery_check']({}, 'm', {}, {}, {})) is None, 'no battery fig
 g['batt_seen'].clear(); sent.clear()
 feed([55], repeat=12)
 ok(sent == [], 'one low measurement repeated for an hour: no alert (counts measurements, not checks)')
+g['batt_seen'].clear(); sent.clear()
+for k in range(4):  # just after a battery change: clock at 0, a placeholder 1 ('3.01 V') until it measures
+    asyncio.run(g['battery_check']({'ntfy_topic': 'x'}, 'm2', {'name': 'Tank 1'}, {'battery': 1, 'timestamp': 0, 'raw': 'start%d' % k}, {}))
+ok(sent == [] and g['batt_of']({'battery': 1, 'timestamp': 0}) is None and g['batt_of']({'battery': 82, 'timestamp': 1795177120}) == 82,
+   'a monitor starting up (clock at 0): its placeholder battery never counts, never alerts')
 sys.exit(1 if fails else 0)
