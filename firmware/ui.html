@@ -178,7 +178,7 @@ dialog::backdrop{background:#0008}
 <div class="hint" style="grid-column:1/-1;margin-top:-4px"><a href="#" class="lnk" style="margin:0" onclick="newTopic();return false">Make up a topic</a> (anyone who knows it can read your alerts)</div>
 </div>
 <label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--fg)"><input type="checkbox" id="n_ro" style="width:auto;margin:0"> Tell me when a tank reaches its reorder level</label>
-<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_bt" style="width:auto;margin:0"> Tell me when a monitor's battery is low (3.65 V or less; a new one reads about 3.8 V)</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_bt" style="width:auto;margin:0"> Tell me when a monitor's battery is low (65% or less)</label>
 <label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_sl" style="width:auto;margin:0"> Tell me if a monitor goes quiet (no reading for 6 hours)</label>
 <label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_dr" style="width:auto;margin:0"> Warn me if oil drops faster than the burner can use it (leak or theft)</label>
 <label style="margin-top:8px">Burner's maximum, litres an hour<input style="max-width:160px;display:block" id="n_bl" type="number" min="1" max="30" step="0.5" placeholder="6"><div class="hint">On the boiler's data plate (kW ÷ 10 is close). 6 suits almost any home boiler. The warning comes within about 2 hours.</div></label>
@@ -519,10 +519,10 @@ async function exportCsv(){try{bst('Preparing CSV…');const s=await api('/api/s
   const recs=[];for(let i=0;i+6<=v.byteLength;i+=6)recs.push([v.getUint32(i,true),v.getUint16(i+4,true)]);recs.sort((a,b)=>a[0]-b[0]);
   for(const[ts,mm]of recs){const L=toL(mm),d=new Date(ts*1000);rows.push([q(t.name),t.mac,d.toISOString(),mm===16382?'':mm,L.toFixed(1),(100*L/cap).toFixed(1)].join(','))}}
  download('oil-tanks-readings-'+day()+'.csv',rows.join('\n')+'\n','text/csv');bst('CSV saved: '+(rows.length-1)+' readings. Times are UTC.')}catch(e){bst('Export failed: '+e.message)}}
-/* the monitor's battery: volts (the field is hundredths over 3), coloured, and what to do about it. A new cell reads
-   about 3.80 V; the Magnus app says BAD by 3.62 V and the low-battery alert goes at 3.65 V */
+/* the monitor's battery: % of its 2.00-3.20 V range (and the volts that is), coloured, and what to do about it. The
+   Magnus app says BAD at 62%; the low-battery alert goes at 65% */
 function battState(b){return b==null?null:b<=65?['bad','replace battery']:b<=72?['warn','order battery']:['good','good']}
-function battTxt(t){if(t.starting)return 'starting up';const s=battState(t.battery);return s?`<b class="bt ${s[0]}">${(3+t.battery/100).toFixed(2)} V (${s[1]})</b>`:'–'}
+function battTxt(t){if(t.starting)return 'starting up';const s=battState(t.battery);return s?`<b class="bt ${s[0]}">${t.battery}% · ${(2+1.2*t.battery/100).toFixed(2)} V (${s[1]})</b>`:'–'}
 const pDay=t=>new Date(t*1000).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 /* Earlier readings: pasted in, turned into the distances the monitor would have read, merged into the tank's history */
 function pasteTanks(){const el=$('pTank'),ts=(S&&S.tanks)||[],v=el.value,k=JSON.stringify(ts.map(t=>[t.mac,t.name]));if(el.dataset.k===k)return;el.dataset.k=k;el.textContent='';  /* (only when the tanks changed: a reload never wipes what the card says) */for(const t of ts){const o=document.createElement('option');o.value=t.mac;o.textContent=t.name;el.appendChild(o)}if(ts.some(t=>t.mac===v))el.value=v;pastePrev()}

@@ -39,18 +39,18 @@ def test_discovery():
     topics = [t for t, _ in d]
     assert topics[0] == 'homeassistant/sensor/hawki_pico_28cdc1aabbcc/config'
     assert len(d) == 2 + len(mqtt.SENSORS)
-    assert d[-1] == ('homeassistant/sensor/hawki_c00456c40c71_battery/config', '')  # the old % battery sensor: removed
+    assert d[-1] == ('homeassistant/sensor/hawki_c00456c40c71_battery_v/config', '')  # 1.3.10-11's volts sensor: removed
     d = d[:-1]
     by = {json.loads(p)['unique_id']: json.loads(p) for _, p in d}
     lit = by['hawki_c00456c40c71_litres']
     # the old NAS bridge's entity ids, so dashboards and automations keep working
-    for k in ('litres', 'percent', 'distance', 'battery_v'):
+    for k in ('litres', 'percent', 'distance', 'battery'):
         assert by['hawki_c00456c40c71_' + k]['default_entity_id'] == 'sensor.hawki_0c71_' + k
     assert lit['state_topic'] == 'hawki/28cdc1aabbcc/c00456c40c71/state'
     assert lit['device']['name'] == 'Tank "1"' and lit['device']['via_device'] == 'hawki_pico_28cdc1aabbcc'
     assert lit['availability_mode'] == 'all' and len(lit['availability']) == 2
-    bv = by['hawki_c00456c40c71_battery_v']
-    assert bv['entity_category'] == 'diagnostic' and bv['unit_of_measurement'] == 'V' and bv['device_class'] == 'voltage'
+    bv = by['hawki_c00456c40c71_battery']
+    assert bv['entity_category'] == 'diagnostic' and bv['unit_of_measurement'] == '%' and bv['device_class'] == 'battery'
     assert all(t.endswith('/config') for t in topics)
     rm = mqtt.removal('c0:04:56:c4:0c:71', '28cdc1aabbcc')
     assert [t for t, _ in rm][:-2] == topics[1:] and all(p == '' for _, p in rm)  # (the old battery sensor too)
@@ -62,7 +62,7 @@ def test_state():
          'misread': None}
     s = mqtt.state(dict(v, good_at=1794935000), 1794935060)
     assert mqtt.state(v, 1794935060)['read_at'] is None  # no measurement time (heard before the clock was set)
-    assert s == {'litres': 502, 'total': 602, 'percent': 41.6, 'distance': 716, 'battery_v': 3.62, 'rssi': -86,
+    assert s == {'litres': 502, 'total': 602, 'percent': 41.6, 'distance': 716, 'battery': 62, 'rssi': -86,
                  'read_at': '2026-11-17T17:03:20+00:00', 'order_by': None, 'misread': False}, s
     ob = mqtt.state(dict(v, order_by='2026-12-16T02:13:20+00:00'), 1794935060)['order_by']
     assert ob == '2026-12-16T02:13:20+00:00', ob  # the dashboard's order date, as a timestamp HA shows in local time

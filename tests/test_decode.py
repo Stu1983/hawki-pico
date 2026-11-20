@@ -10,7 +10,8 @@ def test_known():
     for p, lvl, bat, fw, ts in KNOWN:
         d = decode(bytes.fromhex(p))
         assert (d['level'], d['battery'], d['firmwareVersion'], d['timestamp']) == (lvl, bat, fw, ts), d
-        assert d['volts'] == round(3 + bat / 100, 2), d  # the battery field: hundredths of a volt over 3 (62 = 3.62 V)
+        assert d['volts'] == round(2 + 1.2 * bat / 100, 2), d  # the battery field: % of 2.00-3.20 V (62 = 2.74 V)
+    assert decode(bytes.fromhex('736891edcc4c30900213'))['battery'] == 82 and decode(bytes.fromhex('736891edcc4c30900213'))['volts'] == 2.98  # (that monitor said 2.99 V over Bluetooth)
 
 def test_matches_reference():
     ref = sys.argv[1] if len(sys.argv) > 1 else None

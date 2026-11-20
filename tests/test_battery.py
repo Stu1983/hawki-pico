@@ -2,7 +2,7 @@
 import ast, asyncio, os, sys, time
 src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
 tree = ast.parse(src)
-keep = [n for n in tree.body if isinstance(n, (ast.AsyncFunctionDef, ast.FunctionDef)) and n.name in ('battery_check', 'batt_of')
+keep = [n for n in tree.body if isinstance(n, (ast.AsyncFunctionDef, ast.FunctionDef)) and n.name in ('battery_check', 'batt_of', 'starting')
         or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('BATT_LOW', 'BATT_REARM', 'batt_seen') for t in n.targets)]
 sent, saves, msgs = [], [], []
 
@@ -36,17 +36,17 @@ def feed(levels, n=None, a=None, repeat=1):
 
 
 a = feed([82, 74, 66])
-ok(sent == [], 'above 3.65 V: nothing (3.82, 3.74, 3.66)')
+ok(sent == [], 'above 65%: nothing (82, 74, 66)')
 a = feed([65, 64], a=a)
 ok(sent == [], 'two low checks in a row: not yet (a cold reading)')
 feed([62], a=a)
-ok(sent == ['Tank 1: monitor battery low'] and a.get('battery') and '3.62 V' in msgs[-1], 'third low check: one alert, with the voltage: ' + msgs[-1])
+ok(sent == ['Tank 1: monitor battery low'] and a.get('battery') and '62% (2.74 V)' in msgs[-1], 'third low check: one alert, with the voltage: ' + msgs[-1])
 feed([62, 61, 60, 70], a=a)
-ok(len(sent) == 1, 'stays quiet while low, and at 3.70 V (not a new battery yet)')
+ok(len(sent) == 1, 'stays quiet while low, and at 70% (not a new battery yet)')
 feed([82, 82], a=a)
 ok('battery' in a, 'two good readings: not re-armed yet')
 feed([82], a=a)
-ok('battery' not in a, 'new battery (three readings at 3.75 V or more): armed again')
+ok('battery' not in a, 'new battery (three readings at 75% or more): armed again')
 feed([64, 80, 64, 64], a=a)
 ok(len(sent) == 1, 'a dip that recovers resets the count')
 feed([64], a=a)
@@ -67,5 +67,6 @@ g['batt_seen'].clear(); sent.clear()
 for k in range(4):  # just after a battery change: clock at 0, a placeholder 1 ('3.01 V') until it measures
     asyncio.run(g['battery_check']({'ntfy_topic': 'x'}, 'm2', {'name': 'Tank 1'}, {'battery': 1, 'timestamp': 0, 'raw': 'start%d' % k}, {}))
 ok(sent == [] and g['batt_of']({'battery': 1, 'timestamp': 0}) is None and g['batt_of']({'battery': 82, 'timestamp': 1795177120}) == 82,
-   'a monitor starting up (clock at 0): its placeholder battery never counts, never alerts')
+   'a monitor starting up (clock at 0): its placeholder battery (1%) never counts, never alerts')
+ok(g['batt_of']({'battery': 97, 'timestamp': 0}) == 97, 'clock still at 0 but a real battery figure: kept (seen measuring again with its clock at 0)')
 sys.exit(1 if fails else 0)

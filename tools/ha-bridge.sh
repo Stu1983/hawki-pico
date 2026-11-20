@@ -46,6 +46,6 @@ while read -r row; do
         unit_of_measurement: "%", friendly_name: (.t.name + " level"), icon: "mdi:oil-level",
         state_class: "measurement"}}' <<<"$row")"
   fi
-  post "sensor.hawki_${sfx}_battery" "$(jq -c '{state: (if .t.battery == null then "unknown" else (3 + .t.battery / 100 | tostring) end), attributes: {
-      unit_of_measurement: "V", device_class: "voltage", friendly_name: (.t.name + " sensor battery")}}' <<<"$row")"
+  post "sensor.hawki_${sfx}_battery" "$(jq -c '{state: (if .t.battery == null then "unknown" else (.t.battery|tostring) end), attributes: {
+      unit_of_measurement: "%", device_class: "battery", friendly_name: (.t.name + " sensor battery")}}' <<<"$row")"
 done

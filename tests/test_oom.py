@@ -29,7 +29,7 @@ up = [7200]
 log = []
 names = ('handle', 'send', 'parse_q', 'jb', 'BadRequest', '_Req', '_Resp', 'LOADS', 'ICON_PATHS', 'WEB_MANIFEST', 'MUTATING', 'read_body_to',
          'is_oom', 'note_oom', 'leave_note', 'take_note', 'with_room', 'send_alert', '_send_alert', 'sending', 'BATT_LOW', 'boot_install', 'update_info',
-         'rm', 'OOM_UP_S', 'oom_run', 'alert_back', 'installing', 'manifest', 'resend_cut_off', 'read_note', 'redo_stale', 'batt_of', 'REDO_SETTING', 'OOM_AGAIN_S')
+         'rm', 'OOM_UP_S', 'oom_run', 'alert_back', 'installing', 'manifest', 'resend_cut_off', 'read_note', 'redo_stale', 'batt_of', 'starting', 'REDO_SETTING', 'OOM_AGAIN_S')
 T = types.SimpleNamespace(ticks_ms=lambda: 0, ticks_add=lambda a, b: a + b, ticks_diff=lambda a, b: a - b, time=lambda: 1795400000)
 
 

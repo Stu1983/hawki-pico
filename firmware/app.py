@@ -1445,7 +1445,7 @@ def tank_view(mac, t, now):
     return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct, 'order_by': ob,
             # misread: the rejected reading (-1: no level at all), or None
             'misread': (-1 if d['bad_level'] is None else d['bad_level']) if 'bad_level' in d else None, 'good_at': d.get('good_at'), 'saved': bool(d.get('saved')), 'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': list(un) if un else un, 'listen': listener.info(mac),
-            'battery': batt_of(d), 'starting': d.get('timestamp') == 0, 'rssi': d.get('rssi'),
+            'battery': batt_of(d), 'starting': starting(d), 'rssi': d.get('rssi'),
             'age': (now - d['good_at'] if d.get('good_at') else None) if 'bad_level' in d or d.get('saved') else (now - d['rx']) if d.get('rx') else None,  # after a misread: the shown level's own age
             'cfg': cfg_view(t)}
 
@@ -1607,16 +1607,20 @@ async def drop_check(mac, t, lvl):
             save_cfg(cfg)
 
 
-BATT_LOW = 65     # 3.65 V (the battery field is hundredths of a volt over 3): tell the phone once at or below this.
-                  # A new cell reads about 3.80 V; the Magnus app says BAD, replace soon, at 3.62 V
-BATT_REARM = 75   # 3.75 V: a new battery (back above this) arms it again
+BATT_LOW = 65     # % (of the monitor's 2.00-3.20 V range: 2.78 V): tell the phone once at or below this. The Magnus
+                  # app says BAD, replace soon, at 62%
+BATT_REARM = 75   # %: a new battery (back at or above this) arms it again
 batt_seen = {}    # mac -> [last payload counted, lows in a row, highs in a row]
 
 
 def batt_of(d):
-    # the battery field, or None while the monitor is starting up (just after a battery change: its clock reads 0
-    # and it sends a placeholder, 1 = '3.01 V', until its first measurement)
-    return None if d.get('timestamp') == 0 else d.get('battery')
+    # the battery field, or None for the placeholder a monitor sends just after a battery change (its clock at 0,
+    # battery 1%; seen 2026-11-20, still so after it began measuring again). Only that pair: a real battery is kept
+    return None if starting(d) else d.get('battery')
+
+
+def starting(d):
+    return d.get('timestamp') == 0 and (d.get('battery') or 0) <= 1
 
 
 async def battery_check(n, mac, t, d, a):
@@ -1636,7 +1640,7 @@ async def battery_check(n, mac, t, d, a):
         save_cfg(cfg)
     if n.get('battery', True) and not a.get('battery') and st[1] >= 3:
         res = await send_alert('%s: monitor battery low' % t.get('name', mac),
-                               'The HAWKi monitor\'s battery is down to %.2f V (a new one reads about 3.8 V). Replace it soon, or readings will stop.' % (3 + b / 100),
+                               'The HAWKi monitor\'s battery is down to %d%% (%.2f V). Replace it soon, or readings will stop.' % (b, 2 + 1.2 * b / 100),
                                mark={'mac': mac, 'k': 'battery'})
         if 'ok' in res.values():
             a['battery'] = int(time.time())

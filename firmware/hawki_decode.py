@@ -9,9 +9,10 @@ timestamp = sensor's own clock (unix s) at measurement; may be wrong on unsynced
 
 
 def volts(b):
-    """The battery field is the cell's voltage above 3 V, in hundredths: 62 = 3.62 V (the Magnus app shows it as
-    '3.' and two digits). A new lithium cell reads about 3.8 V; the app says BAD by 3.62 V."""
-    return None if b is None else round(3 + b / 100, 2)
+    """The battery field is a percentage of the monitor's own voltage range, 2.00-3.20 V (its VOLTAGE_RANGE
+    characteristic, 1991): 82 = 2.98 V. Checked on two monitors against the voltage they report over Bluetooth
+    (1962: 2.99 V with 82 in the advert). A new battery reads about 3.2 V (100%); the Magnus app says BAD at 62%."""
+    return None if b is None else round(2 + 1.2 * b / 100, 2)
 
 
 def decode(d):
