@@ -8,6 +8,12 @@ timestamp = sensor's own clock (unix s) at measurement; may be wrong on unsynced
 """
 
 
+def volts(b):
+    """The battery field is the cell's voltage above 3 V, in hundredths: 62 = 3.62 V (the Magnus app shows it as
+    '3.' and two digits). A new lithium cell reads about 3.8 V; the app says BAD by 3.62 V."""
+    return None if b is None else round(3 + b / 100, 2)
+
+
 def decode(d):
     d = bytes(d)
     n = len(d)
@@ -38,6 +44,8 @@ def decode(d):
         r['battery'] = ((d[5] & 3) << 5) | (d[4] >> 3)
         r['errorStatus'] = d[5] >> 2
         r['firmwareVersion'] = d[6]
+    if r.get('battery') is not None:
+        r['volts'] = volts(r['battery'])
     if 'level' in r:
         r['isUnknownLevel'] = r['level'] == 16383
         r['isNearlyEmpty'] = r['level'] == 16382

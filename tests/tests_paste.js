@@ -19,7 +19,7 @@ const w=new JSDOM(html,{url:'http://pico/#cfg',runScripts:'dangerously',pretendT
   return {ok:true,status:200,json:async()=>j,arrayBuffer:async()=>u.startsWith('/api/hist')?hist.buffer.slice(hist.byteOffset,hist.byteOffset+hist.length):new ArrayBuffer(0)}};
  w.onerror=x=>console.log('ERR',x)}}).window;
 const $=id=>w.document.getElementById(id);
-(async()=>{await wait(400);w.tab('cfg');await wait(100);
+(async()=>{await wait(400);w.tab('fc');await wait(100);
  ok($('pTank').options.length===1&&$('pTank').value===m&&$('pBtn').disabled,'the card lists the tank; nothing to add yet');
  $('pTxt').value=['# from the Magnus app','2026-11-12 08:00 850 L','13/11/2026 8:00pm 70%','14 Nov 2026 08:00 1,500 L','next Tuesday 600 L','2026-11-20 09:00 590 L',''].join('\n');
  $('pTxt').dispatchEvent(new w.Event('input'));
@@ -35,4 +35,12 @@ const $=id=>w.document.getElementById(id);
  ok(!posts.length&&/Nothing to add: 1 already covered/.test($('pPrev').textContent),'a time the Pico already has readings for: nothing sent ('+$('pPrev').textContent+')');
  const P=w.pasteParse('31/02/2026 10:00 500 L\n2026-11-12 850\n12th Nov 2026 07:30am 800L\n12.11.26 12:00pm 790 litres\n2026-11-12 64.50%\n2026-11-12 12.50 L\n2026-11-12 -50 L',Date.parse('2026-11-20')/1000);
  ok(P.bad.join()==='1,2,7'&&P.rows.length===4&&P.rows.filter(r=>r[1]===64.5||r[1]===12.5).length===2&&P.rows.filter(r=>r[1]===64.5||r[1]===12.5).every(r=>new Date(r[0]*1000).getHours()===12)&&new Date(P.rows[0][0]*1000).getHours()===7&&new Date(P.rows[1][0]*1000).getHours()===12,'no 31 February, no number without L or %; "12th Nov", "12.11.26", 12pm = noon; a decimal level (64.50%, 12.50 L) is never taken for a time; -50 L refused');
+ state.tanks=[];await w.load();await wait(50);
+ ok($('pTank').options.length===0&&$('pBtn').disabled,'the tank removed (from another phone, say): gone from the list, nothing to add to');
+ /* the dashboard's tank drawing: tap for full screen, tap again to close */
+ state.tanks=[{mac:m,name:'Back tank',cfg:{capacity_l:1000,shape:'cuboid',height_cm:103,length_cm:120,width_cm:60,mode:'use'},litres:600,level:400,percent:60}];
+ w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.tab('dash');await w.load();await wait(300);
+ w.document.getElementById('d_tank').dispatchEvent(new w.MouseEvent('click',{bubbles:true}));const f=$('tfull');
+ ok(f.open&&f.querySelector('svg').innerHTML===$('d_tank').innerHTML&&$('tfullT').textContent==='Back tank','a tap on the drawing opens it full screen, with the tank\'s name');
+ (f.querySelector('svg .oil')||f.querySelector('svg')).dispatchEvent(new w.MouseEvent('click',{bubbles:true}));ok(!f.open,'a tap anywhere on it (the oil, say) closes it again');
  process.exit(fails?1:0)})();

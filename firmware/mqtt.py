@@ -96,7 +96,7 @@ SENSORS = (
     ('total', 'All oil', 'L', 'volume_storage', 'measurement', None, 'mdi:barrel-outline'),
     ('percent', 'Level', '%', None, 'measurement', None, 'mdi:oil-level'),
     ('distance', 'Distance to oil', 'mm', 'distance', 'measurement', 'diagnostic', 'mdi:hydraulic-oil-level'),
-    ('battery', 'Sensor battery', '%', 'battery', 'measurement', 'diagnostic', None),
+    ('battery_v', 'Sensor battery', 'V', 'voltage', 'measurement', 'diagnostic', 'mdi:battery'),  # (a new cell ~3.8 V; low by 3.65)
     ('rssi', 'Sensor signal', 'dBm', 'signal_strength', 'measurement', 'diagnostic', None),
     ('read_at', 'Last reading', None, 'timestamp', None, 'diagnostic', None),
     ('order_by', 'Order by', None, 'timestamp', None, None, 'mdi:calendar-clock'),  # (the dashboard's order date)
@@ -130,6 +130,9 @@ def discovery(pico, tank_mac, name, version, prefix='homeassistant'):
             c['json_attributes_template'] = '{{ {"misread": value_json.misread} | tojson }}'
         out.append(('%s/sensor/%s/config' % (prefix, uid), json.dumps(c)))
         dev = {'identifiers': ['hawki_' + tm]}  # the full device once is enough
+    # the battery as a % (before 1.3.10, a misreading of what is a voltage): removed, so HA keeps no sensor whose
+    # history can't carry on in volts (it would stop its statistics and ask what to do)
+    out.append(('%s/sensor/hawki_%s_battery/config' % (prefix, tm), ''))
     return out
 
 
@@ -137,7 +140,7 @@ def removal(tank_mac, pico, prefix='homeassistant'):
     """Empty retained messages: HA removes that tank's sensors, and the broker forgets its last readings."""
     tm = nomac(tank_mac)
     base = 'hawki/%s/%s' % (pico, tm)
-    return [('%s/sensor/hawki_%s_%s/config' % (prefix, tm, s[0]), '') for s in SENSORS] + [
+    return [('%s/sensor/hawki_%s_%s/config' % (prefix, tm, s), '') for s in [x[0] for x in SENSORS] + ['battery']] + [
         (base + '/state', ''), (base + '/avail', '')]
 
 
@@ -151,7 +154,7 @@ def state(v, now):
     r = lambda x, n=0: None if x is None else (round(x) if n == 0 else round(x, n))
     return {'litres': r(v.get('litres')), 'total': r(v.get('total')), 'percent': r(v.get('percent'), 1),
             'distance': None if v.get('level') in (16382, 16383) else v.get('level'),  # (codes, not distances)
-            'battery': v.get('battery'), 'rssi': v.get('rssi'), 'read_at': read_at,
+            'battery_v': None if v.get('battery') is None else round(3 + v['battery'] / 100, 2), 'rssi': v.get('rssi'), 'read_at': read_at,
             'order_by': v.get('order_by'),
             'misread': v.get('misread') is not None}
 

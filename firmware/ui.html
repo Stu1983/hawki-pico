@@ -20,14 +20,17 @@ button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.del{c
 input,select{width:100%;font:inherit;font-size:16px;  /* (iOS zooms the page on any smaller input) */padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);margin-top:3px}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);width:min(520px,calc(100vw - 32px));padding:16px}
 dialog::backdrop{background:#0008}
-#viz,#d_tank{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}#d_tank{display:block;max-width:560px;margin:8px auto 0;touch-action:pan-y}.dots[hidden]{display:none}details.rd{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}details.rd summary{cursor:pointer;color:var(--acc);font-size:14px}.rdt{border-collapse:collapse;width:100%;font-size:13px;margin-top:6px}.rdt th,.rdt td{text-align:right;padding:3px 4px;border-bottom:1px solid var(--line)}.rdt th:first-child,.rdt td:first-child{text-align:left}.dots{display:flex;justify-content:center;gap:4px;margin-top:6px}.dots button{border:0;background:none;padding:6px;line-height:0}.dots i{display:block;width:8px;height:8px;border-radius:50%;background:var(--line)}.dots button[aria-current=true] i{background:var(--fg)}#d_tank text{font-size:11px}#d_tank .rl{stroke:var(--fg);stroke-width:.6;opacity:.25}#d_tank .tk{fill:none}svg#d_tank .inn{stroke:var(--fg)}#d_tank .rsv{stroke:var(--warn);stroke-width:1.2;stroke-dasharray:2 3}svg#d_tank .rsvt{fill:var(--warn)}
-#viz .tk,#d_tank .tk{fill:none;stroke:var(--fg);stroke-width:1.2}#viz .rib,#d_tank .rib{fill:#2f9ee533;stroke:#2f9ee5}#viz .win,#d_tank .win{fill:var(--card);stroke:#e0473f}
-#viz .inn,#d_tank .inn{fill:var(--bg);stroke:#f08a24;stroke-width:1.2}#viz .wino,#d_tank .wino{fill:none;stroke:#e0473f;stroke-dasharray:4 3}#viz .oil,#d_tank .oil{fill:var(--oil);opacity:.35}#viz .oilx,#d_tank .oilx{opacity:.15;stroke:var(--oil);stroke-dasharray:4 3}#viz .gnd,#d_tank .gnd{stroke:var(--mut)}
-#viz .dim,#d_tank .dim{stroke:var(--mut);stroke-width:.8;fill:none}#viz text,#d_tank text{font:9px system-ui,sans-serif;fill:var(--mut)}#viz .g,#d_tank .g{stroke-dasharray:4 3;opacity:.6}
-#viz .hl{stroke-width:2.6!important;opacity:1}#viz .lbl,#d_tank .lbl{fill:var(--fg);font-weight:600}.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+#viz,#d_tank{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}#d_tank{display:block;max-width:560px;margin:8px auto 0;touch-action:pan-y}.dots[hidden]{display:none}details.rd{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}details.rd summary{cursor:pointer;color:var(--acc);font-size:14px}.rdt{border-collapse:collapse;width:100%;font-size:13px;margin-top:6px}.rdt th,.rdt td{text-align:right;padding:3px 4px;border-bottom:1px solid var(--line)}.rdt th:first-child,.rdt td:first-child{text-align:left}.dots{display:flex;justify-content:center;gap:4px;margin-top:6px}.dots button{border:0;background:none;padding:6px;line-height:0}.dots i{display:block;width:8px;height:8px;border-radius:50%;background:var(--line)}.dots button[aria-current=true] i{background:var(--fg)}.tkv text{font-size:11px}.tkv .rl{stroke:var(--fg);stroke-width:.6;opacity:.25}.tkv .tk{fill:none}svg.tkv .inn{stroke:var(--fg)}.tkv .rsv{stroke:var(--warn);stroke-width:1.2;stroke-dasharray:2 3}svg.tkv .rsvt{fill:var(--warn)}
+#viz .tk,.tkv .tk{fill:none;stroke:var(--fg);stroke-width:1.2}#viz .rib,.tkv .rib{fill:#2f9ee533;stroke:#2f9ee5}#viz .win,.tkv .win{fill:var(--card);stroke:#e0473f}
+#viz .inn,.tkv .inn{fill:var(--bg);stroke:#f08a24;stroke-width:1.2}#viz .wino,.tkv .wino{fill:none;stroke:#e0473f;stroke-dasharray:4 3}#viz .oil,.tkv .oil{fill:var(--oil);opacity:.35}#viz .oilx,.tkv .oilx{opacity:.15;stroke:var(--oil);stroke-dasharray:4 3}#viz .gnd,.tkv .gnd{stroke:var(--mut)}
+#viz .dim,.tkv .dim{stroke:var(--mut);stroke-width:.8;fill:none}#viz text,.tkv text{font:9px system-ui,sans-serif;fill:var(--mut)}#viz .g,.tkv .g{stroke-dasharray:4 3;opacity:.6}
+#viz .hl{stroke-width:2.6!important;opacity:1}#viz .lbl,.tkv .lbl{fill:var(--fg);font-weight:600}.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .lnk{color:var(--acc);font-size:14px;margin-right:8px;text-decoration:none}.empty{color:var(--mut);font-size:14px;padding:6px 2px}.hint{font-size:12px;color:var(--mut);margin-top:3px}
 .tabs{display:flex;gap:4px;margin:12px 0 14px;border-bottom:1px solid var(--line)}.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mut);padding:8px 14px;font-weight:600}
 .tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}
+.tabs{overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs button{white-space:nowrap;flex:0 0 auto}
+/* five tabs on a phone: edge to edge, a little smaller, sharing the width (a very narrow screen scrolls them) */
+@media(max-width:520px){.tabs{margin-left:-16px;margin-right:-16px;padding:0 4px;gap:0}.tabs button{flex:1 0 auto;padding:8px 4px;font-size:13px}}
 .ftabs{display:flex;margin:10px 0 12px;border-bottom:1px solid var(--line)}.ftabs button{flex:1;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mut);padding:8px 4px;font-weight:600;font-size:14px}
 .ftabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}.ftabs button:disabled{opacity:.4;cursor:default}#dlg{height:min(860px,calc(100dvh - 24px));max-height:none;padding:14px 16px}#dlg form{display:flex;flex-direction:column;height:100%;overflow-y:auto}#dlg #viz{flex:0 1 auto;min-height:0;margin-bottom:6px}#dlg .acts{flex:none;margin-top:10px}
 .fpg{flex:1 0 150px;min-height:150px;overflow-y:auto;overscroll-behavior:contain;padding:2px 2px 8px}.fpg[hidden]{display:none}.ftabs{flex:none}
@@ -50,9 +53,14 @@ dialog::backdrop{background:#0008}
 .chk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px}.chk input{width:auto;margin:0}
 .addr{font-size:18px;font-weight:700;word-break:break-all;margin:2px 0 0}.su ol{padding-left:20px;margin:10px 0 0}.su li{margin:0 0 8px}.ok{font-size:40px;line-height:1;color:var(--acc)}
 .pill{font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:2px 8px;margin-right:8px}
+#d_tank{cursor:zoom-in;max-height:62vh}
+/* the tank drawing full screen (tap it on the dashboard) */
+#tfull{width:100vw;height:100vh;max-width:none;max-height:none;margin:0;padding:12px;box-sizing:border-box;border:0;border-radius:0;background:var(--bg)}
+#tfull[open]{display:flex;flex-direction:column}#tfull svg{flex:1;min-height:0;width:100%;height:100%;background:var(--bg)}
+#tfull .row{flex:none}
 </style></head><body><main>
 <h1>Oil Tanks</h1><div class="sub" id="status">Loading…</div>
-<nav class="tabs" role="tablist"><button role="tab" data-p="dash">Dashboard</button><button role="tab" data-p="tanks">Tanks</button><button role="tab" data-p="cfg">Config</button></nav>
+<nav class="tabs" role="tablist"><button role="tab" data-p="dash">Dashboard</button><button role="tab" data-p="tanks">Tanks</button><button role="tab" data-p="fc">Forecast</button><button role="tab" data-p="ntf">Notifications</button><button role="tab" data-p="cfg">Config</button></nav>
 
 <section id="p_setup" class="su" hidden>
 <div class="sstep" aria-hidden="true"><i id="ss1"></i><i id="ss2"></i><i id="ss3"></i></div>
@@ -92,7 +100,7 @@ dialog::backdrop{background:#0008}
  <div class="card tile" id="d_wt"><div class="tl">Weeks left</div><div class="big" id="d_w">–</div><div class="mut" id="d_w2">&nbsp;</div></div>
  <div class="card tile"><div class="tl">Costing</div><div class="big" id="d_c">–</div><div class="mut" id="d_c2">&nbsp;</div><div class="mut" id="d_c3">&nbsp;</div></div>
 </div>
-<div class="card"><div class="row"><b>In the tank now</b><span class="mut" id="d_tank2" style="white-space:nowrap">&nbsp;</span></div><svg id="d_tank" viewBox="0 0 400 230" role="img" aria-label="Front view of the tank with the oil level the sensor reads"></svg><div id="d_dots" class="dots" hidden></div></div>
+<div class="card"><div class="row"><b>In the tank now</b><span class="mut" id="d_tank2" style="white-space:nowrap">&nbsp;</span></div><svg id="d_tank" class="tkv" onclick="tankFull()" viewBox="0 0 400 230" role="img" aria-label="Front view of the tank with the oil level the sensor reads"></svg><div id="d_dots" class="dots" hidden></div></div>
 <div class="card"><div class="row"><b>Litres a day</b><span class="mut">last 30 days</span></div><svg id="c_rate" class="ch" viewBox="0 0 640 190" role="img" aria-label="Litres used each day over the last 30 days"></svg>
 <div class="lg"><span><i class="sw" style="background:var(--acc2)"></i>each day</span><span><i class="sw ln" style="background:var(--acc)"></i>7-day average</span></div></div>
 <div class="card"><div class="row"><b>Oil in the tank</b><span class="mut">30 days back, 30 ahead</span></div><svg id="c_lvl" class="ch" viewBox="0 0 640 190" role="img" aria-label="Litres in the tank over the last 30 days, with the forecast"></svg>
@@ -106,47 +114,7 @@ dialog::backdrop{background:#0008}
 <div class="mut" id="tk1" style="margin-top:4px">New sensors show under <a class="lnk" href="#cfg" style="margin:0">Config → Sensors nearby</a>.</div>
 </section>
 
-<section id="p_cfg" hidden>
-<h2>Sensors nearby</h2>
-<div class="mut" style="margin:-4px 0 8px">HAWKi monitors the Pico can hear that aren't added yet. The strongest signal is usually yours; neighbours' monitors may show here too.</div>
-<div id="found"><div class="empty">Loading…</div></div>
-
-<h2>Wi-Fi &amp; network</h2>
-<div class="card"><div class="row"><div><div id="wifi">…</div><div class="mut" id="wifi2">&nbsp;</div></div><button onclick="openWifi()">Change</button></div>
-<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Name on the network: <b id="hn" style="white-space:nowrap">…</b></div><div class="mut" id="hn2">&nbsp;</div></div><button onclick="changeHost()">Change</button></div>
-<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Address: <b id="na" style="white-space:nowrap">…</b></div><div class="mut" id="na2" style="min-height:36px">&nbsp;</div></div><button onclick="openNet()">Change</button></div></div>
-
-<h2>On your phone</h2>
-<div class="card"><b>An icon on your home screen</b>
-<div class="mut" style="margin-top:4px">iPhone or iPad: in Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>. Android: in Chrome's menu, <b>Add to Home screen</b>. It opens this page full screen; sign in with your PIN once there.</div>
-<b style="display:block;margin-top:14px">A widget showing the oil left (iPhone, iPad)</b>
-<ol class="mut" style="margin:6px 0 0;padding-left:20px">
-<li>Install the free <a class="lnk" style="margin:0" href="https://apps.apple.com/app/scriptable/id1405459188" target="_blank" rel="noopener">Scriptable</a> app.</li>
-<li>Tap <b>Copy the widget script</b> below.</li>
-<li>In Scriptable, tap <b>+</b>, paste, and tap the title to name it <b>Oil</b>. Tap <b>&#9654;</b> and allow it to find devices on your local network.</li>
-<li>Press and hold your home screen, tap <b>Edit</b>, <b>Add Widget</b>, pick <b>Scriptable</b> and add it. Press and hold the new widget, <b>Edit Widget</b>, and choose <b>Oil</b> as its Script.</li>
-<li>Lock screen too: press and hold it, <b>Customize</b>, and add Scriptable the same way.</li></ol>
-<div class="acts" style="justify-content:flex-start;align-items:center"><button onclick="copyWidget()">Copy the widget script</button><a class="lnk" href="/widget.js" target="_blank" rel="noopener">Show it</a></div>
-<div class="mut" id="wjst" style="min-height:36px;margin-top:6px"></div>
-<div class="hint">It shows the oil left, % full and the order-by date, and opens this page when tapped. iOS updates it now and then (usually every 15 to 30 minutes) while your phone is on your home Wi-Fi; away from home it shows the last figures it had.</div></div>
-
-<h2>Notifications</h2>
-<div class="card"><div class="mut" style="margin-bottom:10px">Alerts go to your phone through <b>Pushover</b> (pushover.net) or <b>ntfy</b> (free, no account: install the ntfy app and subscribe to the topic below), or both.</div>
-<div class="grid">
-<label>Pushover user key<input id="n_pu" autocomplete="off" spellcheck="false"></label>
-<label>Pushover app token<input id="n_pt" autocomplete="off" spellcheck="false"></label>
-<label>ntfy topic<input id="n_nt" autocomplete="off" spellcheck="false"></label>
-<label>ntfy server<input id="n_nh" placeholder="ntfy.sh" spellcheck="false"></label>
-<div class="hint" style="grid-column:1/-1;margin-top:-4px"><a href="#" class="lnk" style="margin:0" onclick="newTopic();return false">Make up a topic</a> (anyone who knows it can read your alerts)</div>
-</div>
-<label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--fg)"><input type="checkbox" id="n_ro" style="width:auto;margin:0"> Tell me when a tank reaches its reorder level</label>
-<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_bt" style="width:auto;margin:0"> Tell me when a monitor's battery is low (20% or less)</label>
-<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_sl" style="width:auto;margin:0"> Tell me if a monitor goes quiet (no reading for 6 hours)</label>
-<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_dr" style="width:auto;margin:0"> Warn me if oil drops faster than the burner can use it (leak or theft)</label>
-<label style="margin-top:8px">Burner's maximum, litres an hour<input style="max-width:160px;display:block" id="n_bl" type="number" min="1" max="30" step="0.5" placeholder="6"><div class="hint">On the boiler's data plate (kW ÷ 10 is close). 6 suits almost any home boiler. The warning comes within about 2 hours.</div></label>
-<div class="acts" style="justify-content:flex-start"><button class="pri" onclick="saveNotify()">Save</button><button onclick="testNotify()">Send a test</button></div>
-<div class="mut" id="n_st" style="min-height:18px;margin-top:6px"></div></div>
-
+<section id="p_fc" hidden>
 <h2>Forecast</h2>
 <div class="card"><div>Oil used in a typical year</div><div class="mut" style="margin:4px 0 10px">Optional. It stands in for last year until you have one of your own: each month is forecast from it, scaled by how you are running against it so far, and it is the average year on the history page. A month you have real readings for goes by those from then on, never mixed with this. Leave it empty if you don't know.</div>
 <div class="row" style="gap:8px;justify-content:flex-start"><input id="yr_l" type="number" inputmode="numeric" min="100" max="50000" step="50" placeholder="Litres, e.g. 2100" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')yrSave()"><button onclick="yrSave()">Save</button></div>
@@ -164,6 +132,46 @@ dialog::backdrop{background:#0008}
 <div class="row" style="gap:8px;justify-content:flex-start"><input id="prq" placeholder="e.g. BT51" maxlength="5" autocapitalize="characters" style="flex:1;margin:0" oninput="this.dataset.typed=1" onkeydown="if(event.key==='Enter')prSave()"><button onclick="prSave()">Save</button></div>
 <div class="mut" id="prs" style="min-height:44px;margin-top:6px"></div></div>
 
+<h2>Earlier readings</h2>
+<div class="card"><div class="mut">Readings from before this Pico, from the Magnus app's history, say. One a line: the date, the time and the level in litres or %, like <b>2026-11-12 08:00 850 L</b> or <b>12/11/2026 8:00pm 64%</b>. They go in with the readings, so the charts and the forecast have more to go on. Times the Pico already has readings for are left out, so it is fine to paste the same list twice.</div>
+<div class="row" style="margin-top:10px"><label for="pTank">Tank</label><select id="pTank" style="width:auto" onchange="pastePrev()"></select></div>
+<textarea id="pTxt" rows="6" spellcheck="false" autocapitalize="off" style="width:100%;box-sizing:border-box;margin-top:8px;font:inherit;font-size:16px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)" placeholder="2026-11-12 08:00 850 L" oninput="pastePrev()"></textarea>
+<div class="mut" id="pPrev" style="min-height:18px;margin-top:6px"></div>
+<div class="acts" style="justify-content:flex-start"><button id="pBtn" onclick="pasteAdd()" disabled>Add readings</button></div></div>
+</section>
+
+<section id="p_ntf" hidden>
+<h2>Notifications</h2>
+<div class="card"><div class="mut" style="margin-bottom:10px">Alerts go to your phone through <b>Pushover</b> (pushover.net) or <b>ntfy</b> (free, no account: install the ntfy app and subscribe to the topic below), or both.</div>
+<div class="grid">
+<label>Pushover user key<input id="n_pu" autocomplete="off" spellcheck="false"></label>
+<label>Pushover app token<input id="n_pt" autocomplete="off" spellcheck="false"></label>
+<label>ntfy topic<input id="n_nt" autocomplete="off" spellcheck="false"></label>
+<label>ntfy server<input id="n_nh" placeholder="ntfy.sh" spellcheck="false"></label>
+<div class="hint" style="grid-column:1/-1;margin-top:-4px"><a href="#" class="lnk" style="margin:0" onclick="newTopic();return false">Make up a topic</a> (anyone who knows it can read your alerts)</div>
+</div>
+<label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--fg)"><input type="checkbox" id="n_ro" style="width:auto;margin:0"> Tell me when a tank reaches its reorder level</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_bt" style="width:auto;margin:0"> Tell me when a monitor's battery is low (3.65 V or less; a new one reads about 3.8 V)</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_sl" style="width:auto;margin:0"> Tell me if a monitor goes quiet (no reading for 6 hours)</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_dr" style="width:auto;margin:0"> Warn me if oil drops faster than the burner can use it (leak or theft)</label>
+<label style="margin-top:8px">Burner's maximum, litres an hour<input style="max-width:160px;display:block" id="n_bl" type="number" min="1" max="30" step="0.5" placeholder="6"><div class="hint">On the boiler's data plate (kW ÷ 10 is close). 6 suits almost any home boiler. The warning comes within about 2 hours.</div></label>
+<div class="acts" style="justify-content:flex-start"><button class="pri" onclick="saveNotify()">Save</button><button onclick="testNotify()">Send a test</button></div>
+<div class="mut" id="n_st" style="min-height:18px;margin-top:6px"></div></div>
+
+<h2>On your phone</h2>
+<div class="card"><b>An icon on your home screen</b>
+<div class="mut" style="margin-top:4px">iPhone or iPad: in Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>. Android: in Chrome's menu, <b>Add to Home screen</b>. It opens this page full screen; sign in with your PIN once there.</div>
+<b style="display:block;margin-top:14px">A widget showing the oil left (iPhone, iPad)</b>
+<ol class="mut" style="margin:6px 0 0;padding-left:20px">
+<li>Install the free <a class="lnk" style="margin:0" href="https://apps.apple.com/app/scriptable/id1405459188" target="_blank" rel="noopener">Scriptable</a> app.</li>
+<li>Tap <b>Copy the widget script</b> below.</li>
+<li>In Scriptable, tap <b>+</b>, paste, and tap the title to name it <b>Oil</b>. Tap <b>&#9654;</b> and allow it to find devices on your local network.</li>
+<li>Press and hold your home screen, tap <b>Edit</b>, <b>Add Widget</b>, pick <b>Scriptable</b> and add it. Press and hold the new widget, <b>Edit Widget</b>, and choose <b>Oil</b> as its Script.</li>
+<li>Lock screen too: press and hold it, <b>Customize</b>, and add Scriptable the same way.</li></ol>
+<div class="acts" style="justify-content:flex-start;align-items:center"><button onclick="copyWidget()">Copy the widget script</button><a class="lnk" href="/widget.js" target="_blank" rel="noopener">Show it</a></div>
+<div class="mut" id="wjst" style="min-height:36px;margin-top:6px"></div>
+<div class="hint">It shows the oil left, % full and the order-by date, and opens this page when tapped. iOS updates it now and then (usually every 15 to 30 minutes) while your phone is on your home Wi-Fi; away from home it shows the last figures it had.</div></div>
+
 <h2>Home Assistant</h2>
 <div class="card"><div class="row"><div><div id="mq1">…</div><div class="mut" id="mq2">&nbsp;</div></div><button id="mqOffB" onclick="mqOff()" style="visibility:hidden">Turn off</button></div>
 <div class="mut" style="margin:10px 0 6px">Sends the readings to Home Assistant over MQTT, and Home Assistant finds each tank by itself. In Home Assistant: install the <b>Mosquitto broker</b> add-on, make a user for the monitor (Settings → People → Users), then enter its details here.</div>
@@ -174,11 +182,22 @@ dialog::backdrop{background:#0008}
 <label>Password<input id="mq_pw" type="password" autocomplete="new-password"></label>
 </div>
 <div class="acts"><button class="pri" onclick="mqSave()">Save</button></div></div>
+</section>
+
+<section id="p_cfg" hidden>
+<h2>Sensors nearby</h2>
+<div class="mut" style="margin:-4px 0 8px">HAWKi monitors the Pico can hear that aren't added yet. The strongest signal is usually yours; neighbours' monitors may show here too.</div>
+<div id="found"><div class="empty">Loading…</div></div>
 
 <h2>Software</h2>
 <div class="card"><div class="row"><div><div id="ver">Version …</div><div class="mut" id="ver2">&nbsp;</div></div><button id="updBtn" onclick="updClick()">Check for updates</button></div>
 <div class="mut" id="updBox" style="white-space:pre-wrap;min-height:18px;margin-top:6px"></div>
 <div class="row" style="margin-top:10px"><div><div>Restart the Pico</div><div class="mut" id="rstM">Saves the latest readings first. Back in about 30 seconds.</div></div><button id="rstBtn" onclick="restartPico()">Restart</button></div></div>
+
+<h2>Wi-Fi &amp; network</h2>
+<div class="card"><div class="row"><div><div id="wifi">…</div><div class="mut" id="wifi2">&nbsp;</div></div><button onclick="openWifi()">Change</button></div>
+<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Name on the network: <b id="hn" style="white-space:nowrap">…</b></div><div class="mut" id="hn2">&nbsp;</div></div><button onclick="changeHost()">Change</button></div>
+<div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div><div>Address: <b id="na" style="white-space:nowrap">…</b></div><div class="mut" id="na2" style="min-height:36px">&nbsp;</div></div><button onclick="openNet()">Change</button></div></div>
 
 <h2>Security</h2>
 <div class="card"><div class="row"><div><div id="secT">…</div><div class="mut" id="secM">&nbsp;</div></div><span><button id="secB" onclick="secClick()">Set PIN</button> <button id="secOut" onclick="signOut()" style="visibility:hidden">Sign out</button></span></div>
@@ -189,13 +208,8 @@ dialog::backdrop{background:#0008}
 <div class="card"><div class="mut">A backup holds every tank's settings, deliveries (supplier and price) and all saved readings. It doesn't include the Wi-Fi password. Importing one onto this or a new Pico replaces those tanks' settings and deliveries and merges the readings.</div>
 <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button onclick="exportBackup()">Export backup</button><button onclick="exportCsv()">Export readings (CSV)</button><button onclick="$('impf').click()">Import backup</button>
 <input type="file" id="impf" accept=".json,application/json" hidden onchange="importBackup(this.files[0])"></div><div class="mut" id="bkst" style="min-height:18px;margin-top:6px"></div></div>
-<h2>Earlier readings</h2>
-<div class="card"><div class="mut">Readings from before this Pico, from the Magnus app's history, say. One a line: the date, the time and the level in litres or %, like <b>2026-11-12 08:00 850 L</b> or <b>12/11/2026 8:00pm 64%</b>. They go in with the readings, so the charts and the forecast have more to go on. Times the Pico already has readings for are left out, so it is fine to paste the same list twice.</div>
-<div class="row" style="margin-top:10px"><label for="pTank">Tank</label><select id="pTank" style="width:auto" onchange="pastePrev()"></select></div>
-<textarea id="pTxt" rows="6" spellcheck="false" autocapitalize="off" style="width:100%;box-sizing:border-box;margin-top:8px;font:inherit;font-size:16px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)" placeholder="2026-11-12 08:00 850 L" oninput="pastePrev()"></textarea>
-<div class="mut" id="pPrev" style="min-height:18px;margin-top:6px"></div>
-<div class="acts" style="justify-content:flex-start"><button id="pBtn" onclick="pasteAdd()" disabled>Add readings</button></div></div>
 </section>
+<dialog id="tfull" onclick="if(event.target===this||event.target.closest('svg'))this.close()"><div class="row"><b id="tfullT"></b><span class="mut" id="tfullC"></span><button type="button" onclick="$('tfull').close()">Close</button></div><svg class="tkv" role="img" aria-label="The tank, full screen"></svg></dialog>
 <dialog id="dlg"><form method="dialog" novalidate onsubmit="return saveTank(event)">
 <div class="row"><b id="dlgT">Add tank</b><span class="mut" id="dlgMac"></span></div>
 <svg id="viz" viewBox="0 0 400 230" role="img" aria-label="Tank drawing" style="margin-top:10px"></svg>
@@ -321,7 +335,7 @@ function readAt(t){const r=t.misread!=null||t.saved?t.good_at:t.listen&&t.listen
  return (late?'<b style="color:var(--bad)">no new reading since ':'read at ')+(late&&now-r>20*3600?d.toLocaleDateString([], {day:'numeric',month:'short'})+' ':'')+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(late?'</b>':'')}
 const okMac=m=>/^[0-9a-f:]{17}$/.test(m)?m:'';
 async function api(p,body){const r=await authFetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(r.status===401)throw new Error("The PIN is needed to change this.");if(!r.ok)throw new Error((await r.text()).replace(/^"|"$/g,''));return r.json()}  /* (the Pico's message, without its JSON quotes) */
-let LDN=0,FIRST=true;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render();if(!$('p_cfg').hidden)wjsLoad();
+let LDN=0,FIRST=true;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render();if(!$('p_ntf').hidden)wjsLoad();if(!$('p_fc').hidden)pasteTanks();
  if(FIRST&&!SU){FIRST=false;if(!location.hash&&!S.tanks.length){history.replaceState(null,'','#tanks');tab('tanks')}}}catch(e){if(g===LDN){if(SU==='try'){$('s_tryM').textContent='Waiting for the monitor to answer (your phone may be rejoining the setup Wi-Fi)…';suFar()}else if(!FAR)$('status').textContent='Cannot reach the Pico: '+e.message}}}  /* (an older answer arriving after a newer one is dropped) */
 function render(){
  if(suCheck())return;
@@ -336,7 +350,7 @@ function render(){
   <div class="row" style="margin-top:6px"><span class="big">${big==null?'–':Math.round(big)+' L'}</span><span class="big">${pc==null?'':pc+'%'}</span></div>
   <div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div>
   <div class="mut" style="min-height:36px">${big==null?'&nbsp;':tot==null?'Usable oil only (set the whole-tank capacity under Edit to see all of it)':'All the oil: '+Math.round(t.litres)+' L usable + '+Math.round(tot-t.litres)+' L below the outlet'}${t.total_standard!=null?' · Magnus-style maths (which also counts all the oil): '+Math.round(t.total_standard)+' L':''}</div>
-  <div class="row mut" style="flex-wrap:wrap;gap:2px 12px"><span style="white-space:nowrap">${t.level==null||t.level===16383?'no reading yet':t.level===16382?'nearly empty':t.level+' mm to oil'} · battery ${t.battery??'–'}%</span>${t.misread!=null?'<span style="white-space:nowrap;color:var(--warn)">latest reading '+(t.misread<0||t.misread===16383?'had no level':'was a misread ('+t.misread+' mm)')+(t.level!=null&&t.level!==16383?': showing the last good reading':'')+'</span>':''}<span style="white-space:nowrap">${readAt(t)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div>
+  <div class="row mut" style="flex-wrap:wrap;gap:2px 12px"><span style="white-space:nowrap">${t.level==null||t.level===16383?'no reading yet':t.level===16382?'nearly empty':t.level+' mm to oil'} · battery ${t.battery==null?'–':(3+t.battery/100).toFixed(2)+' V'+(t.battery<=65?' (low: replace soon)':'')}</span>${t.misread!=null?'<span style="white-space:nowrap;color:var(--warn)">latest reading '+(t.misread<0||t.misread===16383?'had no level':'was a misread ('+t.misread+' mm)')+(t.level!=null&&t.level!==16383?': showing the last good reading':'')+'</span>':''}<span style="white-space:nowrap">${readAt(t)}${t.rssi?' · '+t.rssi+' dBm':''}</span></div>
   <details class="rd" data-mac="${okMac(t.mac)}"${RDO.has(t.mac)?' open':''} ontoggle="rdToggle(this)"><summary>Today's readings</summary><div class="rdb">${RD[t.mac]?RD[t.mac].html:'Loading…'}</div></details></div>`}).join('')
   :'');$('tk0').hidden=!!S.tanks.length;$('tk1').hidden=!S.tanks.length;
  RDO.forEach(m=>rdLoad(m));  /* open ones: refresh when a new reading has come */
@@ -503,7 +517,7 @@ async function exportCsv(){try{bst('Preparing CSV…');const s=await api('/api/s
  download('oil-tanks-readings-'+day()+'.csv',rows.join('\n')+'\n','text/csv');bst('CSV saved: '+(rows.length-1)+' readings. Times are UTC.')}catch(e){bst('Export failed: '+e.message)}}
 const pDay=t=>new Date(t*1000).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 /* Earlier readings: pasted in, turned into the distances the monitor would have read, merged into the tank's history */
-function pasteTanks(){const el=$('pTank'),ts=(S&&S.tanks)||[],v=el.value;el.textContent='';for(const t of ts){const o=document.createElement('option');o.value=t.mac;o.textContent=t.name;el.appendChild(o)}if(ts.some(t=>t.mac===v))el.value=v;pastePrev()}
+function pasteTanks(){const el=$('pTank'),ts=(S&&S.tanks)||[],v=el.value,k=JSON.stringify(ts.map(t=>[t.mac,t.name]));if(el.dataset.k===k)return;el.dataset.k=k;el.textContent='';  /* (only when the tanks changed: a reload never wipes what the card says) */for(const t of ts){const o=document.createElement('option');o.value=t.mac;o.textContent=t.name;el.appendChild(o)}if(ts.some(t=>t.mac===v))el.value=v;pastePrev()}
 function pastePrev(){if(!$('pTank').options.length&&S&&S.tanks&&S.tanks.length)return pasteTanks();const P=pasteParse($('pTxt').value),n=P.rows.length,f=x=>pDay(x[0]);$('pBtn').disabled=!n||!$('pTank').value;
  $('pPrev').textContent=!$('pTxt').value.trim()?'':(n?n+' reading'+(n===1?'':'s')+', '+f(P.rows[0])+(n>1?' to '+f(P.rows[n-1]):'')+'.':'No readings found yet.')+(P.bad.length?' Not understood: line'+(P.bad.length>1?'s ':' ')+P.bad.slice(0,8).join(', ')+(P.bad.length>8?'…':'')+'.':'')}
 async function pasteAdd(){const mac=okMac($('pTank').value),t=S.tanks.find(x=>x.mac===mac),P=pasteParse($('pTxt').value);if(!t||!P.rows.length)return;const st=x=>{$('pPrev').textContent=x};
@@ -537,11 +551,13 @@ async function importBackup(f){$('impf').value='';if(!f)return;let o;
   bst('Imported '+macs.length+' tank(s), '+nD+' deliveries and '+nR+' readings.');anReset();load()}catch(e){bst('Import failed: '+e.message)}}
 
 // ---------- tabs ----------
-function tab(p){if(SU){for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=true;return}if(!['dash','tanks','cfg'].includes(p))p='dash';
+const PAGES=['dash','tanks','fc','ntf','cfg'];
+function tab(p){if(SU){for(const k of PAGES)$('p_'+k).hidden=true;return}if(!PAGES.includes(p))p='dash';
  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.p===p));
- for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash();if(p==='cfg'){seek();wjsLoad();pasteTanks()}}
+ {const sb=document.querySelector('.tabs button[data-p="'+p+'"]');if(sb&&sb.scrollIntoView&&sb.parentNode.scrollWidth>sb.parentNode.clientWidth)sb.scrollIntoView({block:'nearest',inline:'nearest'})}
+ for(const k of PAGES)$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash();if(p==='cfg')seek();if(p==='ntf')wjsLoad();if(p==='fc')pasteTanks()}
 // Sensors nearby: the Pico normally only listens when a reading is due; ask it to look around while this is open
-/* the widget script for Scriptable: fetched when Config opens, so a tap can copy it at once (iPhones only allow
+/* the widget script for Scriptable: fetched when Notifications opens, so a tap can copy it at once (iPhones only allow
    copying during the tap itself, not after waiting for a download) */
 let WJS=null,WJSH=null,WJSP=null,WJSG=0;  /* the script, the Pico name it was fetched for, the fetch under way, which fetch is current */
 function wjsLoad(){if(!S||!S.update)return;const h=S.hostname;  /* (only once the Pico's details are in: the script carries its name) */if(WJS&&WJSH!==h){WJS=null;WJSP=null}  /* (renamed: fetch it again, with the new name in it) */
@@ -775,7 +791,14 @@ function tankView(t,cv,withReorder){const c=t&&t.cfg;if(!c||c.shape!=='cuboid')r
  return{cap,svg:tankSvg({reorder:rh!=null&&rsv>0?{h:rh,text:'reorder '+L0(rsv)}:null,L:n(c.length_cm),W:n(c.width_cm),nW:m?n(c.windows):0,og:out,outGuess:0,top,wb0:n(c.win_bottom_cm),wt0:n(c.win_top_cm),wo0:n(c.win_outer_w_cm),
   wi:n(c.win_inner_w_cm),hi:n(c.win_inner_h_cm),rh:n(c.rib_h_cm),rd:n(c.rib_depth_cm),rv:m&&Array.isArray(c.ribs_cm)?c.ribs_cm.map(n):[],plain:true,level:top==null?null:lvl,oilText:n(t.litres)!=null?L0(t.litres):'oil'})}}
 function drawTank(t){const sv=$('d_tank');$('d_dots').hidden=true;if(!t){sv.innerHTML='';$('d_tank2').textContent=' ';sv.setAttribute('viewBox','0 0 400 230');return}
- const v=tankView(t,AN&&AN.mac===t.mac&&AN.cv,true);sv.setAttribute('viewBox','0 0 400 230');sv.innerHTML=v.svg;$('d_tank2').textContent=v.cap}
+ const v=tankView(t,AN&&AN.mac===t.mac&&AN.cv,true);sv.setAttribute('viewBox','0 0 400 230');sv.innerHTML=v.svg;tankFit(sv);sv.dataset.name=t.name;$('d_tank2').textContent=v.cap}
+/* the drawing cropped to the tank (the room either side of it dropped), so it shows larger on a phone; the ground line
+   then spans just the drawing. Where the browser can't measure it (no getBBox), the whole 400 x 230 stays */
+function tankFit(sv,top){try{let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;for(const e of sv.children){if(e.classList.contains('gnd'))continue;const b=e.getBBox();if(!b.width&&!b.height)continue;x0=Math.min(x0,b.x);y0=Math.min(y0,b.y);x1=Math.max(x1,b.x+b.width);y1=Math.max(y1,b.y+b.height)}
+  if(!(x1>x0&&y1>y0))return;const g=sv.querySelector('.gnd'),pad=10;if(g){y1=Math.max(y1,+g.getAttribute('y1'));g.setAttribute('x1',x0-pad);g.setAttribute('x2',x1+pad)}
+  sv.setAttribute('viewBox',[x0-pad,y0-pad-(top||0),x1-x0+2*pad,y1-y0+2*pad+(top||0)].map(v=>Math.round(v*10)/10).join(' '))}catch(e){}}
+let SWIPED=0;function tankFull(){const sv=$('d_tank'),d=$('tfull');if(!sv.innerHTML||Date.now()-SWIPED<600)return;  /* (a swipe to the other tank is not a tap) */const f=d.querySelector('svg');f.setAttribute('viewBox',sv.getAttribute('viewBox'));f.innerHTML=sv.innerHTML;const n=f.querySelector('.tname');if(n)n.remove();
+ $('tfullT').textContent=sv.dataset.name||'';$('tfullC').textContent=$('d_tank2').textContent;d.showModal()}
 // Both tanks: one drawing at a time; swipe (or the dots) for the other. Remembers the one you last looked
 // at; the first time, it shows the tank that has been going down.
 let TI=0;
@@ -785,11 +808,11 @@ function tankPick(ts){let k=-1;try{const m=localStorage.hawkiTankView;k=ts.findI
 let TMAC=null;
 function drawTanks(ts){const sv=$('d_tank'),dots=$('d_dots');TI=TMAC?ts.findIndex(t=>t.mac===TMAC):-1;if(TI<0){TI=tankPick(ts);TMAC=ts[TI].mac}  /* follow the tank, not its position */
  const t=ts[TI],v=tankView(t,null,false);sv.setAttribute('viewBox','0 0 400 230');
- sv.innerHTML=v.svg+`<text class="lbl" x="6" y="14">${esc(t.name)}</text>`;$('d_tank2').textContent=v.cap;
+ sv.innerHTML=v.svg;tankFit(sv,16);sv.dataset.name=t.name;{const vb=sv.getAttribute('viewBox').split(' ').map(Number);sv.insertAdjacentHTML('beforeend',`<text class="lbl tname" x="${vb[0]+6}" y="${vb[1]+14}">${esc(t.name)}</text>`)}$('d_tank2').textContent=v.cap;
  dots.hidden=false;dots.innerHTML=ts.map((x,i)=>`<button type="button" aria-label="${esc(x.name)}" aria-current="${i===TI}" onclick="showTank(${i})"><i></i></button>`).join('');
  if(!sv.dataset.swipe){sv.dataset.swipe=1;let x0=null,y0=null;
   sv.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
-  sv.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;if(Math.abs(dx)>40&&Math.abs(dx)>2*Math.abs(dy)&&S.primary==='all')showTank(TI+(dx<0?1:-1))})}}  /* sideways swipes only: scrolling stays scrolling */
+  sv.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;if(Math.abs(dx)>40&&Math.abs(dx)>2*Math.abs(dy)&&S.primary==='all'){SWIPED=Date.now();showTank(TI+(dx<0?1:-1))}})}}  /* sideways swipes only: scrolling stays scrolling */
 function showTank(i){const ts=S.tanks.filter(x=>modeOf(x.cfg)!=='off');if(ts.length<2||S.primary!=='all')return;TI=(i+ts.length)%ts.length;TMAC=ts[TI].mac;try{localStorage.hawkiTankView=TMAC}catch(e){}drawTanks(ts)}
 // Both tanks as one: oil left = the two added; the level series is their sum, so daily use is the
 // combined drop (a tank you didn't draw from adds nothing, rather than dragging the average down)

@@ -4,11 +4,12 @@ src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).
 tree = ast.parse(src)
 keep = [n for n in tree.body if isinstance(n, ast.AsyncFunctionDef) and n.name == 'battery_check'
         or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('BATT_LOW', 'BATT_REARM', 'batt_seen') for t in n.targets)]
-sent, saves = [], []
+sent, saves, msgs = [], [], []
 
 
 async def send_alert(title, msg, urgent=False, mark=None):
     sent.append(title)
+    msgs.append(msg)
     return {'ntfy': g['result']}
 
 g = {'time': time, 'cfg': {}, 'save_cfg': lambda c: saves.append(1), 'send_alert': send_alert, 'result': 'ok'}
@@ -34,32 +35,32 @@ def feed(levels, n=None, a=None, repeat=1):
     return a
 
 
-a = feed([62, 50, 25])
-ok(sent == [], 'above 20%: nothing')
-a = feed([20, 19], a=a)
+a = feed([82, 74, 66])
+ok(sent == [], 'above 3.65 V: nothing (3.82, 3.74, 3.66)')
+a = feed([65, 64], a=a)
 ok(sent == [], 'two low checks in a row: not yet (a cold reading)')
-feed([18], a=a)
-ok(sent == ['Tank 1: monitor battery low'] and a.get('battery'), 'third low check: one alert')
-feed([18, 17, 15, 30], a=a)
-ok(len(sent) == 1, 'stays quiet while low, and at 30% (not a new battery yet)')
-feed([90, 90], a=a)
+feed([62], a=a)
+ok(sent == ['Tank 1: monitor battery low'] and a.get('battery') and '3.62 V' in msgs[-1], 'third low check: one alert, with the voltage: ' + msgs[-1])
+feed([62, 61, 60, 70], a=a)
+ok(len(sent) == 1, 'stays quiet while low, and at 3.70 V (not a new battery yet)')
+feed([82, 82], a=a)
 ok('battery' in a, 'two good readings: not re-armed yet')
-feed([90], a=a)
-ok('battery' not in a, 'new battery (three readings >= 40%): armed again')
-feed([19, 50, 19, 19], a=a)
+feed([82], a=a)
+ok('battery' not in a, 'new battery (three readings at 3.75 V or more): armed again')
+feed([64, 80, 64, 64], a=a)
 ok(len(sent) == 1, 'a dip that recovers resets the count')
-feed([19], a=a)
+feed([64], a=a)
 ok(len(sent) == 2, 'three in a row again: alerts again')
 sent.clear(); g['result'] = 'failed'; g['batt_seen'].clear()
-a = feed([10, 10, 10])
+a = feed([55, 55, 55])
 ok(len(sent) == 1 and 'battery' not in a, 'send failed: not marked, so it tries again')
-feed([10], a=a)
+feed([55], a=a)
 ok(len(sent) == 2, '... on the next check')
 sent.clear(); g['result'] = 'ok'
-feed([5, 5, 5, 5], n={'ntfy_topic': 'x', 'battery': False})
+feed([50, 50, 50, 50], n={'ntfy_topic': 'x', 'battery': False})
 ok(sent == [], 'switched off: never')
 ok(asyncio.run(g['battery_check']({}, 'm', {}, {}, {})) is None, 'no battery figure: nothing')
 g['batt_seen'].clear(); sent.clear()
-feed([10], repeat=12)
+feed([55], repeat=12)
 ok(sent == [], 'one low measurement repeated for an hour: no alert (counts measurements, not checks)')
 sys.exit(1 if fails else 0)

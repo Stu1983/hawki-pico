@@ -1,31 +1,31 @@
 {
- "version": "1.3.9",
- "ref": "v1.3.9",
- "notes": "Readings from the Magnus app can be pasted in (Config, Earlier readings); a forecast from the first night when a typical year is given; the price chart goes back years on every Pico.",
+ "version": "1.3.10",
+ "ref": "v1.3.10",
+ "notes": "Forecast and Notifications get their own tabs; the tank drawing is larger and opens full screen with a tap; the monitor's battery is shown in volts, with the low-battery alert at 3.65 V to match the Magnus app.",
  "files": {
   "app.py": [
-   "95f0e5014cb0b4ef33e7b029a0963ca50c25946cc041d16ac46aaa96fe26c50b",
-   149264
+   "e4ca05aa15dbb3ac614108319c01e96d7bc5e414a745cffd26b8ebc0f106b47b",
+   149474
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
    7065
   ],
   "common.js.html": [
-   "c3c4898a66af9c65a6659fe18c212dc16b8de64700370faebe270768a1e0a9a3",
-   28597
+   "bc50bb07a3e6a33cb67cb35f4dcb1bb4016a63e4ee8339e0c8a750a46b4bc40b",
+   28603
   ],
   "drops.py": [
    "7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062",
    2186
   ],
   "hawki_decode.py": [
-   "c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266",
-   2120
+   "53421152e31584e4eb1814fe012248e1bc0cbacca08c66540faf48abf45e4e29",
+   2478
   ],
   "hist.html": [
-   "10bef515418647d5f1ae88ef75613a0dc1357f3a981311ff4a0ee253c1d95216",
-   62558
+   "bb5eddd3b6b54dcdab03197258addd75a43b8ae222c5f9326fc75c4c104444cf",
+   62568
   ],
   "histstore.py": [
    "bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80",
@@ -40,8 +40,8 @@
    3391
   ],
   "mqtt.py": [
-   "cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df",
-   7708
+   "ca857946e941943f648935acd1479386503f8aab200d3b4ffcf4de953a01c433",
+   8113
   ],
   "netcfg.py": [
    "a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34",
@@ -60,8 +60,8 @@
    14435
   ],
   "ui.html": [
-   "e2fbcbdbebc12fcb70f7e5f76fe527874226db90af18d1c731589443517dd0a8",
-   121649
+   "0f350509620547c03ce4dacac40ad638191625b90086d63355ca77479683a959",
+   124933
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -72,8 +72,8 @@
    13431
   ],
   "version.py": [
-   "c0fd8078f140ec9079f01b7bb5ab49da7049d5757bf9ebc92521fe1195124f0d",
-   18
+   "ea2f1f89b60c3167baf287dc757b72744370343d284645a8411c66b8b86721f8",
+   19
   ],
   "weather.py": [
    "4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a",
@@ -85,7 +85,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"95f0e5014cb0b4ef33e7b029a0963ca50c25946cc041d16ac46aaa96fe26c50b\", 149264], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"c3c4898a66af9c65a6659fe18c212dc16b8de64700370faebe270768a1e0a9a3\", 28597], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"10bef515418647d5f1ae88ef75613a0dc1357f3a981311ff4a0ee253c1d95216\", 62558], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"e2fbcbdbebc12fcb70f7e5f76fe527874226db90af18d1c731589443517dd0a8\", 121649], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"c0fd8078f140ec9079f01b7bb5ab49da7049d5757bf9ebc92521fe1195124f0d\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Readings from the Magnus app can be pasted in (Config, Earlier readings); a forecast from the first night when a typical year is given; the price chart goes back years on every Pico.\", \"ref\": \"v1.3.9\", \"version\": \"1.3.9\"}",
-  "sig": "01d8e0eaedf43139bd24a616a35af239d3c8dc0a7685a2625bd82c297dfc74a34b60e19eea70125c2fb924af73272e7b815825db3cb8d73f5ee4ec894a72aa14bdc81c44960710c83dfd7a0977c6aeca2f6b5919e7a9eebd39271d79ab14179915d3b4b08940aab8a21675c78efb021e9a33a4ab2b0b799f55751f7cf67000d612c0f1384988fa39e1adbaac649342687b2e4059cddcb4c832acfd3b4b18a33bae1138b3b2d29610bff868f3ac3a01c18769c190a18df7687438a61d8c52bebda04ffc93e93c2881ba6835e37b1a0bb0856f10dca93f267a077dea04b488a4a3c6a523fffe5d828dff39c9f221b9dbf83f72c38c5f05947f5f3ce8f47784765e"
+  "body": "{\"files\": {\"app.py\": [\"e4ca05aa15dbb3ac614108319c01e96d7bc5e414a745cffd26b8ebc0f106b47b\", 149474], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"bc50bb07a3e6a33cb67cb35f4dcb1bb4016a63e4ee8339e0c8a750a46b4bc40b\", 28603], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"53421152e31584e4eb1814fe012248e1bc0cbacca08c66540faf48abf45e4e29\", 2478], \"hist.html\": [\"bb5eddd3b6b54dcdab03197258addd75a43b8ae222c5f9326fc75c4c104444cf\", 62568], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"ca857946e941943f648935acd1479386503f8aab200d3b4ffcf4de953a01c433\", 8113], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"0f350509620547c03ce4dacac40ad638191625b90086d63355ca77479683a959\", 124933], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"ea2f1f89b60c3167baf287dc757b72744370343d284645a8411c66b8b86721f8\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Forecast and Notifications get their own tabs; the tank drawing is larger and opens full screen with a tap; the monitor's battery is shown in volts, with the low-battery alert at 3.65 V to match the Magnus app.\", \"ref\": \"v1.3.10\", \"version\": \"1.3.10\"}",
+  "sig": "2077e914d3193a9ad66910b2ca1ab7544fb504d29901cc221723c315f7ab5be925b8aadfbd8b52f0e461f21ac2b1ba1a6d3d48af1051f9a9ea0eef1d00b2ab85f4bc3baa79f8f36870c959d1e1715485c13b435303246a084d1a54bdfdf75a655dcdf5860f344781f86a20b808352d2343ef4f407e428310a16afa40499e8dcefd6805c6219683af86db49650f0c1bfee36e58acb1afa0340b81eadab876f4312af51e22eeec176c523b1774566b4edff9b00e4d4e847e43fd4285325de41935d2f8210248feaaa1cb5304bb68f696cf26e36d29bff36a66fe40a7edee1badf5638675a5fb7228ef1b52f0a8fa4503ba4f7dfc1141afda77757a30dfa465dcf6"
  }
 }

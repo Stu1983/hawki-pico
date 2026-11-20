@@ -245,7 +245,7 @@ function firstLevel(s){const d=s.filter(p=>p[0]-s[0][0]<=DAY).map(p=>p[1]);retur
 function fcBody(A,key,reserve){ const t0=A.fc.path[0][0],cum=[];let c=0;for(let d=0;d<400;d++){c+=A.rate(t0+d*DAY);cum.push(Math.round(c*100)/100)}return{mac:key,t0:Math.floor(t0),cur:Math.max(0,Math.round(A.cur*100)/100),reserve,cum}}
 /* the typical year's oil (Config) is the whole house's: it applies to a view only when that view holds every tank in use */
 function yearFor(st,macs){const y=st&&+st.year_l;if(!(y>0))return null;const use=(st.tanks||[]).filter(t=>modeOf(t.cfg)==='use');return use.length&&use.every(t=>macs.includes(t.mac))?y:null}  /* (no tank in use: nothing is being burnt, so no figure) */
-/* a forecast to show: from 2 days of readings, or straight away from the typical year you gave (Config) */
+/* a forecast to show: from 2 days of readings, or straight away from the typical year you gave (Forecast tab) */
 function hasFc(A){return!!(A&&A.fc&&(A.recent!=null&&A.span>=2||A.yearL>0))}
 function modeOf(c){return c&&(c.mode==='use'||c.mode==='standby'||c.mode==='off')?c.mode:c&&c.isolated?'standby':'use'}  /* (an explicit mode first: the form's settings copied from another tank carry its isolated time) */
 function holdIsolated(s,since){const t0=typeof since==='number'?since:0;let h=null,sum=0,n=0;return s.map(p=>{if(p[0]<t0)return p;if(h==null||Math.abs(p[1]-h)>REFILL_L){sum=0;n=0}sum+=p[1];n++;h=sum/n;return[p[0],h].concat(p.slice(2))})}  /* held at the running average of its readings since the last big change, so one jittery first reading can't set its level; since = when it was isolated (epoch; true = always): readings before then are left as they were */

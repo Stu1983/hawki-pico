@@ -1607,8 +1607,9 @@ async def drop_check(mac, t, lvl):
             save_cfg(cfg)
 
 
-BATT_LOW = 20     # % : tell the phone once at or below this
-BATT_REARM = 40   # % : a new battery (back above this) arms it again
+BATT_LOW = 65     # 3.65 V (the battery field is hundredths of a volt over 3): tell the phone once at or below this.
+                  # A new cell reads about 3.80 V; the Magnus app says BAD, replace soon, at 3.62 V
+BATT_REARM = 75   # 3.75 V: a new battery (back above this) arms it again
 batt_seen = {}    # mac -> [last payload counted, lows in a row, highs in a row]
 
 
@@ -1629,7 +1630,7 @@ async def battery_check(n, mac, t, d, a):
         save_cfg(cfg)
     if n.get('battery', True) and not a.get('battery') and st[1] >= 3:
         res = await send_alert('%s: monitor battery low' % t.get('name', mac),
-                               'The HAWKi monitor reports %d%% battery. Replace it soon, or readings will stop.' % b,
+                               'The HAWKi monitor\'s battery is down to %.2f V (a new one reads about 3.8 V). Replace it soon, or readings will stop.' % (3 + b / 100),
                                mark={'mac': mac, 'k': 'battery'})
         if 'ok' in res.values():
             a['battery'] = int(time.time())
