@@ -1640,7 +1640,7 @@ async def battery_check(n, mac, t, d, a):
         save_cfg(cfg)
     if n.get('battery', True) and not a.get('battery') and st[1] >= 3:
         res = await send_alert('%s: monitor battery low' % t.get('name', mac),
-                               'The HAWKi monitor\'s battery is down to %d%% (%.2f V). Replace it soon, or readings will stop.' % (b, 2 + 1.2 * b / 100),
+                               'The HAWKi monitor\'s battery is down to %.2f V (a new one settles at about 3.0 V). Replace it soon, or readings will stop.' % (2 + 1.2 * b / 100),
                                mark={'mac': mac, 'k': 'battery'})
         if 'ok' in res.values():
             a['battery'] = int(time.time())

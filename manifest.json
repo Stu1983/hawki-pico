@@ -1,11 +1,11 @@
 {
- "version": "1.3.12",
- "ref": "v1.3.12",
- "notes": "The monitor's battery is a percentage after all (of its 2.00-3.20 V range), now shown with the volts it stands for; Home Assistant's battery sensor is back in %.",
+ "version": "1.3.13",
+ "ref": "v1.3.13",
+ "notes": "The monitor's battery is shown in volts only, with good / order battery / replace battery: the % misled (a new battery settles at about 3.0 V, '80%', for most of its life).",
  "files": {
   "app.py": [
-   "d7626878a7216149aac20ea1814cf6508fecf73e9b065c1fa9adb0106a234433",
-   149809
+   "f9b5226cea8036079b1cd1666408349883ab9f2b0cbd723eec7a5f0a4b253f71",
+   149834
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
@@ -60,8 +60,8 @@
    14435
   ],
   "ui.html": [
-   "8c6f438fe3fc07dd298b831fa59e7f06b623e3c84a9ef8ff465e231f39bdd8f5",
-   126724
+   "52c2b0b4f61438d954a7f1671c43f25de706c86c2cca5a6917804f0fd646c68f",
+   126910
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -72,7 +72,7 @@
    13431
   ],
   "version.py": [
-   "243cdb7dab1d07e9807733cda3ebad1a0cf3df8dcf0b6e39b7280b209c99aca7",
+   "04625ebf3492c0422dc04c74c5719a11074e97d7153d2e6f16162081b8876b2a",
    19
   ],
   "weather.py": [
@@ -85,7 +85,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"d7626878a7216149aac20ea1814cf6508fecf73e9b065c1fa9adb0106a234433\", 149809], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"f4ddfb5e2c96601eea4199efca2a65bfccb1df711e76ab0d32b673cd6e4ad576\", 28610], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"663c4da0ed1eb021fb34db0b82c4e7ab26ae5cf8463024e833e5e8a1ac11d277\", 63183], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"8c6f438fe3fc07dd298b831fa59e7f06b623e3c84a9ef8ff465e231f39bdd8f5\", 126724], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"243cdb7dab1d07e9807733cda3ebad1a0cf3df8dcf0b6e39b7280b209c99aca7\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"The monitor's battery is a percentage after all (of its 2.00-3.20 V range), now shown with the volts it stands for; Home Assistant's battery sensor is back in %.\", \"ref\": \"v1.3.12\", \"version\": \"1.3.12\"}",
-  "sig": "1f3b6ba43556cfc7a608adbd5ead09c63a7db05fe0e1c3fc0a843e3911177471b5b7f7316e14f592338402b1fd25c1bfbe325aebaa1bb6a92a22556e0896def756fd53bfb925da3b84febbb16356d457a23318562a6cfaecbf72f6a0e5bd6deaf5fcb96f607d7cb76758363f9c261c8aec6d8f6c444945aa345d692622d8796e3f00e2f8a1fd428385cec0bff9ebf116e4212d0f554b0ce4c173caeb93327755a0f6b800161d72c3484673fe0f7b79ffff70ce6fcedfb7ee297b6595bbe6fc20c124e115c77539be2f913451c6aa798cbaa5b9b506d1104bb731ce8399487271366c566932dfe239cf7cefab4599a1cf672f90c1eb1a7372eb33f4879574841f"
+  "body": "{\"files\": {\"app.py\": [\"f9b5226cea8036079b1cd1666408349883ab9f2b0cbd723eec7a5f0a4b253f71\", 149834], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"f4ddfb5e2c96601eea4199efca2a65bfccb1df711e76ab0d32b673cd6e4ad576\", 28610], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"663c4da0ed1eb021fb34db0b82c4e7ab26ae5cf8463024e833e5e8a1ac11d277\", 63183], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"52c2b0b4f61438d954a7f1671c43f25de706c86c2cca5a6917804f0fd646c68f\", 126910], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"04625ebf3492c0422dc04c74c5719a11074e97d7153d2e6f16162081b8876b2a\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"The monitor's battery is shown in volts only, with good / order battery / replace battery: the % misled (a new battery settles at about 3.0 V, '80%', for most of its life).\", \"ref\": \"v1.3.13\", \"version\": \"1.3.13\"}",
+  "sig": "4846f94cb2cfc7adf4a750b8143c3037aabeb6c70845803382094209a347071f1c76b40efb11bf372c49d6da528d94484a499b46d0880b2b49e585ad085541232d5bb791c4fcc2848853e7e34ba442dcfc7de35110cf90cd2aaa5fddc22c9b92d24ee512c2e2ec5bd0cc253d7d0f1cfec1a6e105a362780ca52bb7765254bdd5386597bb4a17e057d610800d456fa699c860bd676641719fc9cee412ac954ac88b118b66ec94e6f843b6f2a53bc3f45b2aa13f78d21374da7566982547a8948d276a4a72d0d7988a48065340f8364c25b62cbee9435fd28607f4302b3ca0ead727273d6b5630dc3192cbe86222deb80a1dc423f2c481cba4287c1de56d9065dc"
  }
 }

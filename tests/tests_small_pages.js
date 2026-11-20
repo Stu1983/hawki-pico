@@ -41,7 +41,7 @@ function open(url,route){return new JSDOM(pg('ui.html'),{url,runScripts:'dangero
   ok(P&&P.every((x,i)=>!i||x[0]>P[i-1][0]),'the series stays in time order ('+(P&&P.length)+' points)')}
  {const w=open('http://pico/#tanks',()=>null);await wait(300);
   const t=(b,x)=>{const d=w.document.createElement('div');d.innerHTML=w.battTxt(Object.assign({battery:b},x||{}));const e=d.querySelector('.bt');return e?[e.className,d.textContent]:[null,d.textContent]};
-  ok(JSON.stringify([t(82),t(73),t(72),t(66),t(65),t(62)])===JSON.stringify([['bt good','82% · 2.98 V (good)'],['bt good','73% · 2.88 V (good)'],['bt warn','72% · 2.86 V (order battery)'],['bt warn','66% · 2.79 V (order battery)'],['bt bad','65% · 2.78 V (replace battery)'],['bt bad','62% · 2.74 V (replace battery)']]),'battery: green good from 73%, amber order battery 66-72%, red replace battery at 65% and below, each with its volts');
+  ok(JSON.stringify([t(82),t(73),t(72),t(66),t(65),t(62)])===JSON.stringify([['bt good','2.98 V (good)'],['bt good','2.88 V (good)'],['bt warn','2.86 V (order battery)'],['bt warn','2.79 V (order battery)'],['bt bad','2.78 V (replace battery)'],['bt bad','2.74 V (replace battery)']]),'battery in volts (no %: it misleads): green good from 2.88 V, amber order battery 2.79-2.86, red replace battery at 2.78 V and below');
   ok(t(1,{starting:true})[1]==='starting up'&&t(null)[1]==='–','a monitor starting up says so (not its placeholder 1%); none: a dash');
-  ok(/60% · 2\.72 V \(replace battery\)/.test(w.document.getElementById('p_tanks').textContent),'the Tanks card shows it: '+(w.document.getElementById('p_tanks').textContent.match(/battery [^·]*/)||[''])[0])}
+  ok(/battery 2\.72 V \(replace battery\)/.test(w.document.getElementById('p_tanks').textContent),'the Tanks card shows it: '+(w.document.getElementById('p_tanks').textContent.match(/battery [^·]*/)||[''])[0])}
  process.exit(fails?1:0)})();
