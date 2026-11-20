@@ -189,6 +189,12 @@ dialog::backdrop{background:#0008}
 <div class="card"><div class="mut">A backup holds every tank's settings, deliveries (supplier and price) and all saved readings. It doesn't include the Wi-Fi password. Importing one onto this or a new Pico replaces those tanks' settings and deliveries and merges the readings.</div>
 <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button onclick="exportBackup()">Export backup</button><button onclick="exportCsv()">Export readings (CSV)</button><button onclick="$('impf').click()">Import backup</button>
 <input type="file" id="impf" accept=".json,application/json" hidden onchange="importBackup(this.files[0])"></div><div class="mut" id="bkst" style="min-height:18px;margin-top:6px"></div></div>
+<h2>Earlier readings</h2>
+<div class="card"><div class="mut">Readings from before this Pico, from the Magnus app's history, say. One a line: the date, the time and the level in litres or %, like <b>2026-11-12 08:00 850 L</b> or <b>12/11/2026 8:00pm 64%</b>. They go in with the readings, so the charts and the forecast have more to go on. Times the Pico already has readings for are left out, so it is fine to paste the same list twice.</div>
+<div class="row" style="margin-top:10px"><label for="pTank">Tank</label><select id="pTank" style="width:auto" onchange="pastePrev()"></select></div>
+<textarea id="pTxt" rows="6" spellcheck="false" autocapitalize="off" style="width:100%;box-sizing:border-box;margin-top:8px;font:inherit;font-size:16px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)" placeholder="2026-11-12 08:00 850 L" oninput="pastePrev()"></textarea>
+<div class="mut" id="pPrev" style="min-height:18px;margin-top:6px"></div>
+<div class="acts" style="justify-content:flex-start"><button id="pBtn" onclick="pasteAdd()" disabled>Add readings</button></div></div>
 </section>
 <dialog id="dlg"><form method="dialog" novalidate onsubmit="return saveTank(event)">
 <div class="row"><b id="dlgT">Add tank</b><span class="mut" id="dlgMac"></span></div>
@@ -495,6 +501,22 @@ async function exportCsv(){try{bst('Preparing CSV…');const s=await api('/api/s
   const recs=[];for(let i=0;i+6<=v.byteLength;i+=6)recs.push([v.getUint32(i,true),v.getUint16(i+4,true)]);recs.sort((a,b)=>a[0]-b[0]);
   for(const[ts,mm]of recs){const L=toL(mm),d=new Date(ts*1000);rows.push([q(t.name),t.mac,d.toISOString(),mm===16382?'':mm,L.toFixed(1),(100*L/cap).toFixed(1)].join(','))}}
  download('oil-tanks-readings-'+day()+'.csv',rows.join('\n')+'\n','text/csv');bst('CSV saved: '+(rows.length-1)+' readings. Times are UTC.')}catch(e){bst('Export failed: '+e.message)}}
+const pDay=t=>new Date(t*1000).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+/* Earlier readings: pasted in, turned into the distances the monitor would have read, merged into the tank's history */
+function pasteTanks(){const el=$('pTank'),ts=(S&&S.tanks)||[],v=el.value;el.textContent='';for(const t of ts){const o=document.createElement('option');o.value=t.mac;o.textContent=t.name;el.appendChild(o)}if(ts.some(t=>t.mac===v))el.value=v;pastePrev()}
+function pastePrev(){if(!$('pTank').options.length&&S&&S.tanks&&S.tanks.length)return pasteTanks();const P=pasteParse($('pTxt').value),n=P.rows.length,f=x=>pDay(x[0]);$('pBtn').disabled=!n||!$('pTank').value;
+ $('pPrev').textContent=!$('pTxt').value.trim()?'':(n?n+' reading'+(n===1?'':'s')+', '+f(P.rows[0])+(n>1?' to '+f(P.rows[n-1]):'')+'.':'No readings found yet.')+(P.bad.length?' Not understood: line'+(P.bad.length>1?'s ':' ')+P.bad.slice(0,8).join(', ')+(P.bad.length>8?'…':'')+'.':'')}
+async function pasteAdd(){const mac=okMac($('pTank').value),t=S.tanks.find(x=>x.mac===mac),P=pasteParse($('pTxt').value);if(!t||!P.rows.length)return;const st=x=>{$('pPrev').textContent=x};
+ try{st('Checking…');const cv=await api('/api/curve?mac='+mac),v=new DataView(await getBin(mac)),have=[];for(let i=0;i+6<=v.byteLength;i+=6)have.push(v.getUint32(i,true));have.sort((a,b)=>a-b);
+  /* a time already covered: a saved reading within 2 hours (the Pico's own, read hourly, or one pasted before), so they never mix with the Pico's and pasting a list twice adds nothing */
+  const near=ts=>{let lo=0,hi=have.length;while(lo<hi){const md=(lo+hi)>>1;if(have[md]<ts)lo=md+1;else hi=md}return[lo-1,lo].some(k=>k>=0&&k<have.length&&Math.abs(have[k]-ts)<=7200)};
+  const cap=+t.cfg.capacity_l||cv.l[0],out=[],full=[];let later=0;
+  for(const[ts,val,u]of P.rows){if(near(ts)){later++;continue}const L=u==='%'?val/100*cap:val,mm=toMm(L,cv);if(mm==null){full.push(Math.round(L));continue}out.push([Math.round(ts),mm])}
+  if(!out.length){st('Nothing to add: '+(later?later+' already covered by saved readings':'')+(full.length?(later?', ':'')+full.length+' more than the tank holds':'')+'.');return}
+  if(!confirm('Add '+out.length+' reading'+(out.length===1?'':'s')+' to '+t.name+', '+pDay(out[0][0])+' to '+pDay(out[out.length-1][0])+'?'+(later?'\n\n'+later+' left out: '+(later===1?'a reading is':'readings are')+' already saved within 2 hours (the Pico\'s own, or added before).':'')+(full.length?'\n\n'+full.length+' left out: more than the tank holds ('+full.slice(0,3).join(', ')+' L). Check the tank\'s size under Tanks.':'')))return st('');
+  const b=new DataView(new ArrayBuffer(out.length*6));out.forEach(([ts,mm],i)=>{b.setUint32(i*6,ts,true);b.setUint16(i*6+4,mm,true)});
+  st('Adding…');const r=await authFetch('/api/hist?mac='+mac,{method:'POST',body:b.buffer});if(!r.ok)throw new Error(await r.json().catch(()=>r.status));
+  $('pTxt').value='';pastePrev();st('Added '+out.length+' readings to '+t.name+'.');anReset();load()}catch(e){st('Could not add them: '+e.message)}}
 async function importBackup(f){$('impf').value='';if(!f)return;let o;
  try{o=JSON.parse(await f.text())}catch(e){alert('That file isn\'t a backup (not valid JSON).');return}
  if(!o||o.format!=='hawki-backup'||typeof o.tanks!=='object'){alert('That file isn\'t an Oil Tanks backup.');return}
@@ -517,7 +539,7 @@ async function importBackup(f){$('impf').value='';if(!f)return;let o;
 // ---------- tabs ----------
 function tab(p){if(SU){for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=true;return}if(!['dash','tanks','cfg'].includes(p))p='dash';
  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.p===p));
- for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash();if(p==='cfg'){seek();wjsLoad()}}
+ for(const k of['dash','tanks','cfg'])$('p_'+k).hidden=k!==p;hideTip();if(p==='dash')dash();if(p==='cfg'){seek();wjsLoad();pasteTanks()}}
 // Sensors nearby: the Pico normally only listens when a reading is due; ask it to look around while this is open
 /* the widget script for Scriptable: fetched when Config opens, so a tap can copy it at once (iPhones only allow
    copying during the tap itself, not after waiting for a download) */
@@ -658,7 +680,7 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
  $('d_l').textContent=t.litres==null?'–':L0(t.litres);
  const u=t.unusable;$('d_l2').textContent=(t.percent!=null?t.percent+'% · ':'')+(u?'(+ '+(u[1]==='estimate'?'about ':'')+L0(u[0])+' unusable below the outlet)':'(unusable amount not set: Tanks → Edit)');
  $('d_bar').style.width=Math.max(0,Math.min(100,t.percent??0))+'%';
- const ok=A.recent!=null&&A.span>=2;if(modeOf(t.cfg)!=='off')fcSend(t.mac,A,ok,reserve);
+ const ok=A.recent!=null&&A.span>=2,fo=hasFc(A);if(modeOf(t.cfg)!=='off')fcSend(t.mac,A,fo,reserve);
  // shortest first: the 3-day average big (once there are 3 days), then 7-day and 14-day; the forecast uses the 14-day
  const av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;
  $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
@@ -666,7 +688,7 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
  $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';
  todayCost(A,ok,t?t.mac:null);
  const wt=$('d_wt');wt.className='card tile';const off=modeOf(t.cfg)==='off';  /* off: no forecast, no order date */
- if(ok&&!off){const c=A.fc,wk=x=>(x-now)/(7*DAY);
+ if(fo&&!off){const c=A.fc,wk=x=>(x-now)/(7*DAY);
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
   const sp=modeOf(t.cfg)==='use'?S.tanks.filter(x=>x.mac!==t.mac&&modeOf(x.cfg)==='standby'&&x.litres!=null&&x.litres>(x.cfg.reserve_l??200)).sort((a,b)=>b.litres-a.litres)[0]:null;  /* a standby tank with oil: switch to it rather than order */
   $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?(sp?'Switch to '+sp.name+' now':'Order now')+' (at '+reserve+' L)':(sp?'Switch to '+sp.name+' around ':'Order around ')+fmtD(c.ord)+' (at '+reserve+' L)';
@@ -674,7 +696,7 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
  else{$('d_w').textContent='–';$('d_w2').textContent=off?'Off: no forecast or warnings':' '}
  drawTank(t);
  const key=t.mac+'|'+ck+'|'+(AN&&AN.t)+'|'+(WV&&WV.heat?WXC.key+WXC.at:'-')+'|'+t.level+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;  // redraw only when something changed (keeps a hover open)
- if(!ok||off)A.fc=null;  /* no forecast line until the tiles have one too (and never for an off tank) */
+ if(!fo||off)A.fc=null;  /* no forecast line until the tiles have one too (and never for an off tank) */
  drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap:+t.cfg.capacity_l}:null,HF&&LOADFAIL)}
 
 /* deliveries, for the price (refreshed with the readings, every 10 minutes) */
@@ -703,20 +725,20 @@ async function dashAll(ts){$('d_name').textContent=ts.length>2?'All tanks':'Both
  const sum=f=>ts.reduce((a,t)=>a+(f(t)||0),0),lit=sum(t=>t.litres),cap=sum(t=>+t.cfg.capacity_l),un=sum(t=>t.unusable&&t.unusable[0]),known=ts.every(t=>t.litres!=null);
  $('d_l').textContent=known?L0(lit):'–';$('d_l2').textContent=(known&&cap?Math.round(lit/cap*1000)/10+'% · ':'')+ts.map(t=>t.name+' '+(t.litres==null?'–':L0(t.litres))+(modeOf(t.cfg)==='standby'?' (standby)':'')).join(' + ')+(un?' (+ about '+L0(un)+' unusable)':'');
  $('d_bar').style.width=(known&&cap?Math.max(0,Math.min(100,lit/cap*100)):0)+'%';
- const ok=A.recent!=null&&A.span>=2,av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null;fcSend('all',A,ok,reserve);
+ const ok=A.recent!=null&&A.span>=2,av=d=>ok&&A.avgs&&A.avgs[d]!=null?A.avgs[d].toFixed(1):'–',big3=ok&&A.avgs&&A.avgs[3]!=null,fo=hasFc(A);fcSend('all',A,fo,reserve);
  $('d_r').textContent=!ok?'–':(big3?A.avgs[3]:A.recent).toFixed(1)+' L/day';
  $('d_r2').textContent=ok?(big3?'3':+A.recentDays.toFixed(1))+'-day average, both tanks':(P.length?'needs 2 days of readings':HF?'could not load the readings':'no readings yet');
  $('d_r3').textContent=ok?'7-day '+av(7)+' · '+(+A.recentDays.toFixed(1))+'-day '+A.recent.toFixed(1):' ';
  todayCost(A,ok,null);
  const wt=$('d_wt');wt.className='card tile';
- if(ok){const c=A.fc,wk=x=>(x-now)/(7*DAY);
+ if(fo){const c=A.fc,wk=x=>(x-now)/(7*DAY);
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
   $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?'Order now (at '+reserve+' L in all)':'Order around '+fmtD(c.ord)+' (at '+reserve+' L in all)';
   if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
  else{$('d_w').textContent='–';$('d_w2').textContent=' '}
  drawTanks(ts);
  const key='all|'+ck+'|'+(AN&&AN.t)+'|'+(WV&&WV.heat?WXC.key+WXC.at:'-')+'|'+ts.map(t=>t.level).join(',')+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;
- if(!ok)A.fc=null;
+ if(!fo)A.fc=null;
  drawRate(ok?A:null,now);drawLvl(P.length?{A,P,reserve,now,cap}:null,HF&&LOADFAIL)}
 
 // tiny SVG chart kit: one y-axis, recessive grid, hover tooltip

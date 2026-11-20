@@ -1,19 +1,19 @@
 {
- "version": "1.3.8",
- "ref": "v1.3.8",
- "notes": "Config has an On your phone card: how to add the home-screen icon and the iPhone widget, with a button that copies the widget script (already set to this Pico's name).",
+ "version": "1.3.9",
+ "ref": "v1.3.9",
+ "notes": "Readings from the Magnus app can be pasted in (Config, Earlier readings); a forecast from the first night when a typical year is given; the price chart goes back years on every Pico.",
  "files": {
   "app.py": [
-   "b1c55f543be45db38ed3eacea22587525fb55c1746f3a49087a1422ddd538b36",
-   148144
+   "95f0e5014cb0b4ef33e7b029a0963ca50c25946cc041d16ac46aaa96fe26c50b",
+   149264
   ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
    7065
   ],
   "common.js.html": [
-   "4d47b50dd8c7dfa7312eb83aef12a6b9eff28d521462eaee2a80e9ecb712b3ec",
-   26034
+   "c3c4898a66af9c65a6659fe18c212dc16b8de64700370faebe270768a1e0a9a3",
+   28597
   ],
   "drops.py": [
    "7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062",
@@ -24,8 +24,8 @@
    2120
   ],
   "hist.html": [
-   "f51bc03cbbe15e529cfa07e97a26947c796984820e26f88c78c422296999cd35",
-   62495
+   "10bef515418647d5f1ae88ef75613a0dc1357f3a981311ff4a0ee253c1d95216",
+   62558
   ],
   "histstore.py": [
    "bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80",
@@ -52,16 +52,16 @@
    5451
   ],
   "price.py": [
-   "fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377",
-   1851
+   "b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90",
+   3981
   ],
   "tankcalc.py": [
    "6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229",
    14435
   ],
   "ui.html": [
-   "4c3d73e06c312ad43447b44bee71183d55a9cb79f2a12f84e5828003e9b89df2",
-   117434
+   "e2fbcbdbebc12fcb70f7e5f76fe527874226db90af18d1c731589443517dd0a8",
+   121649
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -72,7 +72,7 @@
    13431
   ],
   "version.py": [
-   "7e16fedbc2559b5d8f23286386eac7e949026c9163702162d3dde3ec44c0661b",
+   "c0fd8078f140ec9079f01b7bb5ab49da7049d5757bf9ebc92521fe1195124f0d",
    18
   ],
   "weather.py": [
@@ -85,7 +85,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"b1c55f543be45db38ed3eacea22587525fb55c1746f3a49087a1422ddd538b36\", 148144], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"4d47b50dd8c7dfa7312eb83aef12a6b9eff28d521462eaee2a80e9ecb712b3ec\", 26034], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"f51bc03cbbe15e529cfa07e97a26947c796984820e26f88c78c422296999cd35\", 62495], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"fbc9586981482aa825a1d0d961a821270112b2b0375a3f7357b2e4899d239377\", 1851], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"4c3d73e06c312ad43447b44bee71183d55a9cb79f2a12f84e5828003e9b89df2\", 117434], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"7e16fedbc2559b5d8f23286386eac7e949026c9163702162d3dde3ec44c0661b\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Config has an On your phone card: how to add the home-screen icon and the iPhone widget, with a button that copies the widget script (already set to this Pico's name).\", \"ref\": \"v1.3.8\", \"version\": \"1.3.8\"}",
-  "sig": "58d369b0aefaaf031bd5d51627e7bc25954585a4b23437ae1f6eec6c829d6213f27f7da6d1d8e4991aa7528cd94e6a4b80ebd647641ed5c3d6f37eb3a894b4a30afac0dd5101706c8017a2682edf2e4121a49bb78ee32ab3b7ea6b5b707d357e1e6ef08e7f82004c91450eb3d49aabc50639ad1bea581c3df5763f6ed4bc3c886d12f51167ab9259939cfd5604dfa6b7df3c05403a5467287256041397ff510a55a3aac0910165b2e5486958bfcc5d4a6d77eda342e7944500973b5dc7b5ea04bd70f358b0da83e7d89718d2b703835ce33041886aaa5c0e35f9f54b9547c69d31bef77866de6b428c1a295c30cec9b993e46692d9707933948930d1a86aaff2"
+  "body": "{\"files\": {\"app.py\": [\"95f0e5014cb0b4ef33e7b029a0963ca50c25946cc041d16ac46aaa96fe26c50b\", 149264], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"c3c4898a66af9c65a6659fe18c212dc16b8de64700370faebe270768a1e0a9a3\", 28597], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"c2cd19806bf0e37c5a34e5a75596e825514cffbdab4c6d9067c45dfd0c0d1266\", 2120], \"hist.html\": [\"10bef515418647d5f1ae88ef75613a0dc1357f3a981311ff4a0ee253c1d95216\", 62558], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"f3411413a1b887fdae7109479c37094fcf528bb31a451312687098b87b8df62d\", 3391], \"mqtt.py\": [\"cf6723182be6f00c8c25ed784c168760f2e8d05364812be5d605011520f575df\", 7708], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"e2fbcbdbebc12fcb70f7e5f76fe527874226db90af18d1c731589443517dd0a8\", 121649], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"c0fd8078f140ec9079f01b7bb5ab49da7049d5757bf9ebc92521fe1195124f0d\", 18], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Readings from the Magnus app can be pasted in (Config, Earlier readings); a forecast from the first night when a typical year is given; the price chart goes back years on every Pico.\", \"ref\": \"v1.3.9\", \"version\": \"1.3.9\"}",
+  "sig": "01d8e0eaedf43139bd24a616a35af239d3c8dc0a7685a2625bd82c297dfc74a34b60e19eea70125c2fb924af73272e7b815825db3cb8d73f5ee4ec894a72aa14bdc81c44960710c83dfd7a0977c6aeca2f6b5919e7a9eebd39271d79ab14179915d3b4b08940aab8a21675c78efb021e9a33a4ab2b0b799f55751f7cf67000d612c0f1384988fa39e1adbaac649342687b2e4059cddcb4c832acfd3b4b18a33bae1138b3b2d29610bff868f3ac3a01c18769c190a18df7687438a61d8c52bebda04ffc93e93c2881ba6835e37b1a0bb0856f10dca93f267a077dea04b488a4a3c6a523fffe5d828dff39c9f221b9dbf83f72c38c5f05947f5f3ce8f47784765e"
  }
 }

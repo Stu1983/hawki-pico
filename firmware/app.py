@@ -3185,6 +3185,22 @@ async def price_task():
                     price_state['gap'] = min(8 * 3600, (price_state.get('gap') or 1800) * 2)
                     print('price err', ex)
                 gc.collect()
+            # the years of prices before this Pico's own: downloaded from this project's repo (data/priceh.bin, kept up
+            # to date there now and then), so a newly set-up Pico's chart goes back years too. Tried every 6 hours
+            # until it has a copy, then once a week while that copy still stops short of its own first day
+            hw = price_state.get('hwait') or 6 * 3600
+            if (p is not None and now > 1.7e9 and wlan.isconnected() and now - price_state.get('htried', 0) > hw
+                    and price.hist_wanted()):
+                await web_quiet()
+                price_state['htried'] = time.time()
+                if cfg.get('price') is not None and wlan.isconnected():
+                    try:
+                        import updater
+                        with_room(price.hist_fetch, updater._get, weather.day_of(time.time()))
+                        price_state['hwait'] = 7 * 86400  # (a copy that still leaves a gap: wait for the next one)
+                    except Exception as ex:
+                        print('price history err', ex)
+                    gc.collect()
         except Exception as ex:
             print('price task', ex)
         await asyncio.sleep(600)

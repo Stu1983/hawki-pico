@@ -336,18 +336,18 @@ function bar(x,y,w,h){const r=Math.min(4,w/2,h);return `M${x},${y+h}V${y+r}Q${x}
 function tiles(){
  const cap=+T.cfg.capacity_l,reserve=T.cfg.reserve_l??200;
  $('t_now').textContent=T.litres==null?'–':L0(T.litres);$('t_now2').textContent=T.percent==null?'':T.percent+'% · reorder at '+reserve+' L';
- const r=A&&A.recent,ok=r!=null&&A.span>=2;
+ const r=A&&A.recent,ok=r!=null&&A.span>=2,fo=hasFc(A);
  $('t_rate').textContent=ok?r.toFixed(1)+' L/day':'–';$('t_rate2').textContent=ok?'last '+Math.round(A.recentDays)+' days':(A&&A.n?'needs 2 days of readings':'no readings yet');
- for(const[id,key]of[['ord','ord'],['dry','dry']]){const c=ok&&A.fc[key],tl=$('tl_'+id);tl.className='card tile';
-  $('t_'+id).textContent=!ok?'–':c==null?'2+ years':c<=now+DAY?'Now':fmtD(c);
-  $('t_'+id+'2').textContent=!ok?'':id==='ord'?'when it reaches '+reserve+' L':c==null?'':c<=now+DAY?'':(d=>d<14?'in '+d+' day'+(d===1?'':'s'):'in '+Math.floor(d/7)+' weeks')(Math.round((c-now)/DAY));  /* (not 'in 0 weeks' or 'in 1 weeks') */
-  if(ok&&c!=null&&c<now+(id==='ord'?14:30)*DAY)tl.classList.add(id==='ord'?'warn':'bad')}
- if(!ok&&T.litres!=null&&T.litres<=reserve){$('t_ord').textContent='Now';$('t_ord2').textContent='below the reorder level';$('tl_ord').classList.add('warn')}
+ for(const[id,key]of[['ord','ord'],['dry','dry']]){const c=fo&&A.fc[key],tl=$('tl_'+id);tl.className='card tile';
+  $('t_'+id).textContent=!fo?'–':c==null?'2+ years':c<=now+DAY?'Now':fmtD(c);
+  $('t_'+id+'2').textContent=!fo?'':id==='ord'?'when it reaches '+reserve+' L':c==null?'':c<=now+DAY?'':(d=>d<14?'in '+d+' day'+(d===1?'':'s'):'in '+Math.floor(d/7)+' weeks')(Math.round((c-now)/DAY));  /* (not 'in 0 weeks' or 'in 1 weeks') */
+  if(fo&&c!=null&&c<now+(id==='ord'?14:30)*DAY)tl.classList.add(id==='ord'?'warn':'bad')}
+ if(!fo&&T.litres!=null&&T.litres<=reserve){$('t_ord').textContent='Now';$('t_ord2').textContent='below the reorder level';$('tl_ord').classList.add('warn')}
  renderDeliveries();costs();
  const h=$('how');h.textContent='';
  const p=s=>{const e=document.createElement('p');e.style.margin='0 0 8px';e.textContent=s;h.appendChild(e)};
  p('The Pico keeps one reading an hour for each tank for 2 years (about 50 KB a year), then one a day (about 2 KB a year), so there is room for decades of history.');
- if(!ok){p('Forecasts start once there are 2 days of readings.');return}
+ if(!fo){p('Forecasts start once there are 2 days of readings, or straight away if you give the oil used in a typical year (Config).');return}
  p(howText(A));}
 
 // ---------- deliveries & costs ----------
@@ -518,7 +518,7 @@ async function load(){const g=++LG;FITGEN++;
   cv1=cv;p1=parse(buf).map(([t,mm])=>[t,toL(mm,cv),mm]);const l=live(t1,cv);if(l)if(!p1.length||l[0]>p1[p1.length-1][0])p1.push(l);  /* (the live reading only if it is newer than the last saved one: out of order it read as a delivery) */if(t1.cfg.isolated)p1=holdIsolated(p1,t1.cfg.isolated)}  /* valve closed: its readings never count as use */
  const d0=(await dlP)||{};if(g!==LG)return;
  const WV=await wxLoad(s0);if(g!==LG)return;const a=analyse(p1,{now:nw,reserve:t1.cfg.reserve_l??200,heat:WV&&WV.heat,wxName:WV&&WV.name,yearL:yearFor(s0,t1.all?t1.tanks.map(t=>t.mac):[mac])});
- if(!(a.recent!=null&&a.span>=2))a.fc=null;  /* no forecast line until there's a forecast */
+ if(!hasFc(a))a.fc=null;  /* no forecast line until there's a forecast */
  S=s0;now=nw;T=t1;CV=cv1;P=p1;D=d0;A=a;if(cvs){CVS=cvs;TF=tf}FITGEN++;  /* the page's data, all at once (and any capacity fit still running for the last one is dropped) */
  $('ttl').textContent=T.name;
  $('sub').textContent=(P.length?'Readings since '+fmtDY(P[0][0])+' · '+(A.span<1?Math.round(A.span*24)+' hours':Math.round(A.span)+' days'):'No readings saved yet')+(late.length?' · readings for '+late.join(', ')+' (held level before then)':'');

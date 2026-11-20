@@ -11,13 +11,14 @@ The Pico listens for the monitors' Bluetooth broadcasts, turns each reading into
 - **Dashboard.** The oil left (with the unusable oil below the outlet in brackets), litres a day with a 30-day chart, the weeks left, and the oil level with its forecast.
 - **History and forecast.** One reading an hour for 2 years, then one a day after that (about 110 KB per tank). Deliveries are found by themselves. Usage by month is shown as an oil year (July to June) against an average year, with "order by" and "could run dry" dates:
   - with a previous year of your own readings, the forecast follows your own use at that time of year, scaled to how this year is running;
-  - before that, from a *typical year's oil* if you enter one (say, last year's deliveries), spread over the year by your town's usual weather and scaled by how this winter is going; without one, from your last two weeks' use and the weather;
+  - before that, from a *typical year's oil* if you enter one (say, last year's deliveries), spread over the year by your town's usual weather and scaled by how this winter is going. This works from the first night: a new Pico has a forecast straight away. Without one, from your last two weeks' use and the weather (after 2 days of readings);
   - hot water is measured from your own summer use when there is one, a bit more in winter because mains water is colder.
 - **Weather.** Pick your town and the Pico fetches the daily temperature from Open-Meteo, to compare your use with the weather and to shape the forecast.
 - **Alerts.** Phone notifications through ntfy (free) or Pushover when a tank in use reaches its reorder level, oil drops faster than the boiler can burn it (a leak or theft), a monitor's battery is low, or a monitor has sent no new reading for 6 hours. Most wait for the reading to hold (a low level for over an hour, for example), so one odd reading doesn't set them off.
-- **Costs.** Record the supplier and price for each delivery to track pence per litre, money spent and running cost. In Northern Ireland, today's oil prices from cheapestoil.co.uk can be shown alongside.
+- **Costs.** Record the supplier and price for each delivery to track pence per litre, money spent and running cost. In Northern Ireland, today's oil prices from cheapestoil.co.uk can be shown alongside, for your postcode district from the day you switch them on, with the all-Northern Ireland figures for the years before (cheapestoil.co.uk's chart has no history by district). `tools/pricehist.py` keeps that history up to date here, run weekly by a GitHub Action.
 - **Home Assistant (optional).** Built in over MQTT: Home Assistant finds each tank by itself (MQTT discovery), with litres, %, battery, the order-by date and more. (`tools/ha-bridge.sh` is the older way, from a separate computer.)
 - **Backup.** Export and import the tanks, deliveries and readings (not the Wi-Fi, PIN or alert settings), or export the readings as CSV.
+- **Earlier readings.** Readings from before the Pico (from the Magnus app's history, for example) can be pasted in under **Config → Earlier readings**, one a line: `2026-11-12 08:00 850 L` or `12/11/2026 8:00pm 64%`.
 - **Updates.** Press *Check for updates* on the page to install new releases from this repo.
 - **A PIN.** Changing settings needs the admin PIN; looking doesn't.
 
@@ -26,7 +27,7 @@ The Pico listens for the monitors' Bluetooth broadcasts, turns each reading into
 Only what you switch on, plus the clock. From the Pico:
 
 - the clock: `pool.ntp.org` or `time.google.com`, when it joins your Wi-Fi (and until the clock is set);
-- updates: `raw.githubusercontent.com`, only when someone checks for or installs an update;
+- updates: `raw.githubusercontent.com`, only when someone checks for or installs an update (and, once oil prices are switched on, to download the years of price history kept here in `data/priceh.bin`);
 - weather: Open-Meteo, once you've picked a town: daily temperatures for that place's coordinates, and its forecast every few hours;
 - oil prices: `cheapestoil.co.uk`, once a day if switched on (with your BT postcode district, if you give one), trying again later if it fails;
 - alerts: ntfy or Pushover, when an alert or a test message is sent (with your Pushover keys, if that's what you use);

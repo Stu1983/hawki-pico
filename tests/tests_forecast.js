@@ -1,7 +1,7 @@
 // node tests/tests_forecast.js  - the seasonal model in firmware/common.js.html, without a browser
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const ctx={};vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;this.wxHeat=wxHeat;this.wxKey=wxKey;this.WX_BASE=WX_BASE;this.howText=howText;this.yearFor=yearFor;this.fcBody=fcBody;this.combine=combine;this.holdIsolated=holdIsolated;this.flatten=flatten;',ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;this.wxHeat=wxHeat;this.wxKey=wxKey;this.WX_BASE=WX_BASE;this.howText=howText;this.hasFc=hasFc;this.yearFor=yearFor;this.fcBody=fcBody;this.combine=combine;this.holdIsolated=holdIsolated;this.flatten=flatten;',ctx);
 let fails=0;const ok=(c,m)=>{console.log((c?'ok   ':'FAIL ')+m);if(!c)fails++};
 const DAY=86400,H=3600,T=(y,m,d)=>new Date(y,m,d,12).getTime()/1000;
 // a household: hot water 0.85 L/day in August (+25 % in Feb), heating only Sep-May
@@ -143,4 +143,12 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  {const now=T(2026,10,18),p=run(T(2026,7,6),now,t=>under(0.8)(t)),A=ctx.analyse(p,{now});ok(A.kS===null&&A.yearL===null&&A.avgSrc(J(2027))==='model','no figure: the forecast is your own readings and the weather, as before')}
  ok(ctx.yearFor({year_l:2100,tanks:[{mac:'a',cfg:{}},{mac:'b',cfg:{mode:'off'}}]},['a'])===2100&&ctx.yearFor({year_l:2100,tanks:[{mac:'a',cfg:{}},{mac:'b',cfg:{}}]},['a'])===null&&ctx.yearFor({tanks:[]},[])===null,'the figure is the whole house\'s: used only for a view holding every tank in use');
  ok(ctx.yearFor({year_l:2100,tanks:[{mac:'a',cfg:{mode:'standby'}}]},['a'])===null,'no tank in use: the figure is not applied')}
+// a new monitor, one night of readings, with a typical year given: a forecast straight away, from the figure alone
+{const now=T(2026,10,20),p=[];for(let t=now-14*H,L=900;t<=now;t+=H,L-=0.4)p.push([t,L]);
+ const A=ctx.analyse(p,{now,yearL:2100,reserve:200}),A0=ctx.analyse(p,{now,reserve:200});
+ ok(A.recent==null&&A.fromYear&&ctx.hasFc(A)&&A.fc.ord>now+30*DAY&&A.fc.ord<now+200*DAY,'one night + 2,100 L a year: order by '+(A.fc&&new Date(A.fc.ord*1000).toDateString()));
+ const jan=A.rate(T(2027,0,15)),jul=A.rate(T(2027,6,15));
+ ok(jan>jul*2&&Math.abs(Object.values(A.fmonths).reduce((a,b)=>a+b,0)/400*365-2100)<300,'...spread by the weather: January '+jan.toFixed(1)+' L/day, July '+jul.toFixed(1)+', about 2,100 a year');
+ ok(/used as it is/.test(ctx.howText(A))&&!/NaN|undefined/.test(ctx.howText(A)),'...and says it is the figure as given: '+ctx.howText(A).slice(0,90)+'…');
+ ok(!ctx.hasFc(A0)&&!A0.fc,'no figure given: no forecast until 2 days of readings, as before')}
 process.exit(fails?1:0);

@@ -13,6 +13,24 @@ const REFILL_L=30;        // a rise this big is a delivery, not sensor noise or 
 
 function parse(buf){const v=new DataView(buf),o=[];for(let i=0;i+6<=buf.byteLength;i+=6)o.push([v.getUint32(i,true),v.getUint16(i+4,true)]);
  o.sort((a,b)=>a[0]-b[0]);return o.filter((p,i)=>!i||p[0]!==o[i-1][0])}
+/* readings typed or pasted in (from the Magnus app's history, say): one a line, a date, a time if known, and the level
+   in litres or %, e.g. "2026-11-12 08:00 850 L", "12/11/2026 8:00pm 64%", "12 Nov 2026 850L". Times are this
+   browser's own. -> {rows:[[epoch,value,'L'|'%']] oldest first, bad:[line numbers]} */
+const MONS=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function pasteParse(text,now){const rows=[],bad=[];now=now||Date.now()/1000;
+ String(text||'').split(/\r?\n/).forEach((ln,i)=>{const s=ln.trim();if(!s||s[0]==='#')return;let y,mo,d,m;
+  if(m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/)){y=+m[1];mo=+m[2];d=+m[3]}
+  else if(m=s.match(/\b(\d{1,2})[\/.](\d{1,2})[\/.](\d{2}|\d{4})\b/)){d=+m[1];mo=+m[2];y=+m[3]<100?2000+ +m[3]:+m[3]}
+  else if(m=s.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3})[a-z]*\.?,?\s+(\d{4})\b/i)){d=+m[1];mo=MONS.indexOf(m[2].toLowerCase())+1;y=+m[3]}
+  const rest=m?s.slice(0,m.index)+' '+s.slice(m.index+m[0].length):'',v=rest.match(/(\d[\d,]*(?:\.\d+)?)\s*(l|litres|liters|ltrs|%)(?![a-z])/i),tm=(v?rest.slice(0,v.index)+' '+rest.slice(v.index+v[0].length):rest).match(/\b(\d{1,2})[:.](\d{2})\s*(am|pm)?/i);  /* (the level first: '64.50%' is never a time) */
+  let hh=12,mi=0;if(tm){hh=+tm[1];mi=+tm[2];if(tm[3]){const pm=tm[3].toLowerCase()==='pm';if(hh===12)hh=pm?12:0;else if(pm)hh+=12}}
+  const t=m&&mo>=1&&mo<=12&&d>=1&&d<=31&&hh<24&&mi<60?new Date(y,mo-1,d,hh,mi).getTime()/1000:NaN,dt=new Date(t*1000);
+  if(!v||/-\s*$/.test(rest.slice(0,v.index))||!(t>0)||dt.getDate()!==d||t>now+3600){bad.push(i+1);return}  /* (-50 L is a mistake, not 50 L) */
+  rows.push([t,+v[1].replace(/,/g,''),v[2]==='%'?'%':'L'])});
+ rows.sort((a,b)=>a[0]-b[0]);return{rows,bad}}
+/* the distance (mm) the monitor would have read for this many litres: the curve the other way (null if the tank can't hold it) */
+function toMm(L,cv){if(!(L>=0))return null;let lo=30,hi=Math.ceil(cv.h)-1;if(L>toL(lo,cv)+5)return null;if(L>=toL(lo,cv))return lo;if(L<=toL(hi,cv))return hi;
+ while(hi-lo>1){const md=(lo+hi)>>1;if(toL(md,cv)>=L)lo=md;else hi=md}return toL(lo,cv)-L<=L-toL(hi,cv)?lo:hi}
 function toL(mm,cv){if(mm===16382||mm>=cv.h)return 0;const i=mm/cv.step,a=Math.floor(i),l=cv.l;if(a>=l.length-1)return l[l.length-1];return l[a]+(l[a+1]-l[a])*(i-a)}
 const med=a=>{if(!a.length)return null;const s=a.slice().sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
 const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
@@ -112,7 +130,8 @@ function analyse(pts,o){
  {const f14=fullDays(14);if(f14!=null){out.recent=f14;out.recentDays=14}}  /* 14 full days: their average (else the line, over what there is) */
  // shorter averages for the Using tile (same smoothed level, so 5 mm steps don't swing them)
  out.avgs={};for(const d of[3,7])out.avgs[d]=fullDays(d);
- if(out.recent==null)return out;
+ if(out.recent==null&&!(o.yearL>0))return out;  /* too few readings for a rate: with a typical year given, the forecast still goes by that (out.fromYear) */
+ out.fromYear=out.recent==null;
  const recentDays=[];for(let t=tStart;t<tEnd;t+=DAY)recentDays.push(t);
  const avgOver=f=>mean(recentDays.map(f));
  /* the real weather, as long as the recent days it's fitted on have it (a gap would fill in the usual and skew the fit) */
@@ -145,7 +164,7 @@ function analyse(pts,o){
   modelWith=hf=>t=>(hw.b0*hwShape(t)+h*hf(t))*s;out.heatFit=wgt;out.heatPerDay=h*s}
  else{const S=t=>HW_SHARE*hwShape(t)/HW_MEAN+(1-HW_SHARE)*heat(t),sR=avgOver(S);
   modelWith=hf=>t=>out.recent*(HW_SHARE*hwShape(t)/HW_MEAN+(1-HW_SHARE)*hf(t))/sR}
- model=modelWith(heat);
+ if(out.recent==null)modelWith=()=>()=>0;model=modelWith(heat);  /* (no rate: never used, the figure is) */
  // A typical year's oil, if you gave one (Config), stands in for LAST YEAR wherever you have no earlier year of
  // your own: spread over the year by the weather (hot water + heating, each averaging 1 over a year), then scaled by
  // how you are running against it over every day so far that can only be compared with it (kS: e.g. 0.8 = a fifth
@@ -226,6 +245,8 @@ function firstLevel(s){const d=s.filter(p=>p[0]-s[0][0]<=DAY).map(p=>p[1]);retur
 function fcBody(A,key,reserve){ const t0=A.fc.path[0][0],cum=[];let c=0;for(let d=0;d<400;d++){c+=A.rate(t0+d*DAY);cum.push(Math.round(c*100)/100)}return{mac:key,t0:Math.floor(t0),cur:Math.max(0,Math.round(A.cur*100)/100),reserve,cum}}
 /* the typical year's oil (Config) is the whole house's: it applies to a view only when that view holds every tank in use */
 function yearFor(st,macs){const y=st&&+st.year_l;if(!(y>0))return null;const use=(st.tanks||[]).filter(t=>modeOf(t.cfg)==='use');return use.length&&use.every(t=>macs.includes(t.mac))?y:null}  /* (no tank in use: nothing is being burnt, so no figure) */
+/* a forecast to show: from 2 days of readings, or straight away from the typical year you gave (Config) */
+function hasFc(A){return!!(A&&A.fc&&(A.recent!=null&&A.span>=2||A.yearL>0))}
 function modeOf(c){return c&&(c.mode==='use'||c.mode==='standby'||c.mode==='off')?c.mode:c&&c.isolated?'standby':'use'}  /* (an explicit mode first: the form's settings copied from another tank carry its isolated time) */
 function holdIsolated(s,since){const t0=typeof since==='number'?since:0;let h=null,sum=0,n=0;return s.map(p=>{if(p[0]<t0)return p;if(h==null||Math.abs(p[1]-h)>REFILL_L){sum=0;n=0}sum+=p[1];n++;h=sum/n;return[p[0],h].concat(p.slice(2))})}  /* held at the running average of its readings since the last big change, so one jittery first reading can't set its level; since = when it was isolated (epoch; true = always): readings before then are left as they were */
 function combine(series,iso){series=series.map((s,k)=>iso&&iso[k]?holdIsolated(s,iso[k]):series.length>1?flatten(s):s);const f0=series.map(s=>s.length?firstLevel(s):0),all=[...new Set(series.flatMap(s=>s.map(p=>p[0])))].sort((a,b)=>a-b),idx=series.map(()=>0);

@@ -1,0 +1,22 @@
+# Keeps data/priceh.bin (Northern Ireland oil prices, one a day, from cheapestoil.co.uk's price chart) up to date, so a
+# newly set-up Pico's price chart goes back years with no gap before its own daily quotes. Picos download it from main.
+name: Price history
+on:
+  schedule:
+    - cron: '30 10 * * 1'   # Mondays, after their figures update
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  refresh:
+    if: github.ref == 'refs/heads/main'   # (Picos download it from main only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -I tools/pricehist.py
+      - run: python3 -c "import sys; sys.path.insert(0, 'firmware'); import price; assert price.hist_ok(open('data/priceh.bin', 'rb').read())"
+      - run: |
+          git diff --quiet data/priceh.bin && exit 0
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m 'Price history: brought up to date' data/priceh.bin
+          git push
