@@ -247,7 +247,7 @@ dialog::backdrop{background:#0008}
 <label style="grid-column:1/-1">Narrowest height (in the middle)<input id="m_hi" type="number" step="0.5" min="0" max="1000" placeholder="half the opening" data-f="inner"></label>
 </div></div>
 <div class="fpg" data-t="rib">
-<div class="hint" style="margin-bottom:8px">Heights up from the base of the tank, in cm. Rough is fine: the total is always scaled to the capacity, so errors only move litres between heights.</div>
+<div class="hint" style="margin-bottom:8px">Heights up from the base of the tank, in cm, to the <b>top edge</b> of each rib. Rough is fine: the total is always scaled to the capacity, so errors only move litres between heights.</div>
 <div class="grid">
 <label>Rib band height<input id="m_rh" type="number" step="0.5" min="0" max="1000" placeholder="12" data-f="ribs"></label>
 <label>Rib sticks out by<input id="m_rd" type="number" step="0.1" min="0" max="1000" placeholder="1.5" data-f="ribs"></label>
@@ -363,9 +363,11 @@ function render(){
 }
 const MF={m_wb:'win_bottom_cm',m_wt:'win_top_cm',m_wo:'win_outer_w_cm',m_wi:'win_inner_w_cm',m_hi:'win_inner_h_cm',m_rh:'rib_h_cm',m_rd:'rib_depth_cm'};
 let curLevel=null,focusF=null;
-function ribInputs(vals){const n=+$('m_nr').value,old=vals||[...document.querySelectorAll('#ribbox input')].map(i=>i.value);
- $('ribbox').innerHTML=Array.from({length:n},(_,i)=>`<label>Rib ${i+1} centre (from bottom rib up)<input type="number" step="0.5" min="0" max="1000" data-f="rib${i}" value="${esc(old[i]??'')}"></label>`).join('');wmShow()}
-function ribVals(){return [...document.querySelectorAll('#ribbox input')].map(i=>i.value===''?null:+i.value)}
+/* ribs are entered by their TOP edge (easier to measure) but kept as centres: centre = top - band/2 */
+function ribHalf(){const v=$('m_rh').value;return (v===''?12:+v)/2}
+function ribInputs(vals){const n=+$('m_nr').value,old=vals?vals.map(c=>c==null||c===''?'':+(+c+ribHalf()).toFixed(2)):[...document.querySelectorAll('#ribbox input')].map(i=>i.value);
+ $('ribbox').innerHTML=Array.from({length:n},(_,i)=>`<label>Rib ${i+1}${i?'':' (lowest)'}: top edge<input type="number" step="any" min="0" max="1000" data-f="rib${i}" value="${esc(old[i]??'')}"></label>`).join('');wmShow()}
+function ribVals(){const h=ribHalf();return [...document.querySelectorAll('#ribbox input')].map(i=>i.value===''?null:Math.max(0,+(+i.value-h).toFixed(2)))}
 function draw(){const sv=$('viz');if(!sv)return;if($('f_shape').value!=='cuboid'){sv.innerHTML='<text x="200" y="118" text-anchor="middle" class="lbl">No drawing for this shape</text>';return}
  const g=k=>{const v=$(k).value;return v===''?null:+v};
  sv.innerHTML=tankSvg({L:+$('f_l').value||178,W:+$('f_w').value||75,nW:+$('f_windows').value,og:g('f_out'),top:g('f_top'),
@@ -398,7 +400,7 @@ function tankSvg(p){
     o+=`<rect class="${c}" x="${X(0)-d}" y="${Y(y1)}" width="${d}" height="${(y1-y0)*sc}"/><rect class="${c}" x="${X(L)}" y="${Y(y1)}" width="${d}" height="${(y1-y0)*sc}"/>`}
   o+=`<path class="tk" d="${l} ${rs} V${Y(0)} Z"/>`}
  else{
- ribs.forEach((c,i)=>{o+=`<rect class="${cls('rib','rib'+i,rv[i]==null)}" x="${X(0)-rd*sc*3}" y="${Y(c+rh/2)}" width="${L*sc+rd*sc*6}" height="${rh*sc}"/><text class="lbl" x="${X(0)-rd*sc*3-2}" y="${Y(c)+3}" text-anchor="end">${rv[i]==null?'?':c}</text>`;
+ ribs.forEach((c,i)=>{o+=`<rect class="${cls('rib','rib'+i,rv[i]==null)}" x="${X(0)-rd*sc*3}" y="${Y(c+rh/2)}" width="${L*sc+rd*sc*6}" height="${rh*sc}"/><text class="lbl" x="${X(0)-rd*sc*3-2}" y="${Y(c+rh/2)+3}" text-anchor="end">${rv[i]==null?'?':+(c+rh/2).toFixed(1)}</text>`;
   if(end)o+=`<rect class="${cls('rib','rib'+i,rv[i]==null)}" x="${ex(0)-rd*sc*3}" y="${Y(c+rh/2)}" width="${W*sc+rd*sc*6}" height="${rh*sc}"/>`});
  o+=`<rect class="tk" x="${X(0)}" y="${Y(top)}" width="${L*sc}" height="${(top-0)*sc}"/>`}
  if(end)o+=`<rect class="tk" x="${ex(0)}" y="${Y(top)}" width="${W*sc}" height="${top*sc}"/>`;
@@ -451,7 +453,7 @@ function copyFrom(){mHint();const t=S.tanks.find(x=>x.mac===$('m_from').value);i
 async function saveTank(e){e.preventDefault();const b={mac:cur,name:$('f_name').value.trim(),shape:$('f_shape').value,windows:+$('f_windows').value,height_cm:Math.round((hfOf()??0)*100)/100,outlet_cm:$('f_out').value===''?null:+$('f_out').value,length_cm:+$('f_l').value||null,width_cm:+$('f_w').value||null,tank_l:+$('f_c').value,reserve_l:$('f_r').value===''?null:+$('f_r').value,window_model:wmMode(),mode:$('f_mode').value,same_as:$('m_from').value};
  for(const el of $('dlg').querySelectorAll('input,select')){const pg=el.closest('.fpg'),tb=pg&&document.querySelector('.ftabs button[data-t="'+pg.dataset.t+'"]');if(el.closest('.cub')&&b.shape!=='cuboid'||tb&&tb.disabled)continue;  /* (a switched-off tab isn't saved) */if(!el.checkValidity()){ftab(el.closest('.fpg').dataset.t);el.reportValidity();return false}}  /* (on whichever tab it is) */
  if(!(b.height_cm>=10&&b.height_cm<=500)){ftab('mea');alert(b.height_cm>500?'The monitor can be at most 500 cm above the top of the outlet.':'The monitor must be at least 10 cm above the top of the outlet.');return false}
- if(b.window_model=='measured'){for(const k in MF){if(/^rib/.test(MF[k])?!+$('m_nr').value:!b.windows)continue;b[MF[k]]=$(k).value===''?null:+$(k).value}  /* (only the parts it has) */const r=ribVals();if(r.some(v=>v==null)){ftab('rib');alert('Fill in every rib height, or reduce the number of ribs.');return false}b.ribs_cm=r;
+ if(b.window_model=='measured'){for(const k in MF){if(/^rib/.test(MF[k])?!+$('m_nr').value:!b.windows)continue;b[MF[k]]=$(k).value===''?null:+$(k).value}  /* (only the parts it has) */const r=ribVals();if(r.some(v=>v==null)){ftab('rib');alert('Fill in every rib height, or reduce the number of ribs.');return false}if([...document.querySelectorAll('#ribbox input')].some(i=>+i.value<2*ribHalf())){ftab('rib');alert('A rib\'s top edge can\'t be lower than the rib band height ('+2*ribHalf()+' cm).');return false}b.ribs_cm=r;
   if(b.windows&&(b.win_bottom_cm==null||b.win_top_cm==null||b.win_outer_w_cm==null)){ftab('win');alert('Measured windows need the bottom, top and opening width.');return false}}
  if(b.shape=='cuboid'&&(!b.length_cm||!b.width_cm)){ftab('mea');alert('A rectangular tank needs length and width.');return false}
  try{await api('/api/tank',b);dlg.close();load()}catch(x){alert(x.message)}return false}
