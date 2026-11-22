@@ -30,6 +30,10 @@ with open(clocklog.name(M), 'ab') as f:
     f.write(b'\x01\x02\x03')  # power cut mid-write
 clocklog.add(M, S + 7 * 3600, S + 7 * 3600 + 5, S + 7 * 3600)
 ok(len(clocklog.read(M)) == 8 and clocklog.read(M)[-1][2] == S + 7 * 3600, 'a record cut short is dropped, the rest stay aligned')
+P = 'aa:bb:cc:dd:ee:ff'
+for k in range(100):
+    clocklog.add(P, S + k * 3600 + 9, S + k * 3600 + 30, S + k * 3600)
+ok(len(clocklog.read(P)) <= 48 and clocklog.offsets(P, S + 100 * 3600) == [30] * 24, 'only about two days kept, the last day still seeds: %d' % len(clocklog.read(P)))
 N = 'c6:76:1b:dc:39:1c'
 clocklog.CAP, clocklog.TRIM = 10, 6
 for k in range(12):

@@ -3,15 +3,15 @@
 The history (h_*.bin) keeps one time per reading, on the Pico's clock (NTP: the reference). This keeps, beside it,
 what the monitor's own clock said, so the two can be compared later (drift, a clock that was reset or set):
 <uint32 the reading's time in the history, uint32 when the Pico heard it, uint32 the advert's own time (0: none)>
-in c_<last 6 hex of its MAC>.bin, 12 bytes a reading, about 105 KB a year; trimmed to the last CAP records.
-After a restart, the last day's (heard - advert time) seeds listen.py's offset, so readings are placed at once.
+in c_<last 6 hex of its MAC>.bin, 12 bytes a reading. Only the last day is ever used (after a restart, its
+(heard - advert time) seeds listen.py's offset, so readings are placed at once), so only about two days are kept.
 """
 import os, struct
 
 REC = '<III'
 SIZE = 12
-CAP = 9000   # records: just over a year of hourly readings
-TRIM = 8000  # kept when it reaches CAP (one rewrite every ~6 weeks)
+CAP = 48   # records: two days of hourly readings (under 600 bytes)
+TRIM = 24  # kept when it reaches CAP (the last day: one small rewrite a day)
 
 
 def name(mac):
