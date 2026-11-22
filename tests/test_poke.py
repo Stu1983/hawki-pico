@@ -40,7 +40,7 @@ ok(not ask(START, st, 60000) and ask(START, st, 60000 + 900), 'stuck again later
 src = open(os.path.join(FW, 'app.py')).read()
 ok("(poke_task, 'measure now')" in src and 'poke.measure(ble' in src and 'scan_on[0] = True' in src,
    'the app runs it for its tanks, pausing the scan while connected and always starting it again')
-ok("li.get('read_at') or li.get('heard_from')" in src and "'heard_from': e['first']" in open(os.path.join(FW, 'listen.py')).read(),
+ok("li.get('changed_at') or li.get('heard_from')" in src and "'heard_from': e['first'], 'changed_at': e['chg']" in open(os.path.join(FW, 'listen.py')).read(),
    'no new measurement since the Pico started: timed from when it was first heard (a monitor already stuck at start is still helped)')
 ok("radio_busy[0] = True" in src and "if radio_busy[0]:" in src and src.index("radio_busy[0] = True") < src.index("scan_on[0] = False\n                stop_scan()"),
    'a maintenance /run waits while a monitor is connected; the scan is stopped inside the protected part (always started again)')

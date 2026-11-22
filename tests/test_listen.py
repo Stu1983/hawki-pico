@@ -68,4 +68,37 @@ F.heard(A, 'z', 700, 5)              # clock not set yet (1970)
 F.heard(A, 'z', 700, 1_800_000_000)  # NTP has set it: same payload
 ok(F.heard(A, 'z', 700, 1_800_000_060) is None, 'clock set after boot: no spurious save')
 ok(F.due([A], 1_800_000_060), 'still listening for the first real reading')
+# a monitor whose clock is stuck at 0: the same level and temperature give the same bytes (Tank 1, 2026-11-21)
+from listen import GRACE
+R = Listener(); T1 = 1_800_000_000 + 7 * 60
+R.heard(A, 'p', 761, T1 - 1800, True); R.heard(A, 'q', 761, T1, True)          # learned: measures at :07
+ok(R.heard(A, 'q', 761, T1 + 3600 + 30, True) is None, 'repeat payload just after the reading was due: wait a bit')
+ok(R.heard(A, 'q', 761, T1 + 3600 + GRACE, True) == (T1 + 3600, 761), 'still the same after the grace: that is the reading, at :07')
+i = R.info(A)
+ok(i['read_at'] == T1 + 3600 and i['next'] == T1 + 7200, 'shown as read at :07, next due an hour on')
+ok(i['changed_at'] == T1 and R.s[A]['chg'] == T1 and R.s[A]['next'] == T1 + 3600, 'the last real change and the schedule stay put')
+ok(R.heard(A, 'q', 761, T1 + 3600 + GRACE + 4, True) is None, 'saved once')
+ok(R.heard(A, 'q', 761, T1 + 4 * 3600 + 400, True) == (T1 + 4 * 3600, 761), 'heard again after a gap: the latest due one')
+r = R.heard(A, 'q', 16383, T1 + 5 * 3600 + 400, True)
+ok(r is None or r[1] == 16383, 'never a reading for a level it could not read (16383 is not saved)')
+ok(R.info(A)['read_at'] == T1 + 4 * 3600, '... and read at stays put')
+ok(R.heard(A, 'r', 766, T1 + 6 * 3600 + 30, True) == (T1 + 6 * 3600 + 30, 766), 'a changed payload still saves at once')
+ok(R.info(A)['read_at'] == T1 + 6 * 3600 + 30 and R.s[A]['period'] == 3600, 'and is the reading again; period not disturbed')
+# a late real reading (6 min): the repeat is saved at :07, the real one when it comes, and learning uses the real gap
+Q = Listener(); Q.heard(A, 'p', 760, T1 - 1800, True); Q.heard(A, 'q', 761, T1, True)
+ok(Q.heard(A, 'q', 761, T1 + 3600 + GRACE, True) == (T1 + 3600, 761), 'late: the repeat first')
+ok(Q.heard(A, 'r', 766, T1 + 3960, True) == (T1 + 3960, 766), 'then the real one')
+ok(Q.s[A]['period'] == round(0.7 * 3600 + 0.3 * 3960), 'period learned from the real changes, not the repeat')
+# no double save with the 2-hour fallback; a clock put back past a repeat; a week of identical bytes
+D = Listener(); D.heard(A, 'p', 760, T1 - 1800, True); D.heard(A, 'q', 761, T1, True)
+got = [r for r in (D.heard(A, 'q', 761, T1 + s, True) for s in range(4, 4 * 3600, 4)) if r]
+ok(got == [(T1 + h * 3600, 761) for h in (1, 2, 3)], 'unchanged for hours: exactly one save per hour, at :07 ' + str(len(got)))
+D.heard(A, 'q', 761, T1 + 3 * 3600 + 400, True)
+ok(D.heard(A, 'q', 761, T1 + 3600 + 100, True) is None and D.info(A)['read_at'] == T1, 'clock put back: the future repeat is forgotten')
+W = Listener(); W.heard(A, 'p', 760, T1 - 1800, True); W.heard(A, 'q', 761, T1, True)
+for h in range(1, 8 * 24 + 1):
+    W.heard(A, 'q', 761, T1 + h * 3600 + GRACE, True)
+ok(W.s[A]['chg'] == T1 and W.info(A)['read_at'] == T1 + 8 * 24 * 3600, 'a week of identical bytes is not a clock jump')
+N = Listener(); N.heard(A, 'p', 761, T1 - 1800); N.heard(A, 'q', 761, T1)
+ok(N.heard(A, 'q', 761, T1 + 3600 + GRACE) is None, 'a ticking-clock monitor: an unchanged payload is not a reading')
 sys.exit(1 if fails else 0)

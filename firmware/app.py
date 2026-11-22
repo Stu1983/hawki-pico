@@ -349,9 +349,12 @@ def irq(ev, data):
                         if d['raw'] != base:                                              # one from before the sync)
                             anchor[k] = (int(time.time()), d.get('timestamp') or 0)
                 if k in cfg['tanks']:  # new hourly measurement? (its payload changes) -> queue it for saving
-                    r = listener.heard(k, d['raw'], 16383 if 'bad_level' in d else d.get('level'), int(time.time()))  # (16383: not saved)
+                    r = listener.heard(k, d['raw'], 16383 if 'bad_level' in d else d.get('level'), int(time.time()),
+                                         d.get('timestamp') == 0)  # (16383: not saved; clock at 0: payloads repeat)
                     if r and r[1] not in (None, 16383):
                         pending.append((k, r[0], r[1]))
+                        if (listener.s.get(k) or {}).get('rep') == r[0] and r[0] > (d.get('good_at') or 0):
+                            d['good_at'] = r[0]  # (a repeat taken as a new measurement: HA's 'Last reading' too)
         h = hx(adv)
         lst = e['adv'].setdefault(str(adv_type), [])
         if h not in lst:
@@ -3253,7 +3256,7 @@ async def poke_task():
             li = listener.info(mac)
             # (since its last new measurement; none since this start: since it was first heard, so one already stuck
             # when the Pico started still counts)
-            since = li and (li.get('read_at') or li.get('heard_from'))
+            since = li and (li.get('changed_at') or li.get('heard_from'))
             age = time.time() - since if since and time.time() > 1700000000 else None
             if not poke.due(d, st, mono_s(), age):
                 continue
