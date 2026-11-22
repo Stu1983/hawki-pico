@@ -24,7 +24,8 @@ OFFS = 24            # offset samples kept (about a day of readings)
 
 class Listener:
     def __init__(self):
-        self.s = {}  # mac -> {'raw', 'chg' (time of last new measurement), 'period', 'next', 'saved', 'm'}
+        self.s = {}  # mac -> {'raw', 'chg' (time of last new measurement), 'period', 'next', 'saved', 'm' (its own
+        #              clock then), 'prog' (when last heard to move on: a new payload, its own clock forward)}
         self.offs = {}  # mac -> recent (heard - advert time) samples: kept when its entry starts afresh
 
     def seed(self, mac, offs):
@@ -64,7 +65,7 @@ class Listener:
         ok_m = bool(mts) and abs(t - mts) <= MAX_OFF
         if e is None:  # first advert since boot: its reading is of unknown age; wait for the next one
             self.s[mac] = e = {'raw': raw, 'chg': None, 'period': PERIOD, 'next': None, 'first': t, 'saved': None,
-                               'm': mts if ok_m else None}
+                               'm': mts if ok_m else None, 'prog': None, 'ml': mts}
             if ok_m:
                 self._off_add(mac, t - mts)  # (an upper bound: it may have been taken a while ago)
                 if len(self.offs[mac]) > 1:  # known from before the restart: the next one is known too
@@ -85,6 +86,8 @@ class Listener:
             return None
         e['raw'] = raw
         e['rep'] = None
+        froze = bool(mts) and mts == e.get('ml')  # its own clock exactly where it was (set or not): stood still
+        e['ml'] = mts
         if ok_m:  # its clock is set: placed at when it measured
             em, p = e.get('m'), e['period']
             dm = 0 if em is None else mts - em
@@ -95,6 +98,8 @@ class Listener:
             self._off_add(mac, t - mts, p)
             if steady:  # its own step (exact: 3600 on both monitors), over any readings missed
                 e['period'] = int(dm / n + 0.5)
+            if not froze and (em is None or mts > em):  # its own clock moved on: a real new measurement ('prog': the "stopped
+                e['prog'] = t           # measuring" alert; a changed payload with its clock stood still isn't one)
             e['m'] = mts
             # never after it was heard, and after anything already saved (in order: a fallback or repeat save too)
             at = min(t, max(mts + self.offset(mac), max(e['chg'] or 0, e['saved'] or 0, e.get('rep') or 0) + 1))
@@ -111,6 +116,8 @@ class Listener:
                 e['period'] = gap  # it really does measure more often
             e['short'] = e.get('short', 0) + 1 if 600 <= gap < 0.75 * p else 0
         e['chg'] = t
+        if not froze:  # (a frozen clock stays "not moving on" even once it is over a day out)
+            e['prog'] = t
         e['saved'] = t
         e['next'] = t + e['period']
         return (t, level)

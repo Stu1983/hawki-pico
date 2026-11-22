@@ -144,4 +144,24 @@ ok(r == (S + 3600, 701), 'a seeded offset 2 h out is dropped, not used to place 
 M2 = Listener(); M2.heard(A, 'a', 700, S, False, S); M2.heard(A, 'b', 701, S + 3600, False, S + 3600)
 r = M2.heard(A, 'c', 702, S + 4 * 3600 + 3, False, S + 2 * 3600)   # readings missed AND its clock moved 2 h back
 ok(r == (S + 4 * 3600 + 3, 702), 'missed readings and a clock moved back: saved when heard, not 2 h early (%r)' % (r,))
+# 'prog': when it last moved on (the "stopped measuring" alert): a new payload with its own clock forward
+G = Listener(); S0 = 1_800_000_000
+G.heard(A, 'p', 760, S0 + 20, False, S0)
+G.heard(A, 'q', 761, S0 + 3620, False, S0 + 3600)
+ok(G.s[A]['prog'] == S0 + 3620, 'its clock moved on: progress (when heard)')
+G.heard(A, 'r', 762, S0 + 7220, False, S0 + 3600)
+ok(G.s[A]['prog'] == S0 + 3620 and G.s[A]['chg'] is not None, 'a new payload, its clock stood still: no progress')
+G.heard(A, 's', 763, S0 + 10820, False, S0 + 10800)
+ok(G.s[A]['prog'] == S0 + 10820, '...moving again: progress')
+U = Listener(); U.heard(A, 'p', 760, S0, True, 0); U.heard(A, 'q', 761, S0 + 3600, True, 0)
+ok(U.s[A]['prog'] == S0 + 3600, 'no clock in its adverts: a new payload is progress, as before')
+Z = Listener(); Z.heard(A, 'p', 760, S0, False, S0 - 2 * 86400); Z.heard(A, 'q', 761, S0 + 3600, False, S0 - 2 * 86400)
+Z.heard(A, 'r', 762, S0 + 7200, False, S0 - 2 * 86400)
+ok(Z.s[A]['prog'] is None and Z.s[A]['chg'] == S0 + 7200, 'a clock frozen over a day out: still no progress (%r)' % Z.s[A]['prog'])
+G.heard(A, 't', 764, S0 + 2 * 86400, False, S0 + 10800)  # same frozen time, now over a day behind the Pico
+ok(G.s[A]['prog'] == S0 + 10820, '...a once-good clock frozen past a day: still no progress')
+Y = Listener()
+for k in range(9):  # its clock frozen 32 h ahead: entering the day's window doesn't count as moving on
+    Y.heard(A, 'p%d' % k, 760, S0 + k * 3600, False, S0 + 32 * 3600)
+ok(Y.s[A]['prog'] is None, 'a frozen clock coming within a day of the Pico: still no progress (%r)' % Y.s[A]['prog'])
 sys.exit(1 if fails else 0)

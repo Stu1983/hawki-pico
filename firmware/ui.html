@@ -179,7 +179,7 @@ dialog::backdrop{background:#0008}
 </div>
 <label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--fg)"><input type="checkbox" id="n_ro" style="width:auto;margin:0"> Tell me when a tank reaches its reorder level</label>
 <label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_bt" style="width:auto;margin:0"> Tell me when a monitor's battery is low (2.78 V or less; a new one settles at about 3.0 V)</label>
-<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_sl" style="width:auto;margin:0"> Tell me if a monitor goes quiet (no reading for 6 hours)</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_sl" style="width:auto;margin:0"> Tell me if a monitor goes quiet or stops measuring (nothing new for 6 hours)</label>
 <label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg)"><input type="checkbox" id="n_dr" style="width:auto;margin:0"> Warn me if oil drops faster than the burner can use it (leak or theft)</label>
 <label style="margin-top:8px">Burner's maximum, litres an hour<input style="max-width:160px;display:block" id="n_bl" type="number" min="1" max="30" step="0.5" placeholder="6"><div class="hint">On the boiler's data plate (kW ÷ 10 is close). 6 suits almost any home boiler. The warning comes within about 2 hours.</div></label>
 <div class="acts" style="justify-content:flex-start"><button class="pri" onclick="saveNotify()">Save</button><button onclick="testNotify()">Send a test</button></div>

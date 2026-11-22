@@ -23,10 +23,10 @@ def ok(c, m):
     fails += 0 if c else 1
 
 
-def chk(e, now, up=100 * H, a=None, n=None):
+def chk(e, now, up=100 * H, a=None, n=None, rx=None):
     # up: how long the clock-based count has been running (since the first check, or a clock jump)
     a = {} if a is None else a
-    asyncio.run(g['silent_check'](n or {'po_user': 'u'}, 'm', {'name': 'Tank 1'}, e, now, now - up, a))
+    asyncio.run(g['silent_check'](n or {'po_user': 'u'}, 'm', {'name': 'Tank 1'}, e, now, now - up, a, rx))
     return a
 
 
@@ -71,4 +71,19 @@ ok(qs(T0) == T0, 'clock goes back: the count starts again')
 a = {'silent': int(T0), 'silent_raw': 'old'}
 chk({'chg': T0 - 24 * H, 'raw': 'newer'}, T0 - 24 * H + 60, up=60, a=a)
 ok('silent' not in a, 'clock went back: a changed reading still re-arms')
+# still heard, but nothing new: "stopped measuring", not "out of range"
+sent.clear()
+a = chk({'chg': T0, 'prog': T0, 'raw': 'same'}, T0 + 7 * H, rx=T0 + 7 * H - 5)
+ok(len(sent) == 1 and 'stopped measuring' in sent[0][0] and '7 hours' in sent[0][1], 'heard 5 s ago, nothing new for 7 h: ' + sent[0][0])
+sent.clear()
+chk({'chg': T0, 'prog': T0, 'raw': 'same'}, T0 + 7 * H, rx=T0 + 4 * H)
+ok(len(sent) == 1 and 'no readings' in sent[0][0], 'not heard for 3 h: "no readings" as before')
+# its payload changes but its own clock stands still: 'prog' stays put, so it alerts and isn't re-armed by that
+sent.clear()
+a = chk({'chg': T0 + 6 * H, 'prog': T0, 'raw': 'b'}, T0 + 7 * H, rx=T0 + 7 * H)
+ok(len(sent) == 1 and 'stopped measuring' in sent[0][0], 'payload changing, its clock stood still: alerts')
+chk({'chg': T0 + 8 * H, 'prog': T0, 'raw': 'c'}, T0 + 8 * H, a=a, rx=T0 + 8 * H)
+ok(a.get('silent') and len(sent) == 1, '...another such payload: neither re-armed nor repeated')
+chk({'chg': T0 + 9 * H, 'prog': T0 + 9 * H, 'raw': 'd'}, T0 + 9 * H + 60, a=a, rx=T0 + 9 * H)
+ok('silent' not in a, '...its clock moves on again: armed again')
 sys.exit(1 if fails else 0)

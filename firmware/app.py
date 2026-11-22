@@ -1704,22 +1704,33 @@ def quiet_since_start(now):
     return q['start']
 
 
-async def silent_check(n, mac, t, e, now, start, a):
+async def silent_check(n, mac, t, e, now, start, a, rx=None):
     # e: the listener's record for this monitor (None if not heard since boot). A new measurement every hour
     # is normal; none for SILENT_H hours means a flat battery, a fault, or out of range. Once, until it's back.
+    # rx: when it was last heard. Still heard (its last reading repeated, or its own clock not moving on): it has
+    # stopped measuring, said so, not "out of range".
     if now < 1.7e9:
         return  # clock not set yet
-    chg = None if e is None else e.get('chg')  # a genuinely new measurement (not just heard again after a restart)
-    if a.get('silent') and chg is not None and e.get('raw') != a.get('silent_raw'):
-        a.pop('silent')  # a different reading from the one we were stuck on: arm it again
+    # a genuinely new measurement (not just heard again after a restart, nor a payload with its own clock stood still)
+    chg = None if e is None else e['prog'] if 'prog' in e else e.get('chg')
+    if a.get('silent') and chg is not None and now - chg < SILENT_H * 3600 and e.get('raw') != a.get('silent_raw'):
+        a.pop('silent')  # a different, recent reading from the one we were stuck on: arm it again
         a.pop('silent_raw', None)
         save_cfg(cfg)
     last = None if e is None else (chg or e.get('first'))
     since = max(last or 0, start)
     if n.get('silent', True) and not a.get('silent') and now - since > SILENT_H * 3600:
-        res = await send_alert('%s: no readings' % t.get('name', mac),
-                               'Nothing new from the monitor for %d hours. Its battery may be flat, or it may be out of '
-                               'range of the Pico.' % ((now - since) // 3600),
+        h = (now - since) // 3600
+        if e is not None and rx is not None and 0 <= now - rx <= 1800:
+            msg = ('%s: monitor stopped measuring' % t.get('name', mac),
+                   'The Pico still hears the monitor, but for %d hours it has sent no new reading, or its own clock '
+                   'has stopped. Taking its batteries out for a minute usually starts it again; the Pico sets its '
+                   'clock afterwards.' % h)
+        else:
+            msg = ('%s: no readings' % t.get('name', mac),
+                   'Nothing new from the monitor for %d hours. Its battery may be flat, or it may be out of '
+                   'range of the Pico.' % h)
+        res = await send_alert(msg[0], msg[1],
                                mark={'mac': mac, 'k': 'silent', 'raw': None if e is None else e.get('raw')})
         if 'ok' in res.values():
             a['silent'] = int(now)
@@ -1808,7 +1819,7 @@ def redo_stale(r, n, now):
     if a.get(k) and a[k] >= (r.get('t') or 0):
         return 'already sent'
     e = listener.s.get(mac) or {}
-    if k == 'silent' and (e.get('chg') is not None or e.get('raw') is not None and e['raw'] != m.get('raw')):
+    if k == 'silent' and ((e['prog'] if 'prog' in e else e.get('chg')) is not None or e.get('raw') is not None and e['raw'] != m.get('raw')):
         return 'readings again'  # (a new measurement since this start, or the first one heard isn't the stuck one)
     if k == 'reorder' and mode_of(t) != 'use':
         return 'not in use'  # (standby: no warning of its own)
@@ -1866,7 +1877,7 @@ async def alerts():
                     a = al.setdefault(mac, {})
                     fresh = time.time() - d.get('rx', 0) <= 3 * 3600  # (judged before any slow send below)
                     try:
-                        await silent_check(n, mac, t, listener.s.get(mac), time.time(), start, a)
+                        await silent_check(n, mac, t, listener.s.get(mac), time.time(), start, a, d.get('rx'))
                     except Exception as ex:
                         print('silent alert err', ex)
                     if not fresh:
