@@ -42,7 +42,7 @@ ok("(poke_task, 'measure now')" in src and 'poke.measure(ble' in src and 'scan_o
    'the app runs it for its tanks, pausing the scan while connected and always starting it again')
 ok("li.get('changed_at') or li.get('heard_from')" in src and "'heard_from': e['first'], 'changed_at': e['chg']" in open(os.path.join(FW, 'listen.py')).read(),
    'no new measurement since the Pico started: timed from when it was first heard (a monitor already stuck at start is still helped)')
-ok("radio_busy[0] = True" in src and "if radio_busy[0]:" in src and src.index("radio_busy[0] = True") < src.index("scan_on[0] = False\n                stop_scan()"),
+ok("radio_busy[0] = True" in src and "if radio_busy[0]:" in src and src.index("radio_busy[0] = True") < src.index("scan_on[0] = False\n        stop_scan()") and src.count('await gatt_turn(') == 2,
    'a maintenance /run waits while a monitor is connected; the scan is stopped inside the protected part (always started again)')
 ok("raise OSError('no answer to the measure command')" in open(os.path.join(FW, 'poke.py')).read(), 'no answer from the monitor at all: a failed try, so the next try follows')
 sys.exit(1 if fails else 0)

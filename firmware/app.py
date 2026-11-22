@@ -44,6 +44,7 @@ import notify
 import weather
 import price
 import battlog
+import clocklog
 import poke
 import netcfg
 import unset
@@ -349,10 +350,20 @@ def irq(ev, data):
                         if d['raw'] != base:                                              # one from before the sync)
                             anchor[k] = (int(time.time()), d.get('timestamp') or 0)
                 if k in cfg['tanks']:  # new hourly measurement? (its payload changes) -> queue it for saving
-                    r = listener.heard(k, d['raw'], 16383 if 'bad_level' in d else d.get('level'), int(time.time()),
-                                         d.get('timestamp') == 0)  # (16383: not saved; clock at 0: payloads repeat)
+                    now_i = int(time.time())
+                    if k not in clk_seeded and ntp_ok[0]:  # (the monitor's clock offset from before a restart)
+                        try:
+                            listener.seed(k, clocklog.offsets(k, now_i))
+                            clk_seeded.add(k)
+                        except Exception as ex:
+                            print('clk seed err', ex)
+                    r = listener.heard(k, d['raw'], 16383 if 'bad_level' in d else d.get('level'), now_i,
+                                         d.get('timestamp') == 0, d.get('timestamp'))  # (16383: not saved; clock at 0: payloads repeat)
                     if r and r[1] not in (None, 16383):
                         pending.append((k, r[0], r[1]))
+                        pending_clk.append((k, r[0], now_i, d.get('timestamp') or 0))
+                        if len(pending_clk) > 100:  # (bounded, as pending: the oldest go first)
+                            pending_clk.pop(0)
                         if (listener.s.get(k) or {}).get('rep') == r[0] and r[0] > (d.get('good_at') or 0):
                             d['good_at'] = r[0]  # (a repeat taken as a new measurement: HA's 'Last reading' too)
         h = hx(adv)
@@ -374,6 +385,8 @@ scan_running = [False]
 hook = [None]  # experiments (/run) receive every non-scan BLE event here
 listener = Listener()
 pending = []  # (mac, time, level) new measurements, saved by recorder()
+pending_clk = []  # (mac, time saved in the history, heard, the advert's own time) for clocklog.py
+clk_seeded = set()  # macs whose listener offset has been seeded from clocklog since this start
 pending_unset = []  # (mac, ticks_ms, sensor time, level) heard while the clock isn't set (unset.py)
 unset_raw = {}      # mac -> payload last heard while the clock isn't set
 clock_set_at = [None]  # epoch when the clock came back this start (the end of the gap)
@@ -593,12 +606,16 @@ def ntp_due():
     return late >= 0 and (not web_busy() or late >= 300)  # (a page open for good can't put it off for ever)
 
 
+ntp_ok = [False]  # the clock has been set from a time server since this start (not just a plausible RTC)
+
+
 async def ntp_sync():
     import ntptime
     for host in ('pool.ntp.org', 'time.google.com'):
         try:
             ntptime.host = host
             ntptime.settime()
+            ntp_ok[0] = True
             net_proof()
             ntp_wait[1] = 0
             return True
@@ -985,6 +1002,7 @@ async def recorder():
                     print('drop check err', ex)
                 continue
             pending.pop(0)
+        save_clk()
         try:
             unset_step(now)
         except Exception as ex:
@@ -994,9 +1012,23 @@ async def recorder():
             await compact_all(now)
 
 
+def save_clk():
+    # each saved reading's two clocks (clocklog.py)
+    while pending_clk:
+        mac, at, heard, mts = pending_clk[0]
+        if mac in cfg['tanks']:
+            try:
+                clocklog.add(mac, at, heard, mts)
+            except Exception as ex:
+                print('clocklog err', ex)
+                break  # keep it; try again next time
+        pending_clk.pop(0)
+
+
 def save_pending():
     # write queued readings now, a planned restart is coming (the recorder only gets to them every 10 s, and after
     # the restart the same reading is only a baseline: that hour would be missing)
+    save_clk()
     while pending:
         mac, t, lvl = pending.pop(0)
         if t >= 1700000000 and mac in cfg['tanks']:
@@ -1456,7 +1488,7 @@ def tank_view(mac, t, now):
     return {'mac': mac, 'name': t.get('name', mac), 'level': lvl, 'litres': lit, 'percent': pct, 'order_by': ob,
             # misread: the rejected reading (-1: no level at all), or None
             'misread': (-1 if d['bad_level'] is None else d['bad_level']) if 'bad_level' in d else None, 'good_at': d.get('good_at'), 'saved': bool(d.get('saved')), 'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': list(un) if un else un, 'listen': listener.info(mac),
-            'battery': batt_of(d), 'starting': starting(d) or poke.stuck(d), 'poked': poke_info.get(mac), 'rssi': d.get('rssi'),
+            'battery': batt_of(d), 'starting': starting(d) or poke.stuck(d), 'poked': poke_info.get(mac), 'clock_set': clock_info.get(mac), 'rssi': d.get('rssi'),
             'age': (now - d['good_at'] if d.get('good_at') else None) if 'bad_level' in d or d.get('saved') else (now - d['rx']) if d.get('rx') else None,  # after a misread: the shown level's own age
             'cfg': cfg_view(t)}
 
@@ -2728,6 +2760,8 @@ async def handle(r, w):
             (cfg.get('alerted') or {}).pop(dm, None)
             poke_st.pop(dm, None)
             poke_info.pop(dm, None)
+            clock_st.pop(dm, None)
+            clock_info.pop(dm, None)
             unset.clear(dm)  # (readings kept aside while the clock was unset: not for a tank that's gone)
             last_saved.pop(dm, None)
             save_cfg(cfg)
@@ -3238,6 +3272,25 @@ async def price_task():
 radio_busy = [False]  # a monitor connected over Bluetooth (poke_task): /run waits
 poke_st = {}    # mac -> how long its monitor has been stuck starting up, and the asks so far (poke.due)
 poke_info = {}  # mac -> {'at': when we last asked it to measure (epoch), 'got': its answers, or 'err'}
+clock_st = {}   # mac -> how long its monitor's clock has looked unset, and the sets so far (poke.clock_due)
+clock_info = {}  # mac -> {'at': when we last set its clock (epoch), 'got': (read before, read after), or 'err'}
+
+
+async def gatt_turn(mac, info, job):
+    # one Bluetooth connection to a monitor, scanning paused meanwhile; the outcome in info[mac]
+    radio_busy[0] = True  # (a /run experiment waits for it)
+    try:
+        scan_on[0] = False
+        stop_scan()
+        await asyncio.sleep_ms(300)
+        info[mac] = {'at': int(time.time()), 'got': await job()}
+    except Exception as ex:
+        info[mac] = {'at': int(time.time()), 'err': str(ex) or repr(ex)}
+    finally:  # (whatever happens, cancelled too: the hook off, the scan back on)
+        hook[0] = None
+        radio_busy[0] = False
+        scan_on[0] = True
+        start_scan()
 
 
 async def poke_task():
@@ -3252,6 +3305,15 @@ async def poke_task():
             d, e = hawki.get(mac), seen.get(mac)
             if not d or not e:
                 continue
+            # its clock unset (after a battery change: the advert's time 0 or junk): set it, as the Magnus app does
+            # when installing. The monitor then measures straight after and every hour from then on.
+            cst = clock_st.setdefault(mac, {})
+            if poke.clock_due(d, cst, time.time() if ntp_ok[0] else 0, mono_s()):  # (only on the time server's time)
+                cst['last'] = mono_s()
+                cst['n'] = cst.get('n', 0) + 1
+                await gatt_turn(mac, clock_info, lambda: poke.set_clock(ble, e['at'], mac, set_hook, asyncio, time.time))
+                print('clock', mac, clock_info[mac])
+                break
             st = poke_st.setdefault(mac, {})
             li = listener.info(mac)
             # (since its last new measurement; none since this start: since it was first heard, so one already stuck
@@ -3262,19 +3324,7 @@ async def poke_task():
                 continue
             st['last'] = mono_s()
             st['n'] = st.get('n', 0) + 1
-            radio_busy[0] = True  # (a /run experiment waits for it)
-            try:
-                scan_on[0] = False
-                stop_scan()
-                await asyncio.sleep_ms(300)
-                poke_info[mac] = {'at': int(time.time()), 'got': await poke.measure(ble, e['at'], mac, set_hook, asyncio)}
-            except Exception as ex:
-                poke_info[mac] = {'at': int(time.time()), 'err': str(ex) or repr(ex)}
-            finally:  # (whatever happens, cancelled too: the hook off, the scan back on)
-                hook[0] = None
-                radio_busy[0] = False
-                scan_on[0] = True
-                start_scan()
+            await gatt_turn(mac, poke_info, lambda: poke.measure(ble, e['at'], mac, set_hook, asyncio))
             print('poke', mac, poke_info[mac])
             break
 

@@ -330,9 +330,13 @@ async function rdLoad(m){const t=S.tanks.find(x=>x.mac===m);if(!t)return;const m
     const L=toL(mm,cv),d=prev==null?'':(L-prev>=0?'+':'')+(L-prev).toFixed(1);h+='<tr><td>'+hm(ts)+'</td><td>'+mm+' mm</td><td>'+L.toFixed(1)+'</td><td>'+d+'</td></tr>';prev=L;pt=ts}
    for(let g=pt+3600;Date.now()/1000-g>1200;g+=3600){h+='<tr class="mut"><td>'+hm(g)+'</td><td colspan="3" style="text-align:left">missed: not heard this hour</td></tr>';miss++}  /* stopped since the last one */
    h+='</table>'}
-  h+='<div class="mut" style="margin-top:6px">'+(rows.length?rows.length+' saved today'+(miss?', '+miss+' missed (a weak signal, or a reading the Pico threw out as a misread)':'')+'. ':'None saved yet today. ')+(nx?'Next due about '+hm(nx)+'.':'Waiting to learn when this monitor reads (about an hour after a restart).')+' Readings come once an hour, in 5 mm steps; a step or two up and down is the oil warming and cooling.</div>';
+  h+='<div class="mut" style="margin-top:6px">'+(rows.length?rows.length+' saved today'+(miss?', '+miss+' missed (a weak signal, or a reading the Pico threw out as a misread)':'')+'. ':'None saved yet today. ')+(nx?'Next due about '+hm(nx)+'.':'Waiting to learn when this monitor reads (about an hour after a restart).')+' Readings come once an hour, in 5 mm steps; a step or two up and down is the oil warming and cooling.'+clockTxt(t)+'</div>';
   RD[m]={key,at:Date.now(),html:h}}catch(e){RD[m]={key:'',at:0,html:'Could not load them: '+e.message}}
  const el=document.querySelector('details.rd[data-mac="'+m+'"] .rdb');if(el)el.innerHTML=RD[m].html}
+/* the monitor's own clock: how far from the Pico's (NTP), or that it isn't set (the Pico sets it) */
+function clockTxt(t){const off=t.listen&&t.listen.offset,cs=t.clock_set||{},at=cs.at?' at '+new Date(cs.at*1000).toLocaleString([],{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+ if(off!=null)return ' Monitor clock: '+(Math.abs(off)<60?'right':Math.round(Math.abs(off)/60)+' min '+(off>0?'slow':'fast'))+(cs.got?' (set by the Pico'+at+')':'')+'.';
+ return cs.err?' Monitor clock not set: the Pico will try again (last try'+at+': '+esc(cs.err)+').':''}
 function readAt(t){const r=t.misread!=null||t.saved?t.good_at:t.listen&&t.listen.read_at,  /* after a misread: when the level shown was read */now=Date.now()/1000;if(!r)return ago(t.age);const d=new Date(r*1000),late=now-r>2*3600;
  return (late?'<b style="color:var(--bad)">no new reading since ':'read at ')+(late&&now-r>20*3600?d.toLocaleDateString([], {day:'numeric',month:'short'})+' ':'')+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(late?'</b>':'')}
 const okMac=m=>/^[0-9a-f:]{17}$/.test(m)?m:'';

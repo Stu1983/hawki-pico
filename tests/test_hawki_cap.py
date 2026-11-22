@@ -28,7 +28,8 @@ T = types.SimpleNamespace(time=lambda: clock[0])
 TANK = 'c0:04:56:c4:0c:71'
 g = {'binascii': binascii, 'time': T, 'decode': hawki_decode.decode, 'mfr_from_adv': hawki_decode.mfr_from_adv,
      'cfg': {'tanks': {TANK: {}}}, 'hawki': {}, 'seen': {}, 'pending': [], 'pending_unset': [], 'unset_raw': {}, 'anchor': {}, 'anchor_base': {},
-     'listener': types.SimpleNamespace(heard=lambda *a: None)}
+     'listener': types.SimpleNamespace(heard=lambda *a: None, seed=lambda *a: None), 'clk_seeded': set(), 'pending_clk': [], 'ntp_ok': [True],
+     'clocklog': types.SimpleNamespace(offsets=lambda *a: [])}
 exec(compile(ast.Module([n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in names
                          or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in names for t in n.targets)], []),
              'app.py', 'exec'), g)

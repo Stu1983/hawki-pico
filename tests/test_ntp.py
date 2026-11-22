@@ -8,7 +8,7 @@ import ast, asyncio, os, sys, types
 
 src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
 tree = ast.parse(src)
-names = ('ntp_sync', 'ntp_due', 'NTP_BACKOFF', 'ntp_wait', 'web_busy')
+names = ('ntp_sync', 'ntp_due', 'NTP_BACKOFF', 'ntp_wait', 'web_busy', 'ntp_ok')
 fails = 0
 
 
@@ -61,6 +61,7 @@ up[0] = True
 keeper(70)
 ok(tries and tries[-1][0] >= 60 and g['ntp_wait'][1] == 0, 'once the page is quiet it tries, and succeeds')
 ok(g['ntp_wait'][1] == 0, 'a success starts the backoff again from 10 s')
+ok(g['ntp_ok'] == [True], 'and the Pico now knows its time came from a time server (monitor clocks may be set)')
 up[0] = False
 
 # a page open for good (the history page fetches every 10 s): still tried within 5 minutes of being due

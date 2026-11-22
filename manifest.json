@@ -1,11 +1,11 @@
 {
- "version": "1.3.17",
- "ref": "v1.3.17",
- "notes": "A monitor whose clock is at 0 repeating the same reading is shown as read on time, not missed",
+ "version": "1.3.18",
+ "ref": "v1.3.18",
+ "notes": "The Pico sets a monitor's clock when it is unset (after a battery change); readings placed at when the monitor measured, on the Pico's clock; both times kept",
  "files": {
   "app.py": [
-   "462691cc0ca9a638aa6cf15239e6cf6a3bea98e86d50a388feaa1fea538ce13a",
-   153571
+   "2146e8af7bd81b6ddfc601a7ed77b83b15c6360ccebe28dd7440f3948fdd5124",
+   156069
   ],
   "battlog.py": [
    "ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de",
@@ -14,6 +14,10 @@
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
    7065
+  ],
+  "clocklog.py": [
+   "438cf7fa3ee99dd89d57941b5cd84d91f48397327c0a28ad6cfad7fe7032b509",
+   3528
   ],
   "common.js.html": [
    "f4ddfb5e2c96601eea4199efca2a65bfccb1df711e76ab0d32b673cd6e4ad576",
@@ -40,8 +44,8 @@
    6004
   ],
   "listen.py": [
-   "d28ced0224fb334ad039f17c8b33c41477c38cdd10f479e71cd87ff744929218",
-   4914
+   "cfa9d94aea1926a4db64838a57af933dcdfaf7a78662c1b4fab2cd07aa7d1cec",
+   8243
   ],
   "mqtt.py": [
    "e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92",
@@ -56,8 +60,8 @@
    5451
   ],
   "poke.py": [
-   "eb43b895b642455a005275d2bc88a07cc462276f058b6e648c794a22b53dec6d",
-   5872
+   "c59ac52b04c72687e5709c9be895430e9efbc16a7248db56e4a8d0258b1997af",
+   10182
   ],
   "price.py": [
    "b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90",
@@ -68,8 +72,8 @@
    14435
   ],
   "ui.html": [
-   "c157e0fb4571601ce2f55e85631025b99efe16749a9d15105b85d45123734ba0",
-   127584
+   "65f37140874ec06bd421b4937cf46f485631bf8cdd46c3818ead70cd1e2794c9",
+   128173
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -80,7 +84,7 @@
    13431
   ],
   "version.py": [
-   "36d5f3e2015aaab212590050fae612a219289872284f88083304021b7104d5e5",
+   "19e7ccd3d6538c13efc0e7ad9afa49db2938bc7a5d52559cab4f74b7f6968ab3",
    19
   ],
   "weather.py": [
@@ -93,7 +97,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"462691cc0ca9a638aa6cf15239e6cf6a3bea98e86d50a388feaa1fea538ce13a\", 153571], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"common.js.html\": [\"f4ddfb5e2c96601eea4199efca2a65bfccb1df711e76ab0d32b673cd6e4ad576\", 28610], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"663c4da0ed1eb021fb34db0b82c4e7ab26ae5cf8463024e833e5e8a1ac11d277\", 63183], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d28ced0224fb334ad039f17c8b33c41477c38cdd10f479e71cd87ff744929218\", 4914], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"eb43b895b642455a005275d2bc88a07cc462276f058b6e648c794a22b53dec6d\", 5872], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"c157e0fb4571601ce2f55e85631025b99efe16749a9d15105b85d45123734ba0\", 127584], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"36d5f3e2015aaab212590050fae612a219289872284f88083304021b7104d5e5\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"A monitor whose clock is at 0 repeating the same reading is shown as read on time, not missed\", \"ref\": \"v1.3.17\", \"version\": \"1.3.17\"}",
-  "sig": "83ff562b26d0bb611dc015b4b952f0a1cae06e5971af5b54110f55714565fb5df6ea54ede5eadff40b08dad3e0b1fe29430ddbccd7db228d8611f9870542c82cec0112865e214cc9c0b124e45c08ba7025bd22ddeacbd1e51c04cc2eea7bed388283fafcaaab7b9f8b8ccff11c81aba4e1ba7137f329f66d7999f89dbf0f0d31511dee5246ab9df5db10b8c1ab79330f299c4cd957f28f89bacb6803ce91cc5a8335f06861085d83d2813dfc9ac2e56821137783a25642aff5a56652a0c8e8572d6926c058bfcd33c47b162efdfa754cf78fbd0f8e4bd3cd264da359257195750c1d164b56d9619e7c2d6f8c0b3084974c90c1a73b386fe8edf2d76e5d5e4f21"
+  "body": "{\"files\": {\"app.py\": [\"2146e8af7bd81b6ddfc601a7ed77b83b15c6360ccebe28dd7440f3948fdd5124\", 156069], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"438cf7fa3ee99dd89d57941b5cd84d91f48397327c0a28ad6cfad7fe7032b509\", 3528], \"common.js.html\": [\"f4ddfb5e2c96601eea4199efca2a65bfccb1df711e76ab0d32b673cd6e4ad576\", 28610], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"663c4da0ed1eb021fb34db0b82c4e7ab26ae5cf8463024e833e5e8a1ac11d277\", 63183], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"cfa9d94aea1926a4db64838a57af933dcdfaf7a78662c1b4fab2cd07aa7d1cec\", 8243], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"c59ac52b04c72687e5709c9be895430e9efbc16a7248db56e4a8d0258b1997af\", 10182], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"65f37140874ec06bd421b4937cf46f485631bf8cdd46c3818ead70cd1e2794c9\", 128173], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"19e7ccd3d6538c13efc0e7ad9afa49db2938bc7a5d52559cab4f74b7f6968ab3\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"The Pico sets a monitor's clock when it is unset (after a battery change); readings placed at when the monitor measured, on the Pico's clock; both times kept\", \"ref\": \"v1.3.18\", \"version\": \"1.3.18\"}",
+  "sig": "40ce1fa870f8505526b9f0be9b1450c0bc41f5938d0585bf47ac354188de0864588e0933c0bf1340d8825cf67275688414741b8872d6ab67428a5c3d54fbc8ac4c24c269a87b2e5dfca54bbe30aeab727ee76c82368bd31330c8af5542c9165f96f97f078319e0d1062cce829fa918e131b7be377a8e262ef8fd73fb3e782b2a2e204ff41beafd2648f17d9c2df35e030f2c052b2ea4cb9d27baec4df20be30c359d0aecf2770769cd16ae092339387f27066bfe6679a6325b2019ff699751e819462753741aef27ef1f10b37b12cf438cbb2d268416857df9cde65f340d805ae63e2de5fd785a91e5111791d5b24de6910cd8db903d1bbc84fa1830c529356c"
  }
 }

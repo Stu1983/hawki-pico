@@ -101,4 +101,47 @@ for h in range(1, 8 * 24 + 1):
 ok(W.s[A]['chg'] == T1 and W.info(A)['read_at'] == T1 + 8 * 24 * 3600, 'a week of identical bytes is not a clock jump')
 N = Listener(); N.heard(A, 'p', 761, T1 - 1800); N.heard(A, 'q', 761, T1)
 ok(N.heard(A, 'q', 761, T1 + 3600 + GRACE) is None, 'a ticking-clock monitor: an unchanged payload is not a reading')
+# the monitor's own clock set (22 Nov 2026): readings placed at when it measured, on the Pico's clock
+from listen import MAX_OFF
+S = 1_795_314_295  # Tank 1 measured 02:24:55 by its clock, which is 7 s slow
+M = Listener()
+M.heard(A, 'a', 761, S - 3600 + 7 + 40, False, S - 3600)   # first after a start: not saved, offset 47 (an upper bound)
+r = M.heard(A, 'b', 761, S + 7 + 2, False, S)                # heard 2 s after: offset now 9
+ok(r == (S + 9, 761), 'heard soon after: saved at the monitor time + offset (%r)' % (r,))
+r = M.heard(A, 'c', 766, S + 3600 + 7 + 1980, False, S + 3600)  # the Pico wasn't listening: heard 33 min late
+ok(r == (S + 3600 + 9, 766), 'heard 33 min late: still saved when it was measured (%r)' % (r,))
+ok(M.s[A]['period'] == 3600 and M.s[A]['next'] == S + 7200 + 9, 'period from its own clock, exact; next from when it measured')
+ok(not M.due([A], S + 7200 + 9 - BEFORE - 5) and M.due([A], S + 7200 + 9 - BEFORE + 1), 'the window opens just before its real slot')
+r = M.heard(A, 'd', 766, S + 3 * 3600 + 7 + 3, False, S + 3 * 3600)   # one reading missed (out of range)
+ok(r == (S + 3 * 3600 + 9, 766) and M.s[A]['period'] == 3600, 'after a missed reading: placed right, period kept')
+ok(M.offset(A) == 9 and M.info(A)['offset'] == 9, 'offset = the smallest (heard - its time): %r' % M.offset(A))
+# its clock set again (moved 25 min back: the Pico set it, or the app): offsets start afresh, this one when heard
+r = M.heard(A, 'e', 761, S + 4 * 3600 + 10, False, S + 4 * 3600 - 1500)
+ok(r == (S + 4 * 3600 + 10, 761) and M.offset(A) == 1510, 'clock changed: saved when heard, new offset %r' % M.offset(A))
+r = M.heard(A, 'f', 761, S + 5 * 3600 + 12, False, S + 5 * 3600 - 1500)
+ok(r == (S + 5 * 3600 + 10, 761), 'then placed by the new offset again (%r)' % (r,))
+# a junk clock (2094, frozen 1990...): heard times, exactly as before
+J = Listener(); J.heard(A, 'a', 700, T1 - 1800, False, 3925600108); r = J.heard(A, 'b', 705, T1, False, 2611340115)
+ok(r == (T1, 705) and J.offset(A) is None, 'junk advert time: saved when heard, no offset')
+# restart: offsets from clocklog seed it, so the first new reading is placed at once and the slot is known
+R = Listener(); R.seed(A, [9, 12, 30])
+R.heard(A, 'a', 761, S + 600, False, S)
+ok(R.s[A]['next'] == S + 9 + 3600 and not R.due([A], S + 1200), 'after a restart: the next slot known from the seeded offset')
+r = R.heard(A, 'b', 766, S + 3600 + 1200, False, S + 3600)
+ok(r == (S + 3600 + 9, 766), 'and the first new reading placed when it was measured (%r)' % (r,))
+Z = Listener(); Z.seed(A, [MAX_OFF + 5, 20])
+ok(Z.offset(A) == 20, 'a seeded offset over a day is dropped')
+# order: a reading the 2-hour fallback already saved is never followed by one placed before it
+O = Listener(); O.heard(A, 'a', 700, S - 3600, False, S - 3600); O.heard(A, 'b', 701, S, False, S)
+r1 = O.heard(A, 'b', 701, S + 7200, False, S)          # same bytes 2 h on: the fallback saves at S+7200
+r2 = O.heard(A, 'c', 702, S + 7204, False, S + 3600)   # then a change whose own time is S+3600
+ok(r1 == (S + 7200, 701) and r2[0] > r1[0] and r2[0] <= S + 7204, 'after a fallback save: the next one placed after it (%r, %r)' % (r1, r2))
+# a clock moved (Pico corrected by NTP, or the monitor's set): an offset more than an hour out starts afresh
+Q2 = Listener(); Q2.seed(A, [-7200])                     # poisoned: saved while the Pico ran 2 h slow
+Q2.heard(A, 'a', 700, S, False, S)
+r = Q2.heard(A, 'b', 701, S + 3600 + 5, False, S + 3600)
+ok(r == (S + 3600, 701), 'a seeded offset 2 h out is dropped, not used to place readings 2 h early (%r)' % (r,))
+M2 = Listener(); M2.heard(A, 'a', 700, S, False, S); M2.heard(A, 'b', 701, S + 3600, False, S + 3600)
+r = M2.heard(A, 'c', 702, S + 4 * 3600 + 3, False, S + 2 * 3600)   # readings missed AND its clock moved 2 h back
+ok(r == (S + 4 * 3600 + 3, 702), 'missed readings and a clock moved back: saved when heard, not 2 h early (%r)' % (r,))
 sys.exit(1 if fails else 0)

@@ -28,9 +28,10 @@ M = 'c0:04:56:c4:0c:71'
 os.chdir(tempfile.mkdtemp())
 g = {'os': os, 'struct': struct, 'unset': unset, 'BOOT': 3, 'mono_s': lambda: 5000,
      'time': types.SimpleNamespace(ticks_ms=lambda: 2000, ticks_diff=lambda a, b: a - b),
-     'cfg': {'tanks': {M: {}}}, 'pending': [(M, 1795400000, 701)], 'pending_unset': [(M, 1000, 0, 702)],
+     'cfg': {'tanks': {M: {}}}, 'pending': [(M, 1795400000, 701)], 'pending_unset': [(M, 1000, 0, 702)], 'pending_clk': [(M, 1795400000, 1795400010, 1795399990)],
+     'clocklog': __import__('clocklog'),
      'machine': types.SimpleNamespace(reset=lambda: (_ for _ in ()).throw(Reset())), 'print': lambda *a: None}
-exec(compile(ast.Module([n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ('hist_name', 'save_pending', 'restart')], []),
+exec(compile(ast.Module([n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ('hist_name', 'save_clk', 'save_pending', 'restart')], []),
              'app.py', 'exec'), g)
 try:
     g['restart']()
@@ -38,6 +39,7 @@ except Reset:
     pass
 b = open(g['hist_name'](M), 'rb').read()
 ok(struct.unpack('<IH', b) == (1795400000, 701) and not g['pending'], 'a reading queued just before the restart is saved first')
+ok(g['clocklog'].read(M) == [(1795400000, 1795400010, 1795399990)] and not g['pending_clk'], '...with its two clocks (clocklog)')
 ok(unset.records(M) == [(4999, 0, 702, 3)] and not g['pending_unset'], '...and one heard while the clock was unset is kept aside')
 # every machine.reset() in app.py goes through restart(), except restart() itself and the watchdog's
 calls = []

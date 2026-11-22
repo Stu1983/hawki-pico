@@ -38,17 +38,30 @@ def due(d, st, now, age=None):
 async def measure(ble, at, mac, set_hook, asyncio, secs=60):
     """Connect, trigger, wait for 'completed' (or secs), disconnect: tried 3 times. Returns the notification statuses
     seen ('01', '02', '05'...). The caller stops scanning first and starts it again after."""
+    return await _tries(ble, at, mac, set_hook, asyncio, lambda *a: _trigger(*a, secs=secs))
+
+
+async def set_clock(ble, at, mac, set_hook, asyncio, now):
+    """Write the time (UTC; now(): epoch s, the Pico's NTP-set clock, read at the moment of writing) to its DATE_TIME
+    (1993) and read it back: tried 3 times. Returns (what it read before, what it reads after). Not written if it
+    already reads within a day of now (set meanwhile, by the Magnus app say). The caller stops scanning first and
+    starts it again after."""
+    wrote = []  # (a retry after our own write was read back wrong must write again, not take it as 'already set')
+    return await _tries(ble, at, mac, set_hook, asyncio, lambda *a: _write_clock(*a, now=now, wrote=wrote))
+
+
+async def _tries(ble, at, mac, set_hook, asyncio, work):
     for k in range(3):  # (a monitor just after a battery change dropped the link about half the time)
         try:
-            return await _measure(ble, at, mac, set_hook, asyncio, secs)
+            return await _session(ble, at, mac, set_hook, asyncio, work)
         except OSError:
             if k == 2:
                 raise
             await asyncio.sleep_ms(3000)
 
 
-async def _measure(ble, at, mac, set_hook, asyncio, secs):
-    st = {'svcs': [], 'chrs': [], 'notes': []}
+async def _session(ble, at, mac, set_hook, asyncio, work):
+    st = {'svcs': [], 'chrs': [], 'notes': [], 'rd': {}}
 
     def h(ev, d):
         if ev == 7:
@@ -63,7 +76,9 @@ async def _measure(ble, at, mac, set_hook, asyncio, secs):
             n = binascii.hexlify(bytes(d[2])).decode()[:2]
             if n not in st['notes'] and len(st['notes']) < 8:  # (each status once, a few at most)
                 st['notes'].append(n)
-        elif ev in (10, 12, 17):
+        elif ev == 15:  # _IRQ_GATTC_READ_RESULT
+            st['rd'][d[1]] = bytes(d[2])
+        elif ev in (10, 12, 16, 17):
             st['done'] = d[-1]
 
     async def wait(key, t=8):
@@ -107,18 +122,7 @@ async def _measure(ble, at, mac, set_hook, asyncio, secs):
         ble.gattc_discover_characteristics(c, svc[0][0], svc[0][1])
         await wait('done')
         ch = {u.split("'")[1][4:8]: vh for vh, u in st['chrs'] if "'" in u}
-        if '1960' not in ch or '1963' not in ch:
-            raise OSError('no trigger')
-        ble.gattc_write(c, ch['1960'] + 1, b'\x01\x00', 1)  # its notifications on (the descriptor follows the value)
-        await wait('done')
-        ble.gattc_write(c, ch['1963'], b'\x07', 1)
-        await wait('done')
-        t0 = time.time()
-        while time.time() - t0 < secs and '05' not in st['notes'] and not st.get('disc'):
-            await asyncio.sleep_ms(200)
-        if not st['notes']:  # (judged by its answers, not the write's status: that came back 14 every time it worked)
-            raise OSError('no answer to the measure command')
-        return st['notes']
+        return await work(ble, c, ch, st, wait, asyncio)
     finally:
         if c is not None and not st.get('disc'):
             try:
@@ -134,3 +138,95 @@ async def _measure(ble, at, mac, set_hook, asyncio, secs):
             await asyncio.sleep_ms(500)
         finally:
             set_hook(None)  # (cancelled in the pause too)
+
+
+async def _trigger(ble, c, ch, st, wait, asyncio, secs=60):
+    if '1960' not in ch or '1963' not in ch:
+        raise OSError('no trigger')
+    ble.gattc_write(c, ch['1960'] + 1, b'\x01\x00', 1)  # its notifications on (the descriptor follows the value)
+    await wait('done')
+    ble.gattc_write(c, ch['1963'], b'\x07', 1)
+    await wait('done')
+    t0 = time.time()
+    while time.time() - t0 < secs and '05' not in st['notes'] and not st.get('disc'):
+        await asyncio.sleep_ms(200)
+    if not st['notes']:  # (judged by its answers, not the write's status: that came back 14 every time it worked)
+        raise OSError('no answer to the measure command')
+    return st['notes']
+
+
+def clock_parse(s):
+    """'DD.MM.YYYY HH:MM:SS' (UTC) -> epoch s, or None."""
+    try:
+        d, mo, y = [int(x) for x in s[:10].split('.')]
+        h, mi, se = [int(x) for x in s[11:19].split(':')]
+    except (ValueError, IndexError):
+        return None
+    if not (1 <= mo <= 12 and 1 <= d <= 31 and h < 24 and mi < 60 and se < 60 and len(s) >= 19):
+        return None
+    y2 = y - (mo <= 2)  # days from 1970-01-01 (proleptic Gregorian)
+    era = y2 // 400
+    yoe = y2 - era * 400
+    doy = (153 * (mo + (-3 if mo > 2 else 9)) + 2) // 5 + d - 1
+    doe = yoe * 365 + yoe // 4 - yoe // 100 + doy
+    return (era * 146097 + doe - 719468) * 86400 + h * 3600 + mi * 60 + se
+
+
+def clock_text(now):
+    """The monitor's DATE_TIME format: 'DD.MM.YYYY HH:MM:SS', UTC (what the Magnus app writes when installing)."""
+    y, mo, d, h, mi, se = time.gmtime(int(now))[:6]
+    return '%02d.%02d.%04d %02d:%02d:%02d' % (d, mo, y, h, mi, se)
+
+
+async def _write_clock(ble, c, ch, st, wait, asyncio, now=None, wrote=None):
+    wrote = [] if wrote is None else wrote
+    if '1993' not in ch:
+        raise OSError('no clock')
+
+    async def read():
+        st['rd'].pop(ch['1993'], None)
+        ble.gattc_read(c, ch['1993'])
+        await wait('done')
+        return (st['rd'].get(ch['1993']) or b'').decode()
+
+    before = await read()
+    b = clock_parse(before)
+    if not wrote and b is not None and abs(b - now()) <= CLOCK_OFF_S:  # (already set, meanwhile: not moved again)
+        return before, before
+    wrote.append(1)
+    ble.gattc_write(c, ch['1993'], clock_text(now() + 1).encode(), 1)  # (+1: the write itself takes a moment)
+    await wait('done')
+    await asyncio.sleep_ms(300)
+    after = await read()
+    a = clock_parse(after)
+    if a is None or abs(a - now()) > 120:  # (judged by reading it back, not the write's status)
+        raise OSError('clock not taken: ' + after)
+    return before, after
+
+
+CLOCK_WAIT_S = 600       # its clock looks unset this long before it's set (one bad advert is not enough)
+CLOCK_AGAIN_S = 6 * 3600  # set again after this if it still looks unset
+CLOCK_MOST = 4           # then leave it until it looks right again (or the Pico restarts)
+CLOCK_OFF_S = 86400      # an advert time further than this from the Pico's (NTP) time: the clock isn't set
+
+
+def clock_bad(d, now):
+    """Its clock is unset: the advert's time is 0 (just after a battery change) or more than a day from the Pico's.
+    A clock that is merely minutes out (an app-installed one ran 4-30 min off) is left alone: readings are placed by
+    the Pico's own time anyway (listen.py), and setting a clock moves the monitor's hourly slot."""
+    ts = d.get('timestamp')
+    return ts is not None and (ts == 0 or abs(now - ts) > CLOCK_OFF_S)
+
+
+def clock_due(d, st, now, mono):
+    """Whether to set this monitor's clock now. now: the Pico's epoch time (must be set: NTP); mono: seconds since
+    start. st: this monitor's {'since', 'last', 'n'}, updated here (cleared once its clock looks right)."""
+    if now < 1700000000:
+        return False
+    if not clock_bad(d, now):
+        st.clear()
+        return False
+    st.setdefault('since', mono)
+    if mono - st['since'] < CLOCK_WAIT_S or st.get('n', 0) >= CLOCK_MOST or 'last' in st and mono - st['last'] < CLOCK_AGAIN_S:
+        return False
+    return True
