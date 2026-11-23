@@ -1,7 +1,7 @@
 {
- "version": "1.3.22",
- "ref": "v1.3.22",
- "notes": "Earlier years' use is put to the weather (a cold winter last year is not next winter's forecast; a cold spell now is not a change in use). Dashboard: Order around over three lines.",
+ "version": "1.3.23",
+ "ref": "v1.3.23",
+ "notes": "Costs: Oil a year is the 2-year average; the price chart shows price per litre or a 500 L / 900 L order, average quote only, and the day's quote beside what you paid.",
  "files": {
   "app.py": [
    "a7d26ea754e41e3ebe45c19a6add3fb31a2e620692f90de0262afb77f676c0cc",
@@ -32,8 +32,8 @@
    2612
   ],
   "hist.html": [
-   "71017002caa26b735526bdb271fba73545af2eef0f3e8922647136f1f61a2668",
-   63308
+   "4fd547a0f2753cfc6afb9154d2e8633f321753bd4e055dc395f884b67ec562de",
+   64948
   ],
   "histstore.py": [
    "bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80",
@@ -84,7 +84,7 @@
    13431
   ],
   "version.py": [
-   "2567ab362a12f388cd0aefd4487898ff7ff8a01562a64aae97f4f2c0b1981829",
+   "a55fbe346b166343e0c1d9c60b3f192de3716dd2359bc0548f01e4081b2953fe",
    19
   ],
   "weather.py": [
@@ -97,7 +97,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"a7d26ea754e41e3ebe45c19a6add3fb31a2e620692f90de0262afb77f676c0cc\", 156869], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"d1247f642e39f6d82a81919c028e7cf05bd4758b565006875f4aa9850d61830d\", 34370], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"71017002caa26b735526bdb271fba73545af2eef0f3e8922647136f1f61a2668\", 63308], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"c59ac52b04c72687e5709c9be895430e9efbc16a7248db56e4a8d0258b1997af\", 10182], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"f549e7ddb4740f1f544f2241f20afb5d1c6574c5a7b0bd021a8d57651f739c1f\", 128918], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"2567ab362a12f388cd0aefd4487898ff7ff8a01562a64aae97f4f2c0b1981829\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Earlier years' use is put to the weather (a cold winter last year is not next winter's forecast; a cold spell now is not a change in use). Dashboard: Order around over three lines.\", \"ref\": \"v1.3.22\", \"version\": \"1.3.22\"}",
-  "sig": "40ee2c5f7f8ae89d3ab7ce511589536466d2393454e98d599f82c143e9bdec8dd8815e53a486a7ab977e9e2ffdd64db6ccd430f6074463368907ccfcf628ee24afbce21250320cd5981449f9645284a6206f2d832e268b98691a0532d44e51512ca9527d2f722b12a414d770c5b73d882f2964355f4a41243ad2090645cf241cb857ec6731b95e7f6877413d90038de0308611d86b1cfc939603e1a9c9b47039351cd17ca25fd0320b7e5cb4ad175dc4125ba3ecf7afc5377ce13c7d5a5df84e62f0ecbce13b042dc6ee748678e58c773667a092cd124ad6ad78933b3bc77fed6bebff0face4c989c3ebb68b24cdf35436abb35e9ca89c3dbcff14018ed4929e"
+  "body": "{\"files\": {\"app.py\": [\"a7d26ea754e41e3ebe45c19a6add3fb31a2e620692f90de0262afb77f676c0cc\", 156869], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"d1247f642e39f6d82a81919c028e7cf05bd4758b565006875f4aa9850d61830d\", 34370], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"4fd547a0f2753cfc6afb9154d2e8633f321753bd4e055dc395f884b67ec562de\", 64948], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"c59ac52b04c72687e5709c9be895430e9efbc16a7248db56e4a8d0258b1997af\", 10182], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"f549e7ddb4740f1f544f2241f20afb5d1c6574c5a7b0bd021a8d57651f739c1f\", 128918], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"a55fbe346b166343e0c1d9c60b3f192de3716dd2359bc0548f01e4081b2953fe\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Costs: Oil a year is the 2-year average; the price chart shows price per litre or a 500 L / 900 L order, average quote only, and the day's quote beside what you paid.\", \"ref\": \"v1.3.23\", \"version\": \"1.3.23\"}",
+  "sig": "57b4b2631f036ddbe6c764ac99a1709cd8adab2b58dcccc73e3356b35d5a60a0bc7c1c4c2de3a84e81986006c0b6c7a62035f2c4778a8b07de4f144f17be8f014b7889f0b021f731cc3c3d05d9ca23f6e971deca557c5fd37f6ed15803c51c9f61dd4de1dd46c7ac79945827861f9461a39152c5d192f4de32c2a909eda0d8c13f5df13a69d4bf6af94407c280a6db7fca15cf955c256973d47e73a37e91cf3e71c5fd7ac5d6575cf390761a3e489f8f2398e16d8e64b535d441aebf11e74bd6e42880435a8c08544dac3cc5e1d7ad6edd727a9da1cbe0998cd6f1cb2d136a8b29f785d443062ca53713b233b547227a486ed1aa7942417127d43e547c07709d"
  }
 }
