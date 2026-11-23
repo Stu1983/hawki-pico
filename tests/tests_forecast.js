@@ -205,4 +205,11 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
   const now=T(2026,10,15),cold=t=>t<T(2026,2,1)?3:0,{p,h}=mk(T(2025,11,1),now,cold);
   const A=ctx.analyse(p,{now,heat:h,wxName:'X',yearL:2500}),tj=T(2027,0,15);
   ok(!A.useOwn&&Math.abs(A.rate(tj)/true_(tj)-1)<0.08,'a figure and a cold January of your own: next January '+A.rate(tj).toFixed(2)+' vs usual-weather '+true_(tj).toFixed(2))}}
+// one old reading pasted in (Earlier readings), then the Pico's own hourly readings from 3 weeks later: a rate from those
+{const t0=T(2026,10,19),p=[[T(2026,9,29),524]];for(let t=t0,L=310;t<t0+4*DAY;t+=H){L-=9.5/24;p.push([t,L])}
+ const A=ctx.analyse(p,{now:t0+4*DAY});ok(A.recent!=null&&Math.abs(A.recent-9.5)<0.6&&A.span>=2&&ctx.hasFc(A),'an old pasted reading 3 weeks before: still a rate from the 4 days since ('+(A.recent&&A.recent.toFixed(2))+' L/day, true 9.5)')}
+{/* only one reading after the gap, or under 2 days since it: no rate yet (as for a first start), never NaN */
+ const a=T(2026,9,29),b=T(2026,10,19);let A=ctx.analyse([[a,710],[b,500]],{now:b});ok(A.recent==null&&!ctx.hasFc(A),'one reading 3 weeks after another: no rate yet');
+ const p=[[a,710]];for(let t=b;t<b+30*H;t+=H)p.push([t,500-10*(t-b)/DAY]);A=ctx.analyse(p,{now:b+30*H});ok(A.recent==null,'30 hours of readings after the gap: not yet');
+ const y=ctx.analyse([[a,710],[b,500]],{now:b,yearL:2000});ok(y.fc&&Number.isFinite(y.rate(b+DAY))&&Number.isFinite(y.fc.ord||0),'...with a typical year given: that forecast, finite')}
 process.exit(fails?1:0);

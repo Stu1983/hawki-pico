@@ -330,7 +330,7 @@ def irq(ev, data):
                 d['name'] = e['name']
                 lv = d.get('level')
                 prev = hawki.get(k) or {}
-                if lv is None or lv == 16383 or lv < MIN_MM:  # no level, or inside the radar's blind zone: a misread
+                if lv is None or lv == 16383 or lv < MIN_MM or odd_empty(lv, prev, d['raw'], cfg['tanks'].get(k), time.time()):  # no level, or inside the radar's blind zone: a misread
                     d['bad_level'] = lv            # (seen: 0 mm on a cold morning), never real. Keep showing the last good level
                     d['level'] = prev['level'] if prev.get('level') is not None else 16383   # (and its time); don't save it
                     d['good_at'] = prev.get('good_at')
@@ -395,6 +395,29 @@ clock_mono = [None]  # mono_s() at that moment: this start's readings are placed
 anchor = {}       # mac -> (epoch, sensor time) of its first new measurement once the clock was set
 anchor_base = {}  # mac -> payload when the clock was set, if none was heard before (an anchor must differ from it)
 MIN_MM = 30  # closer than this to the sensor can't be a real reading (radar blind zone)
+EMPTY_NEAR_MM = 150  # the monitor's own 'nearly empty' code counts at once only within this of the outlet
+EMPTY_WAIT = 3 * 3600  # ...else only if the last good reading is older than this, or the code comes again
+
+
+def odd_empty(lv, prev, raw, tank, now):
+    # The monitor's 'nearly empty' code (16382) straight after a good reading well above the outlet is a misread, not the
+    # tank emptying in an hour (seen 22 Nov 2026 on a friend's monitor at 26%: one such code between two good readings,
+    # saved as 0 L). Set aside ONCE: believed when the last good level was near the outlet, when it was over 3 hours ago
+    # (a leak or theft, or out of range meanwhile), when the code comes again in a new measurement, or when there is
+    # nothing to judge it by. (prev: this monitor's last advert as kept; its level is the last GOOD one.)
+    p = prev.get('level') if prev else None
+    if lv != 16382 or p is None or p in (16382, 16383) or not tank:
+        return False
+    if prev.get('bad_level') == 16382 and prev.get('raw') != raw:
+        return False  # a second measurement saying so
+    g = prev.get('good_at')
+    if not g or now - g > EMPTY_WAIT:
+        return False
+    try:
+        h = float(tank.get('height_cm')) * 10  # sensor to outlet
+    except (TypeError, ValueError):
+        return False
+    return h - p > EMPTY_NEAR_MM
 discover_until = [None]  # ticks_ms: listen actively (names, new sensors) until then; None when off
 
 ble = bluetooth.BLE()

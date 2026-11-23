@@ -13,7 +13,7 @@ import hawki_decode
 
 src = open(os.path.join(FW, 'app.py')).read()
 tree = ast.parse(src)
-names = ('HAWKI_UUID', 'SEEN_MAX', 'SEEN_AGE', 'HAWKI_MAX', 'HAWKI_AGE', 'MIN_MM', 'hx', 'name_of', 'hawki_room', 'irq', 'prune_seen')
+names = ('HAWKI_UUID', 'SEEN_MAX', 'SEEN_AGE', 'HAWKI_MAX', 'HAWKI_AGE', 'MIN_MM', 'EMPTY_NEAR_MM', 'EMPTY_WAIT', 'odd_empty', 'hx', 'name_of', 'hawki_room', 'irq', 'prune_seen')
 fails = 0
 
 

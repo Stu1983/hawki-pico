@@ -115,7 +115,11 @@ function analyse(pts,o){
   for(let d=0,t=t0;d<nd;d++,t=addDays(t,1)){out.days[t]=per;if(nd>2)out.gap[t]=1}}
  for(const t in out.days){const d=new Date(t*1000),k=d.getFullYear()+'-'+d.getMonth(),m=out.months[k]||(out.months[k]={y:d.getFullYear(),m:d.getMonth(),used:0,days:0});m.used+=out.days[t];m.days++}
  // recent rate: last 14 days (or what there is)
- const tEnd=pts[n-1][0],tStart=Math.max(pts[0][0],tEnd-14*DAY),win=(tEnd-tStart)/DAY;
+ const tEnd=pts[n-1][0];let tStart=Math.max(pts[0][0],tEnd-14*DAY);
+ /* the window starts in a gap (one old reading pasted in, then the Pico's own from weeks later): from the first reading after it.
+    (It gave no rate at all: a friend's Pico said "needs 2 days of readings" with 4 days of hourly readings after one from 3 weeks before) */
+ let moved=false;if(at(tStart)==null){const k=pts.findIndex(p=>p[0]>=tStart);if(k>=0){tStart=pts[k][0];moved=true}}
+ const win=(tEnd-tStart)/DAY;
  const a0=at(tStart),a1=sm[n-1];
  // litres a day since t0: the slope of a straight line through the (smoothed, delivery-adjusted) level every 3 hours
  // across the window, so the 5 mm steps the readings come in average out (two end readings a step apart would swing a
@@ -126,8 +130,8 @@ function analyse(pts,o){
   const den=n2*sxx-sx*sx;if(miss||n2<6||!(den>0))  /* a gap in the readings: the two ends are the fair figure */return v0!=null?(v0-a1)/((tEnd-t0)/DAY):null;return -(n2*sxy-sx*sy)/den};
  // the plain average of the last d full days: the same days, and the same figures, as the bars on the charts
  const fullDays=d=>{const today=midnight(tnow),v=[];for(let k=1;k<=d;k++){const t=addDays(today,-k);if(out.days[t]==null)return null;v.push(out.days[t])}return Math.max(0,mean(v))};
- out.recent=win>=1&&a0!=null?Math.max(0,slope(tStart,a0)):null;out.recentDays=win;
- {const f14=fullDays(14);if(f14!=null){out.recent=f14;out.recentDays=14}}  /* 14 full days: their average (else the line, over what there is) */
+ out.recent=win>=(moved?2:1)&&a0!=null?Math.max(0,slope(tStart,a0)):null;out.recentDays=win;  /* (after a gap: 2 days of readings since it, as for a first start) */
+ if(!moved){const f14=fullDays(14);if(f14!=null){out.recent=f14;out.recentDays=14}}  /* (not after a gap: those 14 days would be partly filled in across it, and the weather fit below is over the days since) */  /* 14 full days: their average (else the line, over what there is) */
  // shorter averages for the Using tile (same smoothed level, so 5 mm steps don't swing them)
  out.avgs={};for(const d of[3,7])out.avgs[d]=fullDays(d);
  if(out.recent==null&&!(o.yearL>0))return out;  /* too few readings for a rate: with a typical year given, the forecast still goes by that (out.fromYear) */
