@@ -183,4 +183,26 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
   const p=[];let L=800+6*45;for(let t=end-45*DAY;t<=end;t+=H){L-=6/24;p.push([t,L])}return ctx.analyse(p,{now:end,heat:ctx.wxHeat(rec,fc,norm),wxName:'X',yearL:2100,reserve:200})};
  const from=T(2026,9,31);let prev=null,worst=0,wks=0;for(let d=0;d<20;d++){const e=T(2026,10,8)+d*DAY,A=run(e,from),o=A.fc.ord;if(prev!=null){worst=Math.max(worst,Math.abs(A.kS-prev[0]));wks=Math.max(wks,Math.abs((o-prev[1])/DAY))}prev=[A.kS,o]}
  ok(worst<0.08&&wks<12,'blending in day by day: the scale moves at most '+worst.toFixed(3)+' a day, the order date '+wks.toFixed(0)+' days')}
+// earlier years are put to the weather (v1.3.22): a cold winter last year is not next winter's forecast, nor a cold spell now a change in use
+{const norm=[9,8.5,7.5,5.5,3,1,0.3,0.4,1.5,4,6.5,8.5],per=0.5,hw0=0.85/ctx.hwShape(T(2026,7,15));
+ const usT=t=>ctx.WX_BASE-norm[new Date(t*1000).getMonth()];
+ /* cold: degree days above the usual on a day (the actual weather) */
+ const mk=(from,now,cold)=>{const rec={},fc={};for(let t=from;t<now+16*DAY;t+=DAY){const tm=usT(t)-cold(t);(t<now?rec:fc)[ctx.wxKey(t)]=[tm-3,tm+3]}
+  const p=[];let L=1500;for(let t=from;t<now;t+=H){const v=rec[ctx.wxKey(t)]||fc[ctx.wxKey(t)],dd=Math.max(0,ctx.WX_BASE-(v[0]+v[1])/2),m=new Date(t*1000).getMonth();
+   L-=(hw0*ctx.hwShape(t)+(m<5||m>7?per*dd:0))/24;if(L<400)L+=1000;p.push([t,L])}
+  return{p,h:ctx.wxHeat(rec,fc,norm)}};
+ const true_=t=>hw0*ctx.hwShape(t)+per*norm[new Date(t*1000).getMonth()];
+ {const now=T(2026,11,1),cold=t=>t>=T(2025,11,1)&&t<T(2026,2,1)?3:t>=now-21*DAY?2:0,{p,h}=mk(T(2025,5,1),now,cold);
+  const A=ctx.analyse(p,{now,heat:h,wxName:'X'}),B=ctx.analyse(p,{now}),tj=T(2027,0,15);
+  ok(A.useOwn&&Math.abs(A.k-1)<0.05,'a cold 3 weeks now, against last year put to the same weather: '+Math.round(A.k*100)+'% (no weather: '+Math.round(B.k*100)+'%)');
+  ok(Math.abs(A.rate(tj)/true_(tj)-1)<0.08,'last January 3 degree days colder than usual: next January '+A.rate(tj).toFixed(2)+' vs usual-weather '+true_(tj).toFixed(2)+' (as it was: '+B.rate(tj).toFixed(2)+')');
+  ok(B.rate(tj)>1.15*true_(tj),'...where taking it as it was would have forecast it high');
+  const t5=now+5*DAY;ok(Math.abs(A.rate(t5)/(hw0*ctx.hwShape(t5)+per*(norm[11]+2))-1)<0.1,'the next 16 days follow the forecast (still cold): '+A.rate(t5).toFixed(2));
+  ok(Math.abs(A.rate(T(2027,6,15))-hw0*ctx.hwShape(T(2027,6,15)))<0.15,'summer: hot water as it was');
+  ok(A.like&&A.like.ord<A.fc.ord,'"if it stays this cold" also on earlier years: '+(A.like&&new Date(A.like.ord*1000).toDateString()));
+  ok(/its heating put to X's weather/.test(ctx.howText(A)),'and the words say so')}
+ {/* one year with a typical-year figure: next January goes by this January, put to the usual weather */
+  const now=T(2026,10,15),cold=t=>t<T(2026,2,1)?3:0,{p,h}=mk(T(2025,11,1),now,cold);
+  const A=ctx.analyse(p,{now,heat:h,wxName:'X',yearL:2500}),tj=T(2027,0,15);
+  ok(!A.useOwn&&Math.abs(A.rate(tj)/true_(tj)-1)<0.08,'a figure and a cold January of your own: next January '+A.rate(tj).toFixed(2)+' vs usual-weather '+true_(tj).toFixed(2))}}
 process.exit(fails?1:0);

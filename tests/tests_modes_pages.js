@@ -27,9 +27,9 @@ const st=(t2cfg,primary)=>({tanks:[tank(A1,'Tank 1',250,{}),tank(A2,'Tank 2',t2c
   ok(d.getElementById('d_name').textContent==='Both tanks'&&d.getElementById('d_l').textContent==='950 L','Tank 2 standby with oil: both counted ('+d.getElementById('d_l').textContent+')');
   ok(/\(standby\)/.test(d.getElementById('d_l2').textContent),'...and marked standby: '+d.getElementById('d_l2').textContent)}
  /* dashboard on Tank 1: time to order -> switch to the standby tank with oil */
- {const w=open('ui.html','http://pico/#dash',st({litres:700,cfg:{mode:'standby',isolated:1790000000}},A1));await wait(500);const d=w.document,t=d.getElementById('d_w2').textContent;
+ {const w=open('ui.html','http://pico/#dash',st({litres:700,cfg:{mode:'standby',isolated:1790000000}},A1));await wait(500);const d=w.document,t=d.getElementById('d_w1').textContent;
   ok(/^Switch to Tank 2 (now|around)/.test(t),'Tank 1 near its reorder level, Tank 2 on standby with oil: "'+t+'"')}
- {const w=open('ui.html','http://pico/#dash',st({litres:7,cfg:{mode:'off',isolated:1790000000}},A1));await wait(500);const t=w.document.getElementById('d_w2').textContent;
+ {const w=open('ui.html','http://pico/#dash',st({litres:7,cfg:{mode:'off',isolated:1790000000}},A1));await wait(500);const t=w.document.getElementById('d_w1').textContent;
   ok(/^Order (now|around)/.test(t),'Tank 2 off: order oil: "'+t+'"')}
  /* the form: mode shown and saved */
  {const posts=[],w=open('ui.html','http://pico/#tanks',st({litres:7,cfg:{mode:'off',isolated:1790000000,shape:'cuboid',length_cm:173,width_cm:69,tank_l:1306}},A1),posts);await wait(400);
@@ -47,7 +47,7 @@ const st=(t2cfg,primary)=>({tanks:[tank(A1,'Tank 1',250,{}),tank(A2,'Tank 2',t2c
  {const s=st({litres:7,cfg:{mode:'off',isolated:1790000000}},'all');s.tanks[0].cfg.mode='off';s.tanks[0].cfg.isolated=1790000000;const w=open('ui.html','http://pico/#dash',s);await wait(500);const d=w.document;
   ok(d.getElementById('d_name').textContent==='All tanks are off'&&d.getElementById('d_l').textContent==='–','all tanks off: "'+d.getElementById('d_name').textContent+'" '+d.getElementById('d_l').textContent)}
  {const s=st({litres:7,cfg:{mode:'off',isolated:1790000000}},A1);s.tanks[0].cfg.mode='off';const w=open('ui.html','http://pico/#dash',s);await wait(500);const d=w.document;
-  ok(d.getElementById('d_w').textContent==='–'&&/^Off/.test(d.getElementById('d_w2').textContent),'an off tank shown on its own: its oil, no forecast ("'+d.getElementById('d_w2').textContent+'")')}
+  ok(d.getElementById('d_w').textContent==='–'&&/^Off/.test(d.getElementById('d_w1').textContent),'an off tank shown on its own: its oil, no forecast ("'+d.getElementById('d_w1').textContent+'")')}
  /* "same tank as" an off tank: this tank stays in use */
  {const posts=[],w=open('ui.html','http://pico/#tanks',st({litres:7,cfg:{mode:'off',isolated:1790000000,shape:'cuboid',length_cm:173,width_cm:69,tank_l:1306}},A1),posts);await wait(400);
   w.edit(A1);const d=w.document;d.getElementById('m_from').value=A2;w.copyFrom();ok(d.getElementById('f_mode').value==='use','copying settings from an off tank keeps this one In use ('+d.getElementById('f_mode').value+')')}

@@ -98,7 +98,7 @@ dialog::backdrop{background:#0008}
 <div class="tiles">
  <div class="card tile"><div class="tl">Usable oil left</div><div class="big" id="d_l">–</div><div class="mut" id="d_l2">&nbsp;</div><div class="bar"><i id="d_bar" style="width:0"></i></div></div>
  <div class="card tile"><div class="tl">Using</div><div class="big" id="d_r">–</div><div class="mut" id="d_r2">&nbsp;</div><div class="mut" id="d_r3">&nbsp;</div></div>
- <div class="card tile" id="d_wt"><div class="tl">Weeks left</div><div class="big" id="d_w">–</div><div class="mut" id="d_w2">&nbsp;</div><div class="mut" id="d_w3">&nbsp;</div></div>
+ <div class="card tile" id="d_wt"><div class="tl">Weeks left</div><div class="big" id="d_w">–</div><div class="mut" id="d_w1">&nbsp;</div><div class="mut" id="d_w2">&nbsp;</div><div class="mut" id="d_w3">&nbsp;</div></div>
  <div class="card tile"><div class="tl">Costing</div><div class="big" id="d_c">–</div><div class="mut" id="d_c2">&nbsp;</div><div class="mut" id="d_c3">&nbsp;</div></div>
 </div>
 <div class="card"><div class="row"><b>In the tank now</b><span class="mut" id="d_tank2" style="white-space:nowrap">&nbsp;</span></div><svg id="d_tank" class="tkv" onclick="tankFull()" viewBox="0 0 400 230" role="img" aria-label="Front view of the tank with the oil level the sensor reads"></svg><div id="d_dots" class="dots" hidden></div></div>
@@ -682,7 +682,7 @@ let DKEY='';
 /* send the forecast to the Pico (Home Assistant's order date): once per history refresh, never for an off tank */
 let FCS='';function fcSend(key,A,ok,reserve){if(!ok||!A.fc||!AN)return;const k=key+'|'+AN.t+'|'+reserve;if(k===FCS)return;FCS=k;fetch('/api/forecast',{method:'POST',body:JSON.stringify(fcBody(A,key,reserve))}).catch(()=>{})}
 /* the history download: one at a time (a slow one isn't started again by every 10 s refresh); one that failed is tried again after a minute, and the readings already shown stay meanwhile. ANK: the view (tank + settings) the newest render is for: an older render stops at its next await. ANW: the download asked for last, by number (an older answer arriving later is dropped, even for the same tank) */
-let ANP=null,ANF=null,ANK='',ANW=0,ANN=0;
+let ANP=null,ANF=null,ANK='',ANW=0,ANN=0;const NB='\u00a0';  /* a blank line that keeps its height (a plain space collapses) */
 async function anLoad(mac,ck,get){const k=mac+'|'+ck;if(AN&&(AN.mac!==mac||AN.ck!==ck))AN=null;
  if(ANF&&ANF.k===k&&Date.now()/1000-ANF.at<60)return;
  if(ANP&&ANP.k===k){ANW=ANP.id;return ANP.p}
@@ -701,7 +701,7 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
  if(S.primary==='all'&&act.length>1)return dashAll(act);const t=S.primary==='all'?act[0]:S.tanks.find(x=>x.mac===S.primary);
  $('d_name').textContent=t?t.name:S.tanks.length?'All tanks are off':'No tanks yet';
  $('navHist').href=t?'/history?mac='+okMac(t.mac):'/history';
- if(!t){['d_l','d_r','d_w','d_c'].forEach(i=>$(i).textContent='–');$('d_c2').textContent=$('d_c3').textContent=' ';$('d_l2').textContent=S.tanks.length?'Set a tank to In use: Tanks → Edit.':'Add a tank under Config → Sensors nearby.';$('d_r2').textContent=$('d_r3').textContent=$('d_w2').textContent=' ';DKEY='';drawTank(null);drawRate(null);drawLvl(null);return}
+ if(!t){ANK='none';  /* (an older render still loading stops: it would fill in a forecast for no tank) */['d_l','d_r','d_w','d_c'].forEach(i=>$(i).textContent='–');$('d_c2').textContent=$('d_c3').textContent=' ';$('d_l2').textContent=S.tanks.length?'Set a tank to In use: Tanks → Edit.':'Add a tank under Config → Sensors nearby.';$('d_r2').textContent=$('d_r3').textContent=$('d_w1').textContent=$('d_w2').textContent=$('d_w3').textContent=NB;DKEY='';drawTank(null);drawRate(null);drawLvl(null);return}
  const ck=JSON.stringify(t.cfg),fresh=AN&&AN.mac===t.mac&&AN.ck===ck&&Date.now()/1000-AN.t<600,vk=t.mac+'|'+ck;ANK=vk;if(fresh)ANW=0;
  const cv0=AN&&AN.mac===t.mac&&AN.ck===ck?AN.cv:null;  /* the curve only changes with the settings: keep it */
  if(!fresh)await anLoad(t.mac,ck,()=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),cv0||fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])
@@ -726,10 +726,12 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
  if(fo&&!off){const c=A.fc,wk=x=>(x-now)/(7*DAY);
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
   const sp=modeOf(t.cfg)==='use'?S.tanks.filter(x=>x.mac!==t.mac&&modeOf(x.cfg)==='standby'&&x.litres!=null&&x.litres>(x.cfg.reserve_l??200)).sort((a,b)=>b.litres-a.litres)[0]:null;  /* a standby tank with oil: switch to it rather than order */
-  $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?(sp?'Switch to '+sp.name+' now':'Order now')+' (at '+reserve+' L)':(sp?'Switch to '+sp.name+' around ':'Order around ')+fmtD(c.ord)+' (at '+reserve+' L)';
-  $('d_w3').textContent=c.ord!=null&&c.ord>now+DAY&&likeText(A,fmtD)||' ';
+  /* three lines, always: what to do, when, and "if it stays this cold" */
+  $('d_w1').textContent=c.ord==null?NB:c.ord<=now+DAY?(sp?'Switch to '+sp.name+' now':'Order now'):(sp?'Switch to '+sp.name+' around:':'Order around:');
+  $('d_w2').textContent=c.ord==null?NB:c.ord<=now+DAY?'(at '+reserve+' L)':fmtD(c.ord)+' (at '+reserve+' L)';
+  $('d_w3').textContent=c.ord!=null&&c.ord>now+DAY&&likeText(A,fmtD)||NB;
   if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
- else{$('d_w').textContent='–';$('d_w2').textContent=off?'Off: no forecast or warnings':' ';$('d_w3').textContent=' '}
+ else{$('d_w').textContent='–';$('d_w1').textContent=off?'Off: no forecast or warnings':NB;$('d_w2').textContent=$('d_w3').textContent=NB}
  drawTank(t);
  const key=t.mac+'|'+ck+'|'+(AN&&AN.t)+'|'+(WV&&WV.heat?WXC.key+WXC.at:'-')+'|'+t.level+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;  // redraw only when something changed (keeps a hover open)
  if(!fo||off)A.fc=null;  /* no forecast line until the tiles have one too (and never for an off tank) */
@@ -769,10 +771,11 @@ async function dashAll(ts){$('d_name').textContent=ts.length>2?'All tanks':'Both
  const wt=$('d_wt');wt.className='card tile';
  if(fo){const c=A.fc,wk=x=>(x-now)/(7*DAY);
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
-  $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?'Order now (at '+reserve+' L in all)':'Order around '+fmtD(c.ord)+' (at '+reserve+' L in all)';
-  $('d_w3').textContent=c.ord!=null&&c.ord>now+DAY&&likeText(A,fmtD)||' ';
+  $('d_w1').textContent=c.ord==null?NB:c.ord<=now+DAY?'Order now':'Order around:';
+  $('d_w2').textContent=c.ord==null?NB:c.ord<=now+DAY?'(at '+reserve+' L in all)':fmtD(c.ord)+' (at '+reserve+' L in all)';
+  $('d_w3').textContent=c.ord!=null&&c.ord>now+DAY&&likeText(A,fmtD)||NB;
   if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
- else{$('d_w').textContent='–';$('d_w2').textContent=' ';$('d_w3').textContent=' '}
+ else{$('d_w').textContent='–';$('d_w1').textContent=$('d_w2').textContent=$('d_w3').textContent=NB}
  drawTanks(ts);
  const key='all|'+ck+'|'+(AN&&AN.t)+'|'+(WV&&WV.heat?WXC.key+WXC.at:'-')+'|'+ts.map(t=>t.level).join(',')+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;
  if(!fo)A.fc=null;
