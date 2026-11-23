@@ -1,11 +1,11 @@
 {
- "version": "1.3.26",
- "ref": "v1.3.26",
- "notes": "Earlier readings: the litres or % typed are all the oil in the tank (as delivered, or as the Magnus app shows it): the part below the outlet is taken off. The same date and time typed again corrects a reading, shown old to new first.",
+ "version": "1.3.27",
+ "ref": "v1.3.27",
+ "notes": "One-off: the one reading ever typed into Earlier readings before v1.3.26 (a new tank's fill on 29 Oct, all the oil in it) is moved to where that much oil, less the part below the outlet, would read.",
  "files": {
   "app.py": [
-   "5e9d9b647e1be7963ac8c725d04912cf4f74e5700d9bbf5b059d61f80bdf7fdd",
-   158654
+   "5477680ff446cffe4032287b92e0e9e389d6ecd45d8dceaf24399b9859642801",
+   160971
   ],
   "battlog.py": [
    "ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de",
@@ -84,7 +84,7 @@
    13431
   ],
   "version.py": [
-   "8c3fccdafded01190eaea2b316ec9f53bd99cef8eb795e81addbc3836610ca88",
+   "d028e4b221b2948f3bcd8d1af5257f53bc42224deb2eff9e67bca9d7aaee57e9",
    19
   ],
   "weather.py": [
@@ -97,7 +97,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"5e9d9b647e1be7963ac8c725d04912cf4f74e5700d9bbf5b059d61f80bdf7fdd\", 158654], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"0de996c4dc4cf39d3e04614a2b4ff1212b5e455f707260fba8beb4c84555034c\", 34989], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"749181fc81d91d839e15d468801b21f1bf7fedaa1af590aa7f24fa192a1fffd3\", 65439], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"c59ac52b04c72687e5709c9be895430e9efbc16a7248db56e4a8d0258b1997af\", 10182], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"3c08c432b08a0c94a9b514f94fbd7b6a5b0f415adb2f47cdcc54f8ca88762422\", 130188], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"8c3fccdafded01190eaea2b316ec9f53bd99cef8eb795e81addbc3836610ca88\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Earlier readings: the litres or % typed are all the oil in the tank (as delivered, or as the Magnus app shows it): the part below the outlet is taken off. The same date and time typed again corrects a reading, shown old to new first.\", \"ref\": \"v1.3.26\", \"version\": \"1.3.26\"}",
-  "sig": "46a6798c2535a180e6e4e71c53ec176d45e3b2cbaf6f6ff999cf8ac50f42b2311066168924e9edbbd6e2687f08c69a28406bf9d07aff13927c2325e9294dc8c3d95458fbacb8f7f3cdc03b32233ea531d7b16d4d8967af50763014d50eeeedd8ab4f4f332af968dcd200ee7493408bd712bfdd1ae462b6997c32ad6bbc34f27dd5b1136734ba018c74faa9a5922161397bbe33803ba59ea47e408c0e2e5deca4f6e33b2681e3809e2274e280599f5da3ea2ebe5e719479e7e4986d557ee9d9572c3bf5e936afd29fb3f0c37a13b4a907f4b44b9630227251d5dd8bfe7a8b66c99d5d2c7764ac1381573372a4edf350e9b728380b9cd1ce489c5e262da25f4d1b"
+  "body": "{\"files\": {\"app.py\": [\"5477680ff446cffe4032287b92e0e9e389d6ecd45d8dceaf24399b9859642801\", 160971], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"0de996c4dc4cf39d3e04614a2b4ff1212b5e455f707260fba8beb4c84555034c\", 34989], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"749181fc81d91d839e15d468801b21f1bf7fedaa1af590aa7f24fa192a1fffd3\", 65439], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"c59ac52b04c72687e5709c9be895430e9efbc16a7248db56e4a8d0258b1997af\", 10182], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"3c08c432b08a0c94a9b514f94fbd7b6a5b0f415adb2f47cdcc54f8ca88762422\", 130188], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"d028e4b221b2948f3bcd8d1af5257f53bc42224deb2eff9e67bca9d7aaee57e9\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"One-off: the one reading ever typed into Earlier readings before v1.3.26 (a new tank's fill on 29 Oct, all the oil in it) is moved to where that much oil, less the part below the outlet, would read.\", \"ref\": \"v1.3.27\", \"version\": \"1.3.27\"}",
+  "sig": "118c834661d5a2faad975bdea2871db6aeed5f55e26bcbfa7f150e95ab2b2d017db99a71ae86828b0f6c59a17f11b0cd28b582e988da9d0dba24946af1aa1468075a7621e2b9fd232f900097382bfb0fedb712423fed1d9a3d646c6f01a70fdd18c21e0c33da0ec4f7f0001880acb62829526a52ea6b0dca7aeda620534d00dbc5b8da2d1f3e847d995f97526e550833c0c3da9c4fd4d84882dedf391010f13a9147866070109fac6255c794ce0312505823a8a81c81a1b99155331a79c74643222eaaa9c89923b0da899ca7bb1199088c2a9b6d0f698c457cbac788f7d8b309da7984bcab3dbeb5627d01530a80fa5ab712d10f65066271120eb900b956a4fe"
  }
 }

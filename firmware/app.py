@@ -981,6 +981,59 @@ def hist_name(mac):
     return 'h_' + mac.replace(':', '')[-6:] + '.bin'
 
 
+# One-off (v1.3.27): before v1.3.26 Earlier readings took litres typed in as usable oil. The only reading ever typed in
+# was a new tank's fill (all the oil in it) for 2026-10-29 08:00 UTC, stored as 582 mm: put it where that much oil
+# in all, less the part below the outlet, would read. Matches nothing else (the exact second and distance), runs once.
+FIX_T, FIX_MM = 1793260800, 582
+
+
+def fix_typed_fill():
+    if cfg.get('fix1029'):
+        return
+    retry = False
+    for mac, t in cfg['tanks'].items():
+        hit = False
+        try:
+            name = hist_name(mac)
+            with open(name, 'rb') as f:  # sorted by time: find it by halves
+                lo, hi = 0, os.stat(name)[6] // 6
+                while lo < hi:
+                    md = (lo + hi) // 2
+                    f.seek(md * 6)
+                    if struct.unpack('<I', f.read(4))[0] < FIX_T:
+                        lo = md + 1
+                    else:
+                        hi = md
+                f.seek(lo * 6)
+                r = f.read(6)
+            if len(r) < 6 or struct.unpack('<IH', r) != (FIX_T, FIX_MM):
+                continue
+            hit = True
+            un = unusable(t)
+            if not un:  # (the part below the outlet not known yet: again once it is)
+                retry = True
+                continue
+            H = int(float(t['height_cm']) * 10)
+            ls = litres_many(t, range(H + 1))
+            want = ls[FIX_MM] - un[0]
+            mm = H if want <= 0 else min(range(H + 1), key=lambda i: abs((ls[i] or 0) - want))  # (none left: the outlet)
+            with open('fix.up', 'wb') as o:
+                o.write(struct.pack('<IH', FIX_T, mm))
+            merge_hist(name, 'fix.up', True)
+            last_saved.pop(mac, None)
+            print('fix 29 Oct', mac, FIX_MM, '->', mm)
+        except Exception as ex:
+            print('fix 29 Oct', mac, repr(ex))
+            # found but not rewritten (no room for the copy, say), or the file there but unreadable: again next start
+            retry = retry or hit or not (isinstance(ex, OSError) and ex.args and ex.args[0] == 2)
+        finally:
+            rm('fix.up')
+    if retry:
+        return
+    cfg['fix1029'] = True
+    save_cfg(cfg)
+
+
 async def compact_all(now):
     for mac in list(cfg['tanks']):  # ~2 s per 2-year file; let BLE/HTTP run in between
         try:
@@ -3436,6 +3489,10 @@ async def boot_install(w):
 
 async def main():
     load_forecasts()
+    try:
+        fix_typed_fill()
+    except Exception as ex:
+        print('fix', repr(ex))
     want = take_note('upd.want')
     tasks = ((recorder, 'recorder'), (scan_scheduler, 'scan'), (alerts, 'alerts'),
                      (weather_task, 'weather'), (price_task, 'price'), (mqtt_task, 'mqtt'),
