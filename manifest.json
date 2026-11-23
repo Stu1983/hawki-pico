@@ -1,7 +1,7 @@
 {
- "version": "1.3.28",
- "ref": "v1.3.28",
- "notes": "Usage by month: days without readings (a gap, or before the first reading in a month) are filled in and drawn lighter, so a Pico set up mid-month shows the whole month, not just the days it saw. The forecast is unchanged.",
+ "version": "1.3.29",
+ "ref": "v1.3.29",
+ "notes": "False readings left out everywhere: a lone 'nearly empty' code between two readings that agree (the oil came straight back) no longer shows as a 0 on the charts, in Today's readings, the CSV export, the forecast or Usage by month.",
  "files": {
   "app.py": [
    "5477680ff446cffe4032287b92e0e9e389d6ecd45d8dceaf24399b9859642801",
@@ -20,8 +20,8 @@
    3546
   ],
   "common.js.html": [
-   "c39a9abd20d1afc6b62a0389e02e7181988a9c20782510f5fd45013ff5b3144d",
-   35758
+   "01f88e5e80f0c2818a1f496649bf0af33369e88a9a22ee75da999d301757e379",
+   36361
   ],
   "drops.py": [
    "7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062",
@@ -32,8 +32,8 @@
    2612
   ],
   "hist.html": [
-   "ed3242de28263548eb59186720c9533d9998043c578a0f4ccb8a542b2e3cd30f",
-   66919
+   "d8946f71364761fed3ecbce9bb35d2831dd0ab6edfb66bc764e459fdfa305750",
+   66929
   ],
   "histstore.py": [
    "bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80",
@@ -72,8 +72,8 @@
    14435
   ],
   "ui.html": [
-   "3c08c432b08a0c94a9b514f94fbd7b6a5b0f415adb2f47cdcc54f8ca88762422",
-   130188
+   "2ffdd590d743e98e0863e65fe3f6580816f0af48b048ee14b48ad83b4deb1cb7",
+   130265
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -84,7 +84,7 @@
    13431
   ],
   "version.py": [
-   "88a8c69943128566d0788669bf8923e3fcdd70301ee4766a88ca448155af35a5",
+   "965ac70d320192cd9839f0e4ee229ea54b023df5332dcf68779ff2b476ae0846",
    19
   ],
   "weather.py": [
@@ -97,7 +97,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"5477680ff446cffe4032287b92e0e9e389d6ecd45d8dceaf24399b9859642801\", 160971], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"c39a9abd20d1afc6b62a0389e02e7181988a9c20782510f5fd45013ff5b3144d\", 35758], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"ed3242de28263548eb59186720c9533d9998043c578a0f4ccb8a542b2e3cd30f\", 66919], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"c59ac52b04c72687e5709c9be895430e9efbc16a7248db56e4a8d0258b1997af\", 10182], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"3c08c432b08a0c94a9b514f94fbd7b6a5b0f415adb2f47cdcc54f8ca88762422\", 130188], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"88a8c69943128566d0788669bf8923e3fcdd70301ee4766a88ca448155af35a5\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Usage by month: days without readings (a gap, or before the first reading in a month) are filled in and drawn lighter, so a Pico set up mid-month shows the whole month, not just the days it saw. The forecast is unchanged.\", \"ref\": \"v1.3.28\", \"version\": \"1.3.28\"}",
-  "sig": "4bd2dedc8952c2c88f4a6459fe87c91180fc0dd6206db0559581da5836f17e6e4a5fc549b9553af11b883b5faf566e465209fcdd82b1d8b308deaa0943681794f2ddab7153d0f3194b025bc9db8bfd3fef413f4294542aa5720276a7f4ac0e5cfb3a281cf5e154c83a5029326b82c0b982cc93d454bc49435dd17901713b0e59c774b1d18108c9b5b090b0ba9ea44c2fba94db5aa241ab2cc921d4b143d38586de9d80d6b5e87c1aa85520fe8f08a74da8f566c6554200275f44ec9ed8176ab03e67c61618727957d629ccbe464a6c8c41b4cec23b500717f8d67c691cabadf285aa2f972147fdc1aacf37d9f67421e798c7440331ac5917a05b6839cb408151"
+  "body": "{\"files\": {\"app.py\": [\"5477680ff446cffe4032287b92e0e9e389d6ecd45d8dceaf24399b9859642801\", 160971], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"01f88e5e80f0c2818a1f496649bf0af33369e88a9a22ee75da999d301757e379\", 36361], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"d8946f71364761fed3ecbce9bb35d2831dd0ab6edfb66bc764e459fdfa305750\", 66929], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"c59ac52b04c72687e5709c9be895430e9efbc16a7248db56e4a8d0258b1997af\", 10182], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"2ffdd590d743e98e0863e65fe3f6580816f0af48b048ee14b48ad83b4deb1cb7\", 130265], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"965ac70d320192cd9839f0e4ee229ea54b023df5332dcf68779ff2b476ae0846\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"False readings left out everywhere: a lone 'nearly empty' code between two readings that agree (the oil came straight back) no longer shows as a 0 on the charts, in Today's readings, the CSV export, the forecast or Usage by month.\", \"ref\": \"v1.3.29\", \"version\": \"1.3.29\"}",
+  "sig": "52f3128ca207933a233a028d6384b162bcfdea78067011106fdbdb994efd7fd79c1b34a82b7ec0e3c95155d7aa9355f0dbe9df95d15f4e2753b352d5fee189a2d9c7a49019efab75140b2a8d5a5922ba261527e352f46617a2a986e1777cfa9b450185bb32dc1373aca026790cca43ad0c378a4ee941f520367c2bf9662d77a9f5c0d811e333816f1265bfa358e18310f5ad3df0cb13e296f40b8e1cfe825ef43d5719387c1e6c20ccaf5322da31ebbd3f4cffc36d2df5caacbe5b24585baf2d95a50c642f9104dd68cf3ad89d6cf41eb31751678b3733bcc4fc91294f72c5b0cee1cb2496a0a36f2f8335e45978c94a10634841b7ac72e2f3e15756ea9265b0"
  }
 }

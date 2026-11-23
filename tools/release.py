@@ -107,6 +107,7 @@ def main():
     subprocess.run(['node', os.path.join(ROOT, 'tests', 'tests_forecast.js')], check=True)  # no npm packages needed
     subprocess.run(['node', os.path.join(ROOT, 'tests', 'test_pages_parse.js')], check=True)  # every page script parses
     subprocess.run(['node', os.path.join(ROOT, 'tests', 'tests_widget.js')], check=True)  # the phone widget (no packages needed)
+    subprocess.run(['node', os.path.join(ROOT, 'tests', 'tests_false_readings.js')], check=True)  # false readings left out (no packages needed)
     vp, mp = os.path.join(FW, 'version.py'), os.path.join(ROOT, 'manifest.json')
     was = open(vp).read() if os.path.exists(vp) else None
     try:

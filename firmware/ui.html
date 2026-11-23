@@ -323,7 +323,7 @@ function rdToggle(el){const m=el.dataset.mac;if(el.open){RDO.add(m);rdLoad(m)}el
 async function rdLoad(m){const t=S.tanks.find(x=>x.mac===m);if(!t)return;const m0=new Date();m0.setHours(0,0,0,0);const since=Math.floor(m0.getTime()/1000);
  const key=since+'|'+(t.listen&&t.listen.read_at)+'|'+JSON.stringify(t.cfg);if(RD[m]&&RD[m].key===key&&Date.now()-RD[m].at<60000)return;  /* (and at least once a minute: a reading is saved a few seconds after it arrives) */
  try{const ck=JSON.stringify(t.cfg);if(!RDCV[m]||RDCV[m].ck!==ck)RDCV[m]={ck,cv:await (await fetch('/api/curve?mac='+okMac(m))).json()};const cv=RDCV[m].cv;
-  const rows=parse(await (await fetch('/api/hist?mac='+okMac(m)+'&since='+since)).arrayBuffer()).filter(r=>r[0]>=since);
+  const rows=parse(await (await fetch('/api/hist?mac='+okMac(m)+'&since='+(since-6*3600))).arrayBuffer(),cv.h).filter(r=>r[0]>=since);  /* (from 6 hours before midnight: a false reading just after it is judged by the one before) */
   const hm=s=>new Date(s*1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),nx=t.listen&&t.listen.next;
   let h='',miss=0;if(rows.length){h='<table class="rdt"><tr><th>Time</th><th>Distance</th><th>Litres</th><th>Change</th></tr>';let prev=null;
    let pt=null;for(const[ts,mm]of rows){if(pt!=null)for(let g=pt+3600;ts-g>1200;g+=3600){h+='<tr class="mut"><td>'+hm(g)+'</td><td colspan="3" style="text-align:left">missed: not heard this hour</td></tr>';miss++}  /* a gap of an hour or more */
@@ -522,7 +522,7 @@ async function exportBackup(){try{bst('Preparing backup…');const s=await api('
 async function exportCsv(){try{bst('Preparing CSV…');const s=await api('/api/state'),q=v=>'"'+String(v).replace(/"/g,'""')+'"',rows=['tank,sensor,time,distance_mm,litres,percent'];
  for(const t of s.tanks){const cv=await api('/api/curve?mac='+t.mac),v=new DataView(await getBin(t.mac)),cap=+t.cfg.capacity_l;
   const toL=mm=>{if(mm===16382||mm>=cv.h)return 0;const i=mm/cv.step,a=Math.floor(i),l=cv.l;return a>=l.length-1?l[l.length-1]:l[a]+(l[a+1]-l[a])*(i-a)};
-  const recs=[];for(let i=0;i+6<=v.byteLength;i+=6)recs.push([v.getUint32(i,true),v.getUint16(i+4,true)]);recs.sort((a,b)=>a[0]-b[0]);
+  const recs=parse(v.buffer,cv.h);  /* (the false readings left out, as on every chart) */
   for(const[ts,mm]of recs){const L=toL(mm),d=new Date(ts*1000);rows.push([q(t.name),t.mac,d.toISOString(),mm===16382?'':mm,L.toFixed(1),(100*L/cap).toFixed(1)].join(','))}}
  download('oil-tanks-readings-'+day()+'.csv',rows.join('\n')+'\n','text/csv');bst('CSV saved: '+(rows.length-1)+' readings. Times are UTC.')}catch(e){bst('Export failed: '+e.message)}}
 /* the monitor's battery in volts (the advert's figure is a % of its 2.00-3.20 V range, a straight line on the voltage,
@@ -708,7 +708,7 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
  const ck=JSON.stringify(t.cfg),fresh=AN&&AN.mac===t.mac&&AN.ck===ck&&Date.now()/1000-AN.t<600,vk=t.mac+'|'+ck;ANK=vk;if(fresh)ANW=0;
  const cv0=AN&&AN.mac===t.mac&&AN.ck===ck?AN.cv:null;  /* the curve only changes with the settings: keep it */
  if(!fresh)await anLoad(t.mac,ck,()=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),cv0||fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])
-   .then(([buf,cv])=>({mac:t.mac,ck,t:Date.now()/1000,cv,base:parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)])})));
+   .then(([buf,cv])=>({mac:t.mac,ck,t:Date.now()/1000,cv,base:parse(buf,cv.h).map(([ts,mm])=>[ts,toL(mm,cv)])})));
  if(ANK!==vk)return;const HF=anFailed(t.mac,ck);  /* (another tank or setting asked for meanwhile: its render draws) */
  const now=Date.now()/1000;let P=AN?AN.base.slice():[];
  if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383&&AN){const lt=now-t.age;if(!P.length||lt>P[P.length-1][0])P.push([lt,toL(t.level,AN.cv)])}  /* (only if newer than the last saved one) */
@@ -759,7 +759,7 @@ async function dashAll(ts){$('d_name').textContent=ts.length>2?'All tanks':'Both
  const ck=JSON.stringify(ts.map(t=>[t.mac,t.cfg])),fresh=AN&&AN.mac==='all'&&AN.ck===ck&&Date.now()/1000-AN.t<600,vk='all|'+ck;ANK=vk;if(fresh)ANW=0;
  const cvs0=AN&&AN.mac==='all'&&AN.ck===ck?AN.cvs:null;
  if(!fresh)await anLoad('all',ck,()=>Promise.all(ts.map((t,k)=>Promise.all([fetch('/api/hist?mac='+okMac(t.mac)).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer()}),cvs0&&cvs0[k]||fetch('/api/curve?mac='+okMac(t.mac)).then(r=>r.json())])))
-   .then(got=>({mac:'all',ck,t:Date.now()/1000,cvs:got.map(g=>g[1]),bases:got.map(([buf,cv])=>parse(buf).map(([ts,mm])=>[ts,toL(mm,cv)]))})));
+   .then(got=>({mac:'all',ck,t:Date.now()/1000,cvs:got.map(g=>g[1]),bases:got.map(([buf,cv])=>parse(buf,cv.h).map(([ts,mm])=>[ts,toL(mm,cv)]))})));
  if(ANK!==vk)return;const HF=anFailed('all',ck);
  const now=Date.now()/1000,series=AN?AN.bases.map((b,k)=>{const s=b.slice(),t=ts[k];if(t.level!=null&&t.age!=null&&t.age<1800&&t.level!==16383)s.push([now-t.age,toL(t.level,AN.cvs[k])]);return s}):[];
  const P=AN?combine(series,ts.map(t=>t.cfg.isolated)):[],reserve=Math.max(...ts.map(t=>t.cfg.reserve_l??200)),WV=await wxLoad(S);if(ANK!==vk)return;const A=anCached(vk,P,{now,reserve,heat:WV&&WV.heat,wxName:WV&&WV.name,yearL:yearFor(S,ts.map(t=>t.mac))},WV);

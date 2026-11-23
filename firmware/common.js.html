@@ -11,8 +11,10 @@ const HW_SHARE=0.15;      // before a summer of your own data: share of a year's
 const MAINS=0.25;         // hot water takes up to 25 % more oil in winter (mains water ~6 °C instead of ~15 °C)
 const REFILL_L=30;        // a rise this big is a delivery, not sensor noise or warm oil
 
-function parse(buf){const v=new DataView(buf),o=[];for(let i=0;i+6<=buf.byteLength;i+=6)o.push([v.getUint32(i,true),v.getUint16(i+4,true)]);
- o.sort((a,b)=>a[0]-b[0]);return o.filter((p,i)=>!i||p[0]!==o[i-1][0])}
+function parse(buf,h){const v=new DataView(buf),o=[];for(let i=0;i+6<=buf.byteLength;i+=6)o.push([v.getUint32(i,true),v.getUint16(i+4,true)]);
+ o.sort((a,b)=>a[0]-b[0]);const u=o.filter((p,i)=>!i||p[0]!==o[i-1][0]);
+ /* a false reading: a lone 'nearly empty' code (16382) between two ordinary readings that agree (the one before within 3 hours, as the Pico itself judges it; the one after within 6) (3 cm): the oil came straight back, so it was never empty; only that code, so a real change is never touched; and, as the Pico itself does, never with 15 cm or less of oil either side (h: the curve's height, mm) */
+ return u.filter((r,i)=>{const p=u[i-1],n=u[i+1];return !(r[1]===16382&&p&&n&&p[1]<16000&&n[1]<16000&&!(h&&(h-p[1]<=150||h-n[1]<=150))&&r[0]-p[0]<=3*3600&&n[0]-r[0]<=6*3600&&Math.abs(p[1]-n[1])<=30)})}
 /* readings typed or pasted in (from the Magnus app's history, say): one a line, a date, a time if known, and the level
    in litres or %, e.g. "2026-11-12 08:00 850 L", "12/11/2026 8:00pm 64%", "12 Nov 2026 850L". Times are this
    browser's own. -> {rows:[[epoch,value,'L'|'%']] oldest first, bad:[line numbers]} */
