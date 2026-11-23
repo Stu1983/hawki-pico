@@ -17,7 +17,7 @@
 #   GET  /api/hist?mac=       that tank's hourly history: 6-byte records <uint32 epoch, uint16 mm>
 #   GET  /api/curve?mac=      litres at every 10 mm of distance (the page maps history with it,
 #                             so a changed tank shape re-draws the whole history)
-#   POST /api/hist?mac=       merge uploaded history records into the tank's file (restore)
+#   POST /api/hist?mac=       merge uploaded history records into the tank's file (restore; &replace=1: same times replaced)
 #   GET  /api/deliveries      {mac: [{t, litres, supplier, total, ppl, note}]}  (deliv.json)
 #   POST /api/delivery        add/edit {mac, t, old_t?, litres?, supplier?, total?, ppl?, note?}
 #                             or {mac, old_t, delete: true}
@@ -2298,8 +2298,9 @@ def restore(b):
     return len(tanks)
 
 
-def merge_hist(name, tmp):
-    # both files are sorted by time: two-pointer merge, low memory; existing records win on ties
+def merge_hist(name, tmp, replace=False):
+    # both files are sorted by time: two-pointer merge, low memory; existing records win on ties, unless replace
+    # (Earlier readings: the same time typed again corrects a reading typed in before)
     def nxt(f):
         if f is None:
             return None
@@ -2315,6 +2316,9 @@ def merge_hist(name, tmp):
         with open(tmp, 'rb') as b, open(name + '.new', 'wb') as o:
             ra, rb = nxt(a), nxt(b)
             while ra or rb:
+                if replace and ra is not None and rb is not None and ra[0] == rb[0]:
+                    ra = nxt(a)  # the upload's reading takes this one's place
+                    continue
                 if rb is None or (ra is not None and ra[0] <= rb[0]):
                     r, ra = ra, nxt(a)
                 else:
@@ -2518,7 +2522,7 @@ async def handle(r, w):
                     return await send(w, 400, '"short upload"')
                 wd_hold[0] += 1
                 try:
-                    n = merge_hist(hist_name(mac), 'hist.up')
+                    n = merge_hist(hist_name(mac), 'hist.up', q.get('replace') == '1')
                 finally:
                     wd_hold[0] -= 1
                 last_saved.pop(mac, None)  # the file changed: read its newest reading again
