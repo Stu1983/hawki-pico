@@ -50,6 +50,7 @@ import netcfg
 import unset
 import mqtt
 import drops
+import share
 
 # HAWKi service UUID 00001923-1322-ffdd-3533-886fdadce133, as it appears in the advert (LE)
 HAWKI_UUID = bytes(reversed(binascii.unhexlify('000019231322ffdd3533886fdadce133')))
@@ -1317,7 +1318,7 @@ def rm(name):
 
 MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
             '/api/update/install', '/api/restart', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location', '/api/price', '/api/year', '/api/net', '/api/mqtt',
-            '/api/wifi/try', '/api/setup/done')
+            '/api/wifi/try', '/api/setup/done', '/api/share')
 
 
 # ---------- views ----------
@@ -2150,7 +2151,7 @@ def state(peer=''):
             'pin_set': bool(cfg.get('pin')), 'maint': bool(cfg.get('maint')),
             'primary': cfg.get('primary') if cfg.get('primary') in cfg['tanks'] or cfg.get('primary') == 'all' and len(tanks) > 1
                        else (tanks[0]['mac'] if tanks else None),
-            'hostname': HOSTNAME, 'net': net_view(), 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'price': price_view(), 'year_l': cfg.get('year_l'), 'mqtt': mqtt_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac')),
+            'hostname': HOSTNAME, 'net': net_view(), 'scan': scan_mode[0], 'notify': notify_view(), 'wx': wx_view(), 'price': price_view(), 'year_l': cfg.get('year_l'), 'mqtt': mqtt_view(), 'share': share_view(), 'mac': ':'.join('%02x' % c for c in wlan.config('mac')),
             'via_ap': on_ap(peer), 'wifi_saved': cfg.get('ssid') or None, 'join': join_view()}
 
 
@@ -2737,6 +2738,11 @@ async def handle(r, w):
                 return await send(w, 200, json.dumps(price_view()))
             except Exception as ex:
                 return await send(w, 400, json.dumps(str(ex)))
+        if path == '/api/share' and method == 'POST':
+            try:
+                return await send(w, 200, json.dumps(set_share(json.loads(body or '{}'))))
+            except Exception as ex:
+                return await send(w, 400, json.dumps(str(ex)))
         if path == '/api/mqtt' and method == 'POST':
             try:
                 set_mqtt(json.loads(body or '{}'))
@@ -3153,6 +3159,131 @@ async def weather_task():
 
 
 # ---------- oil prices (cheapestoil.co.uk, Northern Ireland) ----------
+# ---------- share for support (share.py) ----------
+# cfg['share'] = {'on', 'id', 'key', 'at' (last upload)}; cfg['share_del'] = [{'id', 'key'}]: uploads still to delete
+# (sharing switched off). A new ID each time it's switched on.
+share_state = {'err': None, 'size': None, 'want': False, 'next': 0, 'gap': 1800, 'busy': False}
+
+
+def share_view():
+    sh = cfg.get('share') or {}
+    return {'on': bool(sh.get('on')), 'id': sh.get('id') if sh.get('on') else None, 'at': sh.get('at') or None,
+            'err': share_state['err'], 'busy': share_state['busy'] or share_state['want'], 'host': share.HOST or None}
+
+
+def set_share(b):
+    sh = cfg.get('share') or {}
+    if b.get('on') is True and not sh.get('on'):
+        cfg['share'] = {'on': True, 'id': share.new_id(), 'key': share.new_key(), 'at': 0}
+        share_state['want'] = True
+    elif b.get('on') is False and sh.get('on'):
+        cfg['share_del'] = share_dels() + [{'id': sh['id'], 'key': sh['key']}]  # (deleted from the server in the background)
+        cfg['share'] = {'on': False}
+        share_state['want'] = False
+    elif b.get('now') and sh.get('on'):
+        share_state['want'] = True
+    else:
+        return share_view()
+    share_state['err'] = None
+    share_state['next'] = 0
+    share_state['gap'] = 1800
+    save_cfg(cfg)
+    return share_view()
+
+
+def share_dels():
+    d = cfg.get('share_del')
+    return [d] if isinstance(d, dict) else list(d or [])
+
+
+def share_due(sh, now):
+    # once a UTC day, at this Pico's own time of day (from its key: Picos spread over the day, never two in one day)
+    try:
+        slot = int(sh['key'][:8], 16) % 86400
+    except (KeyError, TypeError, ValueError):
+        slot = 0
+    at = sh.get('at') or 0
+    return int(now // 86400) > int(at // 86400) and now % 86400 >= slot or now - at >= 2 * 86400
+
+
+def share_files():
+    return {'deliv': 'deliv.json', 'hist': {m: hist_name(m) for m in cfg['tanks']},
+            'wx': weather.FILE, 'wxf': weather.FFILE, 'prices': price.FILE}
+
+
+def share_size_guess():
+    n = 0
+    f = share_files()
+    for p in [f['deliv'], f['wx'], f['wxf'], f['prices']] + list(f['hist'].values()):
+        try:
+            n += os.stat(p)[6]
+        except OSError:
+            pass
+    return n * 4 // 3 + 40000  # (base 64, plus the settings, curves and state)
+
+
+def share_build(now):
+    curves, bl = {}, {}
+    for m, t in cfg['tanks'].items():
+        try:
+            curves[m] = curve(t)
+        except Exception:
+            pass
+        try:
+            bl[m] = [[d, round(2 + 1.2 * b / 100, 2), c] for d, b, c in battlog.read(m)]
+        except Exception:
+            bl[m] = []
+    return share.build(cfg, state(), share_files(), curves, bl, VERSION, now)
+
+
+async def share_step():
+    host, now = share.HOST, time.time()
+    if not host or now < 1.7e9 or not wlan.isconnected() or mono_s() < share_state['next'] or installing[0]:
+        return
+    dels = share_dels()
+    d = dels[0] if dels else None
+    sh = cfg.get('share') or {}
+    if not d and not (sh.get('on') and (share_state['want'] or share_due(sh, now))):
+        return
+    await web_quiet()
+    share_state['busy'] = True
+    wd_hold[0] += 1
+    try:
+        if d:
+            with_room(share.delete, host, d['id'], d['key'])
+            left = [x for x in share_dels() if x.get('id') != d['id']]
+            if left:
+                cfg['share_del'] = left
+            else:
+                cfg.pop('share_del', None)
+            save_cfg(cfg)
+        elif cfg.get('share') is sh and sh.get('on'):
+            if share_size_guess() + 60000 > free_bytes():
+                raise OSError('not enough room on the Pico to put the upload together')
+            share_state['size'] = share_build(now)
+            with_room(share.upload, host, sh['id'], sh['key'])
+            sh['at'] = int(now)
+            save_cfg(cfg)
+            share_state['want'] = False
+        share_state['err'] = None
+        share_state['gap'] = 1800
+    except Exception as ex:
+        share_state['err'] = str(ex) or repr(ex)
+        share_state['next'] = mono_s() + share_state['gap']  # (30 minutes, doubling to 8 hours)
+        share_state['gap'] = min(8 * 3600, share_state['gap'] * 2)
+    finally:
+        wd_hold[0] -= 1
+        share_state['busy'] = False
+        rm(share.FILE)
+
+
+async def share_task():
+    await asyncio.sleep(180)
+    while True:
+        await share_step()
+        await asyncio.sleep(60)
+
+
 price_state = {'day': None, 'tried': 0, 'err': None, 'now': None, 'pc': None}  # day last fetched; when last tried;
 # last error; the newest saved [day, cheapest, average]
 
@@ -3497,7 +3628,7 @@ async def main():
     tasks = ((recorder, 'recorder'), (scan_scheduler, 'scan'), (alerts, 'alerts'),
                      (weather_task, 'weather'), (price_task, 'price'), (mqtt_task, 'mqtt'),
                      (net_trial_guard, 'net trial'), (update_guard, 'update guard'), (bootsel_reset, 'bootsel'), (dns_task, 'setup dns'),
-                     (poke_task, 'measure now'))
+                     (poke_task, 'measure now'), (share_task, 'share'))
     asyncio.create_task(keep(wifi_keeper, 'wifi'))
     if want:
         try:

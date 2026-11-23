@@ -141,6 +141,13 @@ dialog::backdrop{background:#0008}
 <div class="card"><div class="mut">A backup holds every tank's settings, deliveries (supplier and price) and all saved readings. It doesn't include the Wi-Fi password. Importing one onto this or a new Pico replaces those tanks' settings and deliveries and merges the readings.</div>
 <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button onclick="exportBackup()">Export backup</button><button onclick="exportCsv()">Export readings (CSV)</button><button onclick="$('impf').click()">Import backup</button>
 <input type="file" id="impf" accept=".json,application/json" hidden onchange="importBackup(this.files[0])"></div><div class="mut" id="bkst" style="min-height:18px;margin-top:6px"></div></div>
+
+<h2>Share for support</h2>
+<div class="card"><div class="mut">Once a day, this Pico's readings, tank settings, deliveries and weather go to the share server under an ID you can give to someone helping you: they see these same pages, read only. Tank names and delivery notes go as you typed them. Never sent: the Wi-Fi name or password, the PIN, notification keys, network details or the place name. Where you are goes only as your postcode district (if set under Oil prices) and to within about 15 miles. Stopping deletes it from the server.</div>
+<div class="row" style="margin-top:10px;align-items:center;gap:10px;min-height:40px"><b id="shId" style="font:700 20px ui-monospace,monospace;letter-spacing:1px">–</b><button id="shCopy" onclick="shCopy()" style="visibility:hidden">Copy</button></div>
+<div class="mut" id="shSt" style="min-height:38px"></div>
+<div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button class="pri" id="shBtn" onclick="shToggle()">Start sharing</button><button id="shNow" onclick="shNow()">Send now</button></div>
+<div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap;align-items:center"><label for="shIn">Restore from an ID</label><input id="shIn" placeholder="HK-7QM2-XFD9" style="width:9em" autocapitalize="characters" spellcheck="false"><button id="shRes" onclick="shRestore()">Restore</button></div></div>
 </div>
 <div id="p_fc" hidden>
 <h2>Forecast</h2>
@@ -350,7 +357,7 @@ function render(){
  $('status').textContent=S.ap&&!S.ssid?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
  if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
   $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':u.why==='memory'?'Restarted by itself to free up memory.':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':l.stage==='install'?'The update to '+l.to+' could not be installed: '+l.reason:'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
- secRender();netRender();notifyRender();wxRender();yrRender();prRender();mqRender();navHist();if(!$('p_dash').hidden)dash();
+ secRender();netRender();notifyRender();wxRender();yrRender();prRender();shRender();mqRender();navHist();if(!$('p_dash').hidden)dash();
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
  $('tanks').innerHTML=(S.tanks.length>1?`<div class="card"><div class="row" style="min-height:34px"><div><b>Both tanks together</b><div class="mut">Oil, use and forecast for the tanks combined</div></div>${S.primary==='all'?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('all')">Show on dashboard</button>`}</div></div>`:'')+(S.tanks.length?S.tanks.map(t=>{/* the Tanks page shows ALL the oil in the tank (the dashboard shows the usable oil): usable + what's below the outlet */
   const tot=t.total,whole=+t.cfg.tank_l,pc=tot!=null&&whole?Math.round(tot/whole*1000)/10:t.percent,big=tot??t.litres,p=pc??0;  /* total: worked out on the Pico from the reading, floor to surface */const md=modeOf(t.cfg);return `<div class="card"><div class="row"><b>${esc(t.name)}${md==='use'||S.tanks.length<2?'':' <span class="mut">('+(md==='off'?'off':'standby')+')</span>'}</b><button onclick="edit('${okMac(t.mac)}')">Edit</button></div>
@@ -508,6 +515,17 @@ async function restartPico(){const b=$('rstBtn'),m=$('rstM');
  if(!back)m.textContent='It has not restarted yet: refresh this page in a minute.';
  b.disabled=false}
 
+// ---------- share for support ----------
+function shRender(){const h=S.share||{},on=!!h.on,id=on&&h.id;$('shId').textContent=id||'–';$('shCopy').style.visibility=id?'visible':'hidden';
+ $('shBtn').textContent=on?'Stop sharing':'Start sharing';$('shBtn').className=on?'':'pri';$('shBtn').disabled=!h.host;$('shNow').disabled=!on||!h.host||!!h.busy;$('shRes').disabled=!h.host;
+ $('shSt').textContent=!h.host?'The share server isn\'t ready yet: it comes in an update.':!on?'Not sharing.':h.busy?'Sending…':h.err?'Could not send: '+h.err+'. It tries again later.':h.at?'Last sent '+new Date(h.at*1000).toLocaleString([],{weekday:'short',hour:'2-digit',minute:'2-digit'})+'. Give the ID to whoever is helping: they open '+h.host+'/v/'+id:'Sending in a minute or two…'}
+async function shToggle(){const on=!(S.share&&S.share.on);if(!on&&!confirm('Stop sharing? What was sent is deleted from the share server and the ID stops working.'))return;try{await api('/api/share',{on});await load()}catch(x){alert(x.message)}}
+async function shNow(){try{await api('/api/share',{now:1});await load()}catch(x){alert(x.message)}}
+function shCopy(){const id=S.share&&S.share.id;if(id&&navigator.clipboard)navigator.clipboard.writeText(id).then(()=>{$('shCopy').textContent='Copied'},()=>{})}
+function shOkId(v){let s=String(v||'').toUpperCase().replace(/[^0-9A-Z]/g,'');if(s.startsWith('HK')&&s.length===10)s=s.slice(2);s=s.replace(/O/g,'0').replace(/[IL]/g,'1');return /^[0-9A-HJKMNP-TV-Z]{8}$/.test(s)?'HK-'+s.slice(0,4)+'-'+s.slice(4):null}
+async function shRestore(){const id=shOkId($('shIn').value),h=S.share||{};if(!id){alert('A share ID looks like HK-7QM2-XFD9.');return}
+ try{$('shRes').disabled=true;bst('Fetching '+id+'…');const r=await fetch('https://'+h.host+'/u/'+id);if(r.status===404)throw new Error('nothing is shared under '+id);if(!r.ok)throw new Error('the share server said '+r.status);
+  const o=await r.json();bst('');await importBackup(null,o)}catch(e){bst('');alert('Could not restore: '+e.message)}finally{$('shRes').disabled=!h.host}}
 // ---------- backup ----------
 const bst=t=>{$('bkst').textContent=t};
 const b64=buf=>{let s='';const u=new Uint8Array(buf);for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
@@ -549,8 +567,8 @@ async function pasteAdd(){const mac=okMac($('pTank').value),t=S.tanks.find(x=>x.
   const b=new DataView(new ArrayBuffer(out.length*6));out.forEach(([ts,mm],i)=>{b.setUint32(i*6,ts,true);b.setUint16(i*6+4,mm,true)});
   st('Adding…');const r=await authFetch('/api/hist?mac='+mac+(fix?'&replace=1':''),{method:'POST',body:b.buffer});if(!r.ok)throw new Error(await r.json().catch(()=>r.status));
   $('pTxt').value='';pastePrev();st('Added '+out.length+' readings to '+t.name+'.');anReset();load()}catch(e){st('Could not add them: '+e.message)}}
-async function importBackup(f){$('impf').value='';if(!f)return;let o;
- try{o=JSON.parse(await f.text())}catch(e){alert('That file isn\'t a backup (not valid JSON).');return}
+async function importBackup(f,o){$('impf').value='';if(!f&&!o)return;  /* (o: a backup already read, from a share ID) */
+ if(!o)try{o=JSON.parse(await f.text())}catch(e){alert('That file isn\'t a backup (not valid JSON).');return}
  if(!o||o.format!=='hawki-backup'||typeof o.tanks!=='object'){alert('That file isn\'t an Oil Tanks backup.');return}
  const lc=x=>{const r={};for(const k in x||{})r[k.toLowerCase()]=x[k];return r};o.tanks=lc(o.tanks);  /* (older backups may have upper-case MACs) */
  const macs=Object.keys(o.tanks).filter(m=>okMac(m)),hist=lc(o.history),dl=lc(o.deliveries);
