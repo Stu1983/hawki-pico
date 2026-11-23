@@ -113,7 +113,12 @@ function analyse(pts,o){
  out.gap={};  /* days only filled in across a gap in readings (more than 2 days): real enough for totals, not for comparing years */
  for(let k=1;k<mids.length;k++){const[t0,v0]=mids[k-1],[t1,v1]=mids[k],nd=Math.round((t1-t0)/DAY),per=(v0-v1)/nd;
   for(let d=0,t=t0;d<nd;d++,t=addDays(t,1)){out.days[t]=per;if(nd>2)out.gap[t]=1}}
- for(const t in out.days){const d=new Date(t*1000),k=d.getFullYear()+'-'+d.getMonth(),m=out.months[k]||(out.months[k]={y:d.getFullYear(),m:d.getMonth(),used:0,days:0});m.used+=out.days[t];m.days++}
+ /* the monthly totals only (never the forecast): days in a long gap with no midnight near a reading (one typed in weeks before the Pico's own, say), a straight line across it */
+ const across=t=>{let lo=0,hi=n-1;while(lo<hi){const m=(lo+hi)>>1;if(pts[m][0]<t)lo=m+1;else hi=m}return lo>0&&pts[lo][0]>t?sm[lo-1]+(sm[lo]-sm[lo-1])*(t-pts[lo-1][0])/(pts[lo][0]-pts[lo-1][0]):null};
+ const fill={};for(let t=midnight(pts[0][0]);t<pts[n-1][0];t=addDays(t,1)){const t1=addDays(t,1);if(out.days[t]!=null||t<pts[0][0]||t1>pts[n-1][0])continue;
+  const a=at(t)??across(t),b=at(t1)??across(t1);if(a!=null&&b!=null)fill[t]=(a-b)*DAY/(t1-t)}
+ out.fill=fill;
+ for(const t of Object.keys(out.days).concat(Object.keys(fill))){const d=new Date(t*1000),k=d.getFullYear()+'-'+d.getMonth(),m=out.months[k]||(out.months[k]={y:d.getFullYear(),m:d.getMonth(),used:0,days:0,gapL:0,gapD:0});const u=out.days[t]??fill[t];m.used+=u;m.days++;if(out.gap[t]||fill[t]!=null){m.gapL+=u;m.gapD++}}
  // recent rate: last 14 days (or what there is)
  const tEnd=pts[n-1][0];let tStart=Math.max(pts[0][0],tEnd-14*DAY);
  /* the window starts in a gap (one old reading pasted in, then the Pico's own from weeks later): from the first reading after it.
