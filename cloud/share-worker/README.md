@@ -16,4 +16,4 @@ npx wrangler deploy                        # prints the address, e.g. hawki-shar
 Then set `HOST` in `firmware/share.py` to that address and release.
 
 Free plan limits that matter: KV 1,000 writes a day (one per upload: ~1,000 Picos sharing), 100,000 reads a day,
-1 GB stored (~300 KB to 1 MB a Pico). Test: `node test.mjs` (no packages; `NODE_PATH` with jsdom for the page check).
+1 GB stored (~300 KB to 1 MB a Pico). Test: `node test.mjs [upload.json]` (no packages; `NODE_PATH` with jsdom for the page check).

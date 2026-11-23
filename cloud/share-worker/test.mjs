@@ -1,6 +1,6 @@
 // node test.mjs [upload.json]  - the share server against an in-memory KV; with NODE_PATH holding jsdom, also the
 // support view: the Pico's own pages (from firmware/, standing in for GitHub) drawn from the upload.
-import {handle, ID, GAP} from './src/index.js';
+import {handle, ID, GAP} from './src/share.js';
 import fs from 'fs';
 import path from 'path';
 import {createRequire} from 'module';
@@ -108,14 +108,14 @@ if (JSDOM && fs.existsSync(process.argv[2] || '')) {  // (the pages need a real 
   }
 }
 { const bad = JSON.parse(up); bad.area = {pc: '</script><script>alert(1)</script>'}; bad.fw = '1.3.0/../../../evil/x/main'; bad.at = T;
-  const {inject} = await import('./src/index.js');
+  const {inject} = await import('./src/share.js');
   const h = inject('<html><head></head><body></body></html>', SID, bad);
   ok(!/<\/script><script>alert/.test(h) && /\\u003c\/script>/.test(h) && !/evil/.test(h), 'an upload\'s text can never close the viewer\'s script; a bad version is never used');
   const seen = []; const f0 = globalThis.fetch; globalThis.fetch = async u => { seen.push(String(u)); return new Response('<html><head></head></html>'); };
   T += GAP + 1; await call('PUT', '/u/' + SID, JSON.stringify(bad), {'X-Key': K1}); T += 61;
   await view('/'); globalThis.fetch = f0;
   ok(seen.length && seen.every(u => u.startsWith('https://raw.githubusercontent.com/Stu1983/hawki-pico/main/firmware/')), 'pages only ever from this repo: ' + seen[0]); }
-{ const {api} = await import('./src/index.js');
+{ const {api} = await import('./src/share.js');
   const st = {tanks: [{mac: 'x', name: 'Stu\'s <b>tank</b>', level: '<svg onload="x()">', n: 5}]};
   const got = await api({state: st}, '/api/state', new URLSearchParams()).json();
   ok(JSON.stringify(got) === JSON.stringify({tanks: [{mac: 'x', name: 'Stus btank/b', level: 'svg onload=x()', n: 5}]}), 'what the pages are handed is plain text: ' + JSON.stringify(got.tanks[0])); }
