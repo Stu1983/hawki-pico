@@ -112,7 +112,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
  <select id="prUnit" aria-label="Show prices as" style="font:inherit;font-size:16px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:5px 8px" onchange="PRU=this.value;try{localStorage.hawkiPrUnit=PRU}catch(e){}drawPrices()"><option value="ppl">Price per litre</option><option value="500">500 L order</option><option value="900">900 L order</option></select></div>
  <div class="seg" id="prRng" style="margin-top:6px;min-height:34px"></div>
  <svg id="c7" viewBox="0 0 640 200" role="img" aria-label="Quoted oil prices over time, with the prices you paid"></svg>
- <div class="legend"><span><i class="l" style="border-color:var(--s1)"></i>Average quote</span><span><i style="background:var(--card);border:2px solid var(--s3);border-radius:50%;width:10px"></i>You paid</span></div>
+ <div class="legend"><span><i class="l" style="border-color:var(--s1)"></i>Average quote</span><span><b style="color:var(--s3);margin-right:6px" aria-hidden="true">✕</b>You paid</span></div>
  <div class="mut" id="prNote" style="min-height:18px"></div></div>
 <div class="card" style="margin-top:8px"><b>Spend by year</b> <span class="mut">(every tank, from the delivery details saved)</span><div style="overflow-x:auto"><table id="yrs" style="white-space:nowrap"><tr><td class="mut">Loading…</td></tr></table></div></div>
 
@@ -474,7 +474,10 @@ function drawPrices(){const c7=$('c7');c7.textContent='';$('prUnit').value=PRU;c
  line(2);  /* (the cheapest quote: in the tip only, Stu 2026-11-23: a second line that close was hard to tell apart) */
  const dk=t=>new Date(t*1000).toDateString(),QD={};for(const r of PR||[])QD[dk(r[0])]=r;  /* each day's quote, by the calendar day */
  for(const p of pts){const qn=QD[dk(p[0])];
-  const c=el('circle',{cx:x(p[0]),cy:y(U(p[1])),r:5,class:'fill',tabindex:0},c7),lines=[p[1].toFixed(1)+'p/L paid'+(per?' ('+fu(U(p[1]))+fl+')':''),fmtDY(p[0])+(qn?' · average quote that day '+qn[2].toFixed(1)+'p/L':'')];  /* (your price is the one agreed when you ordered, often days before the delivery: the circle can sit off the line) */
+  const cx=x(p[0]),cy=y(U(p[1])),c=el('g',{tabindex:0},c7),lines=[p[1].toFixed(1)+'p/L paid'+(per?' ('+fu(U(p[1]))+fl+')':''),fmtDY(p[0])+(qn?' · average quote that day '+qn[2].toFixed(1)+'p/L':'')];  /* (your price is the one agreed when you ordered, often days before the delivery: the mark can sit off the line) */
+  /* a cross: its centre is exactly the price and day (Stu 2026-11-23: a circle read as roughly there); a bigger see-through circle under it to tap */
+  el('circle',{cx,cy,r:8,fill:'transparent'},c);el('path',{d:'M'+(cx-5)+','+(cy-5)+'L'+(cx+5)+','+(cy+5)+'M'+(cx+5)+','+(cy-5)+'L'+(cx-5)+','+(cy+5),stroke:'var(--card)','stroke-width':5,'stroke-linecap':'round'},c);
+  el('path',{d:'M'+(cx-5)+','+(cy-5)+'L'+(cx+5)+','+(cy+5)+'M'+(cx+5)+','+(cy-5)+'L'+(cx-5)+','+(cy+5),stroke:'var(--s3)','stroke-width':2.5,'stroke-linecap':'round'},c);
   c.addEventListener('pointermove',e=>showTip(e,lines));c.addEventListener('pointerdown',e=>showTip(e,lines));c.addEventListener('pointerleave',hideTip)}
  /* hover anywhere on the quotes: that day's figures */
  if(q.length){const hit=el('rect',{x:ml,y:mt,width:pw,height:ph,fill:'transparent'},c7),near=e=>{const b=c7.getBoundingClientRect(),xx=(e.clientX-b.left)*W/b.width,t=t0+(xx-ml)/pw*(t1-t0);let best=q[0];for(const r of q)if(Math.abs(r[0]-t)<Math.abs(best[0]-t))best=r;return best};
