@@ -173,25 +173,43 @@ function analyse(pts,o){
  const yearL=o.yearL>0?+o.yearL:null;
  /* the figure's two parts. Hot water: your own summer baseline once it has been measured (heating off, so that
     month is hot water alone), more in winter as the mains runs colder (hwShape); until then HW_SHARE of the year.
-    Heating: the rest of the year's oil, spread by the usual weather. Both in the USUAL weather, for the comparison
-    and the forecast alike: against the weather that really happened the daily figures swing far more than the oil
-    does - a mild September with the heating on read 157%, a cold November 61%, where month against usual month
-    every one was 74-82% */
+    Heating: the rest of the year's oil, spread by the weather. Compared against the weather each day really had
+    (wx.bin, where the Pico has it), and forecast by the next 16 days' forecast, then the usual for the time of year:
+    so a cold spell reads as a cold spell, not as this house using more. (It was the usual weather for both until
+    v1.3.21; tested against Stu's readings over Oct-Nov 2026 it was 19% out over the next 14 days, this 12%.) */
  const hwOk=!!(yearL&&hw),hwCap=hwOk&&hw.b0*HW_MEAN*365>0.6*yearL;  /* (never more than 60% of the figure: a figure that small is not this house's, but the forecast must not jump as it is crossed) */
  const hwYear=yearL?(hwOk?Math.min(hw.b0*HW_MEAN*365,0.6*yearL):HW_SHARE*yearL):0;
- const synHw=t=>hwYear/365*hwShape(t)/HW_MEAN,synHeat=t=>(yearL-hwYear)/365*usualHeat(t);
- const syn=yearL?t=>synHw(t)+synHeat(t):null;let kS=null,nS=0;
+ /* the weather for the figure: each day as it was or is forecast where known, else the usual for the place; from the place's
+    weather (o.heat) throughout, even when a few recent days lack it (that only stops the 14-day model fit above) */
+ const wh=o.heat&&o.heat.has&&o.heat.usual?o.heat:null,uH=wh?wh.usual:usualHeat,wxDay=wh?t=>wh.has(t)?wh(t):wh.usual(t):uH;
+ const synHw=t=>hwYear/365*hwShape(t)/HW_MEAN,synHeatIn=hf=>t=>(yearL-hwYear)/365*hf(t),synHeat=synHeatIn(uH);
+ const syn=yearL?t=>synHw(t)+synHeat(t):null;let kS=null,nS=0,kU=1,kW=1,wW=0;
  /* compared only over days in the heating season (the usual weather calls for half an average day's heating or more): summer days say nothing about the winter, and a figure's few litres of June heating against none burnt once cut a winter forecast to 30% */
- if(syn){let a=0,bw=0,bh=0;for(const t in out.days){const tt=+t;if(tt<tEnd-365*DAY||tt>=tEnd||usualHeat(tt+DAY/2)<0.5||ownBy(tt,tt-300*DAY,true)!=null)continue;  /* (days filled in across a gap count too: the total over them is real) */a+=out.days[t];bw+=synHw(tt+DAY/2);bh+=synHeat(tt+DAY/2);nS++}
-  /* measured hot water is yours already, so only the heating is scaled; else the whole figure is. 0.3-1.6: a figure well out still leaves the forecast following the readings */
-  const r=nS>=14?(hwOk?(a-bw)/bh:a/(bw+bh)):1;kS=r>=0||r<0?Math.min(1.6,Math.max(0.3,r)):1}
- const synRate=hwOk?t=>synHw(t)+kS*synHeat(t):t=>kS*syn(t);out.kSHw=hwOk;out.kSHwCap=hwCap;
+ if(syn){
+  /* w: against the weather each day really had, over the days the Pico has it for (a day without it would skew the comparison
+     by however far it was from the usual); else every day against the usual weather (as before v1.3.21). */
+  const cmp=w=>{let a=0,bw=0,bh=0,n=0;for(const t in out.days){const tt=+t;if(tt<tEnd-365*DAY||tt>=tEnd||uH(tt+DAY/2)<0.5||ownBy(tt,tt-300*DAY,true)!=null||w&&!wh.has(tt+DAY/2))continue;  /* (days filled in across a gap count too: the total over them is real) */a+=out.days[t];bw+=synHw(tt+DAY/2);bh+=synHeatIn(w?wxDay:uH)(tt+DAY/2);n++}
+   /* measured hot water is yours already, so only the heating is scaled; else the whole figure is. 0.3-1.6: a figure well out still leaves the forecast following the readings */
+   const r=n>=14?(hwOk?(a-bw)/bh:a/(bw+bh)):1;return[r>=0||r<0?Math.min(1.6,Math.max(0.3,r)):1,n]};
+  [kU,nS]=cmp(false);kS=kU;
+  /* the weather's way takes over from the usual's gradually, from 14 to 28 days with weather: no jump the day it starts */
+  if(wh){const[k1,n1]=cmp(true);kW=k1;wW=Math.min(1,Math.max(0,(n1-14)/14));if(wW>0){kS=wW*kW+(1-wW)*kU;nS=Math.max(nS,n1)}}}  /* (shown: the blend, so the figure in the words moves as smoothly as the forecast) */
+ const rU=hwOk?t=>synHw(t)+kU*synHeat(t):t=>kU*(syn?syn(t):0);
+ const synRateIn=hf=>{const h=synHeatIn(hf),rw=hwOk?t=>synHw(t)+kW*h(t):t=>kW*(synHw(t)+h(t));return wW>=1?rw:wW<=0?rU:t=>wW*rw(t)+(1-wW)*rU(t)},synRate=synRateIn(wxDay);out.kSHw=hwOk;out.kSHwCap=hwCap;
+ out.wxFig=wh?(o.wxName||'your location'):null;out.wxW=wW;
  out.yearL=yearL;out.kS=kS;out.kSDays=nS;
  /* earlier years x how this year compares (as ever); else, with a figure given: your own readings from the same time
     of year once that has happened (next February goes by this February, as it was, never the figure), else the
     figure x how you are running against it; with no figure, the model */
- const rate=t=>{let v=k!=null?own(t):null;if(v!=null)return v*k;if(!syn)return model(t);v=ownLast(t);return v!=null?v:synRate(t)};
+ const rateIn=(mdl,sr)=>t=>{let v=k!=null?own(t):null;if(v!=null)return v*k;if(!syn)return mdl(t);v=ownLast(t);return v!=null?v:sr(t)};
+ const rate=rateIn(model,synRate);
  out.rate=rate;
+ /* a second view: the weather after the 16-day forecast stays as far from the usual as the last 4 weeks were (out.like.r:
+    1.2 = a fifth colder), for "if it stays like this". Only with real weather for 21+ of those days. A cold November says
+    little about the winter (45 Decembers-Marches near Stu: a third-coldest November was followed by a winter only 3% colder
+    than usual), so the first forecast stays the usual weather; this one shows the spread. */
+ let like=null;if(wh&&(syn||heat===o.heat)){  /* (no figure: only when the model was fitted with this same weather) */let a2=0,b2=0,n2=0;for(let t=midnight(tEnd)-28*DAY+DAY/2;t<tEnd;t+=DAY)if(wh.has(t)){a2+=wh(t);b2+=wh.usual(t);n2++}
+  if(n2>=21&&b2/n2>=0.5){  /* (heating season only: in summer a few degree days either way are no guide) */const r=Math.min(1.5,Math.max(0.6,a2/b2)),hf=t=>wh.has(t)?wh(t):wh.usual(t)*r;like={r,seen:a2/b2,rate:rateIn(out.recent==null?model:modelWith(hf),synRateIn(hf))}}}
  // an average year, for the monthly chart, date by date: your own readings from before this oil year began (1 July)
  // at that time of year (±10 days, 10+ of them); where there are none, the typical year you gave; else this
  // forecast's own model in the usual weather
@@ -202,20 +220,23 @@ function analyse(pts,o){
  out.avg=t=>{const v=avgOwn(t);return v!=null?v:avgM(t)};out.avgSrc=t=>avgOwn(t)!=null?'own':yearL?'given':'model';
  // simulate forward from the current level
  const lf=out.fills.length?out.fills[out.fills.length-1].t:-Infinity,tail=pts.slice(-4).filter(p=>p[0]>=lf).map(p=>p[1]),cur=!tail.length?med(L.slice(-4)):tail.length<3?tail[tail.length-1]:med(tail.slice(-3));out.cur=cur;  // actual level now: the last few readings, none from before the last delivery; with under 3 since it, the newest (one read while the tanker was still pumping would drag a median down) (sm is the delivery-adjusted level)
- const sim=f=>{let l=cur,t=tEnd,ord=null,dry=null;const path=[[t,l]];
-  for(let d=0;d<730&&(dry==null);d++){const r=rate(t)*f;l-=r;t+=DAY;path.push([t,Math.max(0,l)]);
+ const sim=(f,rf)=>{let l=cur,t=tEnd,ord=null,dry=null;const path=[[t,l]];
+  for(let d=0;d<730&&(dry==null);d++){const r=(rf||rate)(t)*f;l-=r;t+=DAY;path.push([t,Math.max(0,l)]);
    if(ord==null&&l<=reserve)ord=t;if(l<=0)dry=t}
   return{ord:cur<=reserve?tEnd:ord,dry:cur<=0?tEnd:dry,path}};
  out.fc=sim(1);  // one forecast: your expected use, nothing added
+ if(like){const c=sim(1,like.rate);out.like={r:like.r,seen:like.seen,ord:c.ord,dry:c.dry}}
  // forecast for each remaining month of this year
  out.fmonths={};let tt=tEnd;
  for(let d=0;d<400;d++){const dt=new Date(tt*1000),k2=dt.getFullYear()+'-'+dt.getMonth();(out.fmonths[k2]=(out.fmonths[k2]||0)+rate(tt));tt+=DAY}
  return out}
 
 // Words for the forecast method, shared by both pages.
-function howText(A){const b=howBase(A);if(!A.yearL)return b;const y=Math.round(A.yearL).toLocaleString()+' L';
+function howText(A){return howText0(A)+likeHow(A)}
+function howText0(A){const b=howBase(A);if(!A.yearL)return b;const y=Math.round(A.yearL).toLocaleString()+' L';
  if(A.useOwn)return b+' Dates with no earlier year of your own yet go by the '+y+' you gave for a typical year.';
- return 'Last year stands in for your own: the '+y+' you gave for a typical year, spread over the year by '+(A.wx?'the usual weather for '+A.wx:'a typical UK heating year')+(A.kSHw?(A.kSHwCap?'. Your summer hot water alone comes to more than 60% of it, so 60% is taken as hot water: the figure looks too small for this house':'. Its hot water is your own: '+A.hw.perDay.toFixed(2)+' L/day in summer, more in winter as the mains runs colder')+'. Its heating is ':', and it is ')+(A.kSDays>=14?'scaled by how you are running against it: '+Math.round(A.kS*100)+'% over the '+A.kSDays+' days of the heating season so far'+(A.kS===0.3||A.kS===1.6?' (the furthest it follows).':'.'):'used as it is until there are 14 days of readings in the heating season to compare.')+' Each month goes by your own readings once you have had it.'}
+ return 'Last year stands in for your own: the '+y+' you gave for a typical year, spread over the year by '+(A.wxFig&&A.wxW>0?A.wxFig+"'s weather (each day so far as it really was, the next 16 days' forecast, then the usual for the time of year)":A.wxFig?'the usual weather for '+A.wxFig:'a typical UK heating year')+(A.kSHw?(A.kSHwCap?'. Your summer hot water alone comes to more than 60% of it, so 60% is taken as hot water: the figure looks too small for this house':'. Its hot water is your own: '+A.hw.perDay.toFixed(2)+' L/day in summer, more in winter as the mains runs colder')+'. Its heating is ':', and it is ')+(A.kSDays>=14?'scaled by how you are running against it: '+Math.round(A.kS*100)+'% over the '+A.kSDays+' days of the heating season so far'+(A.kS===0.3||A.kS===1.6?' (the furthest it follows)':'')+(A.wxW>0&&A.wxW<1?', judged partly against the usual weather until there are 28 days of real weather to compare ('+Math.round(A.wxW*100)+'% of the way).':'.'):'used as it is until there are 14 days of readings in the heating season to compare.')+' Each month goes by your own readings once you have had it.'}
+function likeHow(A){const l=A&&A.like;return likeShown(A)?' The last 4 weeks were '+Math.round(Math.abs(l.seen-1)*100)+'% '+(l.seen>1?'colder':'milder')+' than usual (needing that much more or less heating); the second date is if the rest of the winter stays like that. A few cold or mild weeks say little about the rest of the winter, so the first date goes by the usual weather after the 16-day forecast.':''}
 function howBase(A){
  if(A.useOwn)return 'Seasonal pattern: your own usage from previous years at the same time of year, scaled by how this year compares: '+Math.round(A.k*100)+'% of earlier years over the '+A.kDays+' days that can be compared. A steady change (an older boiler, a colder year) carries on into the forecast.'+(A.wx?' Any days with no earlier year to go on follow '+A.wx+"'s weather.":'');
  if(A.hw)return 'Seasonal pattern: hot water uses about '+A.hw.perDay.toFixed(2)+' L/day (your summer'+(A.hw.months>1?' months':' '+MON[A.hw.m])+' '+A.hw.y+', heating off), up to '+Math.round(MAINS*100)+'% more in winter because the mains water is colder. Heating follows '+(A.wx?A.wx+"'s weather: the next 16 days' forecast, then the usual for the time of year (10-year average)":'a typical UK year (degree days)')+(A.heatFit>=1?', sized to your use over the last '+Math.round(A.recentDays)+' days.':A.heatFit>0?', sized partly from your last '+Math.round(A.recentDays)+' days and partly from a typical '+Math.round(HW_SHARE*100)+'% hot-water share.':', sized from a typical '+Math.round(HW_SHARE*100)+'% hot-water share until the heating season shows your real use.');
@@ -246,6 +267,9 @@ function fcBody(A,key,reserve){ const t0=A.fc.path[0][0],cum=[];let c=0;for(let 
 /* the typical year's oil (Config) is the whole house's: it applies to a view only when that view holds every tank in use */
 function yearFor(st,macs){const y=st&&+st.year_l;if(!(y>0))return null;const use=(st.tanks||[]).filter(t=>modeOf(t.cfg)==='use');return use.length&&use.every(t=>macs.includes(t.mac))?y:null}  /* (no tank in use: nothing is being burnt, so no figure) */
 /* a forecast to show: from 2 days of readings, or straight away from the typical year you gave (Config → Forecast) */
+/* "if it stays like this": the order date if the weather after the 16-day forecast stays as far from the usual as the last 4 weeks were ('' when that's within 5% of the usual, or there's nothing to say) */
+function likeShown(A){const l=A&&A.like,o=A&&A.fc&&A.fc.ord;return!!(l&&l.ord!=null&&o!=null&&Math.abs(l.r-1)>=0.05&&Math.abs(l.ord-o)>=DAY)}  /* (the same date either way: earlier years or the 16-day forecast decide it, so nothing to add) */
+function likeText(A,fmt){const l=A&&A.like;if(!likeShown(A))return'';return fmt(l.ord)+' if it stays this '+(l.r>1?'cold':'mild')}
 function hasFc(A){return!!(A&&A.fc&&(A.recent!=null&&A.span>=2||A.yearL>0))}
 function modeOf(c){return c&&(c.mode==='use'||c.mode==='standby'||c.mode==='off')?c.mode:c&&c.isolated?'standby':'use'}  /* (an explicit mode first: the form's settings copied from another tank carry its isolated time) */
 function holdIsolated(s,since){const t0=typeof since==='number'?since:0;let h=null,sum=0,n=0;return s.map(p=>{if(p[0]<t0)return p;if(h==null||Math.abs(p[1]-h)>REFILL_L){sum=0;n=0}sum+=p[1];n++;h=sum/n;return[p[0],h].concat(p.slice(2))})}  /* held at the running average of its readings since the last big change, so one jittery first reading can't set its level; since = when it was isolated (epoch; true = always): readings before then are left as they were */

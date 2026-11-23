@@ -1,7 +1,7 @@
 // node tests/tests_forecast.js  - the seasonal model in firmware/common.js.html, without a browser
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const ctx={};vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;this.wxHeat=wxHeat;this.wxKey=wxKey;this.WX_BASE=WX_BASE;this.howText=howText;this.hasFc=hasFc;this.yearFor=yearFor;this.fcBody=fcBody;this.combine=combine;this.holdIsolated=holdIsolated;this.flatten=flatten;',ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;this.wxHeat=wxHeat;this.wxKey=wxKey;this.WX_BASE=WX_BASE;this.howText=howText;this.likeText=likeText;this.hasFc=hasFc;this.yearFor=yearFor;this.fcBody=fcBody;this.combine=combine;this.holdIsolated=holdIsolated;this.flatten=flatten;',ctx);
 let fails=0;const ok=(c,m)=>{console.log((c?'ok   ':'FAIL ')+m);if(!c)fails++};
 const DAY=86400,H=3600,T=(y,m,d)=>new Date(y,m,d,12).getTime()/1000;
 // a household: hot water 0.85 L/day in August (+25 % in Feb), heating only Sep-May
@@ -151,4 +151,36 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  ok(jan>jul*2&&Math.abs(Object.values(A.fmonths).reduce((a,b)=>a+b,0)/400*365-2100)<300,'...spread by the weather: January '+jan.toFixed(1)+' L/day, July '+jul.toFixed(1)+', about 2,100 a year');
  ok(/used as it is/.test(ctx.howText(A))&&!/NaN|undefined/.test(ctx.howText(A)),'...and says it is the figure as given: '+ctx.howText(A).slice(0,90)+'…');
  ok(!ctx.hasFc(A0)&&!A0.fc,'no figure given: no forecast until 2 days of readings, as before')}
+// A typical year given, and the real weather: a cold spell reads as a cold spell, not as this house using more
+{const norm=[9,8.5,7.5,5.5,3,1,0.3,0.4,1.5,4,6.5,8.5],now=T(2026,10,20),WX=dd=>ctx.WX_BASE-dd,uT=t=>WX(norm[new Date(t*1000).getMonth()]);
+ const mk=(dT,fT)=>{const rec={},fc={};for(let t=T(2026,6,1);t<now;t+=DAY){const tm=uT(t)-(t>now-28*DAY?dT:0);rec[ctx.wxKey(t)]=[tm-3,tm+3]}
+  for(let t=now;t<now+16*DAY;t+=DAY){const tm=uT(t)-fT;fc[ctx.wxKey(t)]=[tm-3,tm+3]}return [rec,fc,ctx.wxHeat(rec,fc,norm)]};
+ const yr=2100,hw=0.9,heatY=(yr-hw*1.125*365)/365;
+ /* the house: hot water 0.9 L/day (more in winter), heating 70% of the figure's, in the weather it really had */
+ const house=(rec,h)=>{const p=[];let L=1500;for(let t=T(2026,6,6);t<=now;t+=H){const m=new Date(t*1000).getMonth();L-=(hw*ctx.hwShape(t)+(m>=5&&m<=7?0:0.7*heatY*h(t)))/24;p.push([t,L])}return p};
+ const [r1,f1,h1]=mk(4,4),A=ctx.analyse(house(r1,h1),{now,heat:h1,wxName:'Coleraine',yearL:yr,reserve:200});
+ ok(Math.abs(A.kS-0.7)<0.04,'four weeks 4 C colder than usual: still 70% of the figure\'s heating ('+Math.round(A.kS*100)+'%), not more');
+ const t5=now+5*DAY,t40=now+40*DAY;
+ ok(Math.abs(A.rate(t5)-(hw*ctx.hwShape(t5)+0.7*heatY*h1(t5)))<0.3,'the next 16 days follow the forecast: '+A.rate(t5).toFixed(2)+' L/day');
+ ok(Math.abs(A.rate(t40)-(hw*ctx.hwShape(t40)+0.7*heatY*h1.usual(t40)))<0.3,'after that, the usual weather: '+A.rate(t40).toFixed(2)+' L/day');
+ ok(A.like&&A.like.r>1.15&&A.like.ord<A.fc.ord,'"if it stays like this": '+(A.like&&A.like.r.toFixed(2))+' x the usual, order '+(A.like?Math.round((A.fc.ord-A.like.ord)/DAY):'-')+' days sooner');
+ const [r2,f2,h2]=mk(-3,-3),M=ctx.analyse(house(r2,h2),{now,heat:h2,wxName:'Coleraine',yearL:yr,reserve:200});
+ ok(Math.abs(M.kS-0.7)<0.04&&M.like&&M.like.r<0.9&&M.like.ord>M.fc.ord,'a mild spell works the other way: '+Math.round(M.kS*100)+'%, staying mild orders later');
+ const N=ctx.analyse(house(r1,h1),{now,yearL:yr,reserve:200});
+ ok(N.like==null&&N.kS>0.75,'no weather for the place: as before, the usual weather throughout ('+Math.round(N.kS*100)+'%), no second view');
+ const [r3,f3]=mk(4,4);for(let t=now-10*DAY;t<now;t+=DAY)delete r3[ctx.wxKey(t)];const h3=ctx.wxHeat(r3,f3,norm),G=ctx.analyse(house(r1,h1),{now,heat:h3,yearL:yr,reserve:200});
+ ok(G.like==null,'10 of the last 28 days without weather: no "if it stays like this" (it needs 21)')
+ {const K=ctx.analyse(house(r1,h1),{now,heat:h3,wxName:'Coleraine',yearL:yr,reserve:200});
+  ok(Math.abs(K.kS-A.kS)<0.05,'the last 10 days without weather: the comparison still uses the place\'s weather ('+Math.round(K.kS*100)+'% vs '+Math.round(A.kS*100)+'%), no jump')}
+ ok(Math.abs(A.like.seen-1.6)<0.15&&/(5\d|6\d)% colder than usual/.test(ctx.howText(A)),'the words give the weeks as they were ('+Math.round((A.like.seen-1)*100)+'%), not the 50% cap the date uses');
+ {const L2={fc:{ord:1},like:{r:1.3,seen:1.3,ord:1}};ok(ctx.likeText(L2,String)===''&&!/second date/.test(ctx.howText(Object.assign({},A,L2))),'the same date either way: no second date, and the words don\'t mention one')}
+ ok(/\d+% colder than usual.*the second date/.test(ctx.howText(A))&&/stays this cold/.test(ctx.likeText(A,String)),'the words: '+ctx.likeText(A,()=>'D')+' / '+ctx.howText(A).slice(-150));
+ {const nowS=T(2026,6,25),rec={},fc={};for(let t=T(2026,4,1);t<nowS;t+=DAY){const tm=uT(t)-5;rec[ctx.wxKey(t)]=[tm-3,tm+3]}const hS=ctx.wxHeat(rec,fc,norm);
+  const p=[];let L=1500;for(let t=T(2026,4,1);t<=nowS;t+=H){L-=1/24;p.push([t,L])}const S=ctx.analyse(p,{now:nowS,heat:hS,yearL:yr,reserve:200});
+  ok(S.like==null&&ctx.likeText(S,String)==='','a cold July: no "if it stays this cold" outside the heating season')}}
+// weather only for the last few weeks (a new place, or a gap): the weather's way blends in from 14 to 28 days of it, no jump
+{const norm=Array(12).fill(5),run=(end,from)=>{const rec={},fc={};for(let t=from;t<end;t+=DAY)rec[ctx.wxKey(t)]=[3.5,3.5];for(let t=end;t<end+16*DAY;t+=DAY)fc[ctx.wxKey(t)]=[3.5,3.5];
+  const p=[];let L=800+6*45;for(let t=end-45*DAY;t<=end;t+=H){L-=6/24;p.push([t,L])}return ctx.analyse(p,{now:end,heat:ctx.wxHeat(rec,fc,norm),wxName:'X',yearL:2100,reserve:200})};
+ const from=T(2026,9,31);let prev=null,worst=0,wks=0;for(let d=0;d<20;d++){const e=T(2026,10,8)+d*DAY,A=run(e,from),o=A.fc.ord;if(prev!=null){worst=Math.max(worst,Math.abs(A.kS-prev[0]));wks=Math.max(wks,Math.abs((o-prev[1])/DAY))}prev=[A.kS,o]}
+ ok(worst<0.08&&wks<12,'blending in day by day: the scale moves at most '+worst.toFixed(3)+' a day, the order date '+wks.toFixed(0)+' days')}
 process.exit(fails?1:0);

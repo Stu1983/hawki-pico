@@ -57,7 +57,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <div class="tiles">
  <div class="card tile"><div class="k">In the tank now</div><div class="v" id="t_now">–</div><div class="n" id="t_now2"></div></div>
  <div class="card tile"><div class="k">Using lately</div><div class="v" id="t_rate">–</div><div class="n" id="t_rate2"></div></div>
- <div class="card tile" id="tl_ord"><div class="k">Order around</div><div class="v" id="t_ord">–</div><div class="n" id="t_ord2"></div></div>
+ <div class="card tile" id="tl_ord"><div class="k">Order around</div><div class="v" id="t_ord">–</div><div class="n" id="t_ord2"></div><div class="n" id="t_ord3">&nbsp;</div></div>
  <div class="card tile" id="tl_dry"><div class="k">Could run dry</div><div class="v" id="t_dry">–</div><div class="n" id="t_dry2"></div></div>
 </div>
 
@@ -345,6 +345,7 @@ function tiles(){
   $('t_'+id).textContent=!fo?'–':c==null?'2+ years':c<=now+DAY?'Now':fmtD(c);
   $('t_'+id+'2').textContent=!fo?'':id==='ord'?'when it reaches '+reserve+' L':c==null?'':c<=now+DAY?'':(d=>d<14?'in '+d+' day'+(d===1?'':'s'):'in '+Math.floor(d/7)+' weeks')(Math.round((c-now)/DAY));  /* (not 'in 0 weeks' or 'in 1 weeks') */
   if(fo&&c!=null&&c<now+(id==='ord'?14:30)*DAY)tl.classList.add(id==='ord'?'warn':'bad')}
+ $('t_ord3').textContent=fo&&A.fc.ord!=null&&A.fc.ord>now+DAY&&likeText(A,fmtD)||' ';
  if(!fo&&T.litres!=null&&T.litres<=reserve){$('t_ord').textContent='Now';$('t_ord2').textContent='below the reorder level';$('tl_ord').classList.add('warn')}
  renderDeliveries();costs();
  const h=$('how');h.textContent='';

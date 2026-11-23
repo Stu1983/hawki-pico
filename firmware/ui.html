@@ -98,7 +98,7 @@ dialog::backdrop{background:#0008}
 <div class="tiles">
  <div class="card tile"><div class="tl">Usable oil left</div><div class="big" id="d_l">–</div><div class="mut" id="d_l2">&nbsp;</div><div class="bar"><i id="d_bar" style="width:0"></i></div></div>
  <div class="card tile"><div class="tl">Using</div><div class="big" id="d_r">–</div><div class="mut" id="d_r2">&nbsp;</div><div class="mut" id="d_r3">&nbsp;</div></div>
- <div class="card tile" id="d_wt"><div class="tl">Weeks left</div><div class="big" id="d_w">–</div><div class="mut" id="d_w2">&nbsp;</div></div>
+ <div class="card tile" id="d_wt"><div class="tl">Weeks left</div><div class="big" id="d_w">–</div><div class="mut" id="d_w2">&nbsp;</div><div class="mut" id="d_w3">&nbsp;</div></div>
  <div class="card tile"><div class="tl">Costing</div><div class="big" id="d_c">–</div><div class="mut" id="d_c2">&nbsp;</div><div class="mut" id="d_c3">&nbsp;</div></div>
 </div>
 <div class="card"><div class="row"><b>In the tank now</b><span class="mut" id="d_tank2" style="white-space:nowrap">&nbsp;</span></div><svg id="d_tank" class="tkv" onclick="tankFull()" viewBox="0 0 400 230" role="img" aria-label="Front view of the tank with the oil level the sensor reads"></svg><div id="d_dots" class="dots" hidden></div></div>
@@ -727,8 +727,9 @@ async function dash(){if(!S.update)return;await dlvLoad();swHint();const act=S.t
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
   const sp=modeOf(t.cfg)==='use'?S.tanks.filter(x=>x.mac!==t.mac&&modeOf(x.cfg)==='standby'&&x.litres!=null&&x.litres>(x.cfg.reserve_l??200)).sort((a,b)=>b.litres-a.litres)[0]:null;  /* a standby tank with oil: switch to it rather than order */
   $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?(sp?'Switch to '+sp.name+' now':'Order now')+' (at '+reserve+' L)':(sp?'Switch to '+sp.name+' around ':'Order around ')+fmtD(c.ord)+' (at '+reserve+' L)';
+  $('d_w3').textContent=c.ord!=null&&c.ord>now+DAY&&likeText(A,fmtD)||' ';
   if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
- else{$('d_w').textContent='–';$('d_w2').textContent=off?'Off: no forecast or warnings':' '}
+ else{$('d_w').textContent='–';$('d_w2').textContent=off?'Off: no forecast or warnings':' ';$('d_w3').textContent=' '}
  drawTank(t);
  const key=t.mac+'|'+ck+'|'+(AN&&AN.t)+'|'+(WV&&WV.heat?WXC.key+WXC.at:'-')+'|'+t.level+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;  // redraw only when something changed (keeps a hover open)
  if(!fo||off)A.fc=null;  /* no forecast line until the tiles have one too (and never for an off tank) */
@@ -769,8 +770,9 @@ async function dashAll(ts){$('d_name').textContent=ts.length>2?'All tanks':'Both
  if(fo){const c=A.fc,wk=x=>(x-now)/(7*DAY);
   $('d_w').textContent=c.dry==null?'2+ years':wk(c.dry)<1?'Under a week':Math.floor(wk(c.dry))+' week'+(Math.floor(wk(c.dry))===1?'':'s');
   $('d_w2').textContent=c.ord==null?' ':c.ord<=now+DAY?'Order now (at '+reserve+' L in all)':'Order around '+fmtD(c.ord)+' (at '+reserve+' L in all)';
+  $('d_w3').textContent=c.ord!=null&&c.ord>now+DAY&&likeText(A,fmtD)||' ';
   if(c.ord!=null&&c.ord<now+14*DAY)wt.classList.add(c.ord<now+DAY?'bad':'warn')}
- else{$('d_w').textContent='–';$('d_w2').textContent=' '}
+ else{$('d_w').textContent='–';$('d_w2').textContent=' ';$('d_w3').textContent=' '}
  drawTanks(ts);
  const key='all|'+ck+'|'+(AN&&AN.t)+'|'+(WV&&WV.heat?WXC.key+WXC.at:'-')+'|'+ts.map(t=>t.level).join(',')+'|'+$('c_rate').getBoundingClientRect().width;if(key===DKEY)return;DKEY=key;
  if(!fo)A.fc=null;
