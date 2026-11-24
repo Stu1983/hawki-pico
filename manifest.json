@@ -1,7 +1,7 @@
 {
- "version": "1.3.36",
- "ref": "v1.3.36",
- "notes": "Magnus app offset: the Pico reads the offset typed into the Magnus app (written into the monitor, which takes it off every distance) once a day and adds it back, so readings stay right whatever is set there. Shown under Edit tank \u2192 Measurements, with Read it again",
+ "version": "1.3.37",
+ "ref": "v1.3.37",
+ "notes": "The level chart is called Usable oil in the tank (on the dashboard and the forecast page): it shows the oil above the outlet, so a total typed under Earlier readings shows less by what's below the outlet",
  "files": {
   "app.py": [
    "a170ae94476c60445d0312931e9bd240b5d7d939e5e1800b9c9443f83de34a44",
@@ -32,8 +32,8 @@
    2612
   ],
   "hist.html": [
-   "d8946f71364761fed3ecbce9bb35d2831dd0ab6edfb66bc764e459fdfa305750",
-   66929
+   "8016a076264c6c19d5b49cac30ae307cf05bf524d1f94c4e7c38667b51aa6b71",
+   66936
   ],
   "histstore.py": [
    "bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80",
@@ -76,8 +76,8 @@
    14435
   ],
   "ui.html": [
-   "72836ffac98682db47a94cc041e1547d9956c5c6e59c4fced77fd66fa2bf58b6",
-   146460
+   "f16b6476007c55211cd604bddbac506ed9d12089a4fd89bfc7e26555ead610bb",
+   146462
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -88,7 +88,7 @@
    13431
   ],
   "version.py": [
-   "9ba71109daca330aa9762c8a188daab91bf0994933d521b2d19bec39a9a014ec",
+   "ee65af1024613b415be4093c19f135f6d4a2ab2866a109f973f72a38b4bfdf71",
    19
   ],
   "weather.py": [
@@ -101,7 +101,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"a170ae94476c60445d0312931e9bd240b5d7d939e5e1800b9c9443f83de34a44\", 170985], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"01f88e5e80f0c2818a1f496649bf0af33369e88a9a22ee75da999d301757e379\", 36361], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"d8946f71364761fed3ecbce9bb35d2831dd0ab6edfb66bc764e459fdfa305750\", 66929], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"600ceb444c040ae9053a9fa089dc23093f7c51544d2ab6376b83970808c81c19\", 11926], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"share.py\": [\"92b32c0a86229b055975dd3181707b31eaa6bd895444d0189ffc6801442d899e\", 7680], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"72836ffac98682db47a94cc041e1547d9956c5c6e59c4fced77fd66fa2bf58b6\", 146460], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"9ba71109daca330aa9762c8a188daab91bf0994933d521b2d19bec39a9a014ec\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Magnus app offset: the Pico reads the offset typed into the Magnus app (written into the monitor, which takes it off every distance) once a day and adds it back, so readings stay right whatever is set there. Shown under Edit tank \\u2192 Measurements, with Read it again\", \"ref\": \"v1.3.36\", \"version\": \"1.3.36\"}",
-  "sig": "1434e040c0a84bff489780ce9188336e3d1c918a5917b4566de8c07992cb11b1e5b5a9463c1062c84d7190af95f62877d7e9ed2e38eb2b9035bb7b6f555fd4c03097bf48cd736f02c3bd531d1a2126a9b5fc8c8da0ac1fac95f868bbd3a4b9890594b5649608f41858f8b5846775ecefc19a8cae7d83866b3ded98f95784e3303261e2bfc8ad6bc40f091b2881376e0619cf315800efdf6794f161be5cd4a7cb5a05b3d883f60dc06703907fc14e292612179c9d834f804f90b73b34f611f27fafc490257f0f15855aac902e389d7d957854477f8eada1ff142c85e3af41f8afdf47714992c5d978f7a0ca2a177400ef4795aeb39ad0e63e0bff18663d4a90a4"
+  "body": "{\"files\": {\"app.py\": [\"a170ae94476c60445d0312931e9bd240b5d7d939e5e1800b9c9443f83de34a44\", 170985], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"01f88e5e80f0c2818a1f496649bf0af33369e88a9a22ee75da999d301757e379\", 36361], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"8016a076264c6c19d5b49cac30ae307cf05bf524d1f94c4e7c38667b51aa6b71\", 66936], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"600ceb444c040ae9053a9fa089dc23093f7c51544d2ab6376b83970808c81c19\", 11926], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"share.py\": [\"92b32c0a86229b055975dd3181707b31eaa6bd895444d0189ffc6801442d899e\", 7680], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"f16b6476007c55211cd604bddbac506ed9d12089a4fd89bfc7e26555ead610bb\", 146462], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"ee65af1024613b415be4093c19f135f6d4a2ab2866a109f973f72a38b4bfdf71\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"The level chart is called Usable oil in the tank (on the dashboard and the forecast page): it shows the oil above the outlet, so a total typed under Earlier readings shows less by what's below the outlet\", \"ref\": \"v1.3.37\", \"version\": \"1.3.37\"}",
+  "sig": "8143f0f7220b21abf0915052e444370cb74f1fe441814203224010b534b67de08f5682cfee3a823d9a2365a0130133232b499b8c9565a20cc016019b93de6aa39d18d9ef7e1181942802fe2acfcd924776c19501d550d606a2ca4e689f1830ebe085b3f250757a69f8a9ad8c118c104b97fe357f7d0cad5ab64055c0b653c33c2b253908d926a96b7807023aa14acb279e661a3c8d0db691489b422bd80fed93058f75a9c8560357b558b1aa6bd6ca2aca34cc040ba7e152bdba0bef657aecd4709edb7173c1093be11b0a9af28ba5a19ac01539fa40e84e62d44f7912b10286c4f78ebb3ca68934b306295e6f33856b17f10bcd49d16f72bf41d64d14ff8dc7"
  }
 }
