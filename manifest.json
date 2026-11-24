@@ -1,7 +1,7 @@
 {
- "version": "1.3.37",
- "ref": "v1.3.37",
- "notes": "The level chart is called Usable oil in the tank (on the dashboard and the forecast page): it shows the oil above the outlet, so a total typed under Earlier readings shows less by what's below the outlet",
+ "version": "1.3.38",
+ "ref": "v1.3.38",
+ "notes": "Today's readings: a Today so far total at the bottom (the last reading less the first)",
  "files": {
   "app.py": [
    "a170ae94476c60445d0312931e9bd240b5d7d939e5e1800b9c9443f83de34a44",
@@ -76,8 +76,8 @@
    14435
   ],
   "ui.html": [
-   "f16b6476007c55211cd604bddbac506ed9d12089a4fd89bfc7e26555ead610bb",
-   146462
+   "a0c68f8d536ddaca240981d33b45b5ee61fdd08e91a49d6fe0eee1cbebd73777",
+   146766
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -88,7 +88,7 @@
    13431
   ],
   "version.py": [
-   "ee65af1024613b415be4093c19f135f6d4a2ab2866a109f973f72a38b4bfdf71",
+   "8d2b04e8f90f7182e26d1dcbf1b7dcd38a2f48a94ef1e826a137f5cac7801f4b",
    19
   ],
   "weather.py": [
@@ -101,7 +101,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"a170ae94476c60445d0312931e9bd240b5d7d939e5e1800b9c9443f83de34a44\", 170985], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"01f88e5e80f0c2818a1f496649bf0af33369e88a9a22ee75da999d301757e379\", 36361], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"8016a076264c6c19d5b49cac30ae307cf05bf524d1f94c4e7c38667b51aa6b71\", 66936], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"600ceb444c040ae9053a9fa089dc23093f7c51544d2ab6376b83970808c81c19\", 11926], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"share.py\": [\"92b32c0a86229b055975dd3181707b31eaa6bd895444d0189ffc6801442d899e\", 7680], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"f16b6476007c55211cd604bddbac506ed9d12089a4fd89bfc7e26555ead610bb\", 146462], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"ee65af1024613b415be4093c19f135f6d4a2ab2866a109f973f72a38b4bfdf71\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"The level chart is called Usable oil in the tank (on the dashboard and the forecast page): it shows the oil above the outlet, so a total typed under Earlier readings shows less by what's below the outlet\", \"ref\": \"v1.3.37\", \"version\": \"1.3.37\"}",
-  "sig": "8143f0f7220b21abf0915052e444370cb74f1fe441814203224010b534b67de08f5682cfee3a823d9a2365a0130133232b499b8c9565a20cc016019b93de6aa39d18d9ef7e1181942802fe2acfcd924776c19501d550d606a2ca4e689f1830ebe085b3f250757a69f8a9ad8c118c104b97fe357f7d0cad5ab64055c0b653c33c2b253908d926a96b7807023aa14acb279e661a3c8d0db691489b422bd80fed93058f75a9c8560357b558b1aa6bd6ca2aca34cc040ba7e152bdba0bef657aecd4709edb7173c1093be11b0a9af28ba5a19ac01539fa40e84e62d44f7912b10286c4f78ebb3ca68934b306295e6f33856b17f10bcd49d16f72bf41d64d14ff8dc7"
+  "body": "{\"files\": {\"app.py\": [\"a170ae94476c60445d0312931e9bd240b5d7d939e5e1800b9c9443f83de34a44\", 170985], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"01f88e5e80f0c2818a1f496649bf0af33369e88a9a22ee75da999d301757e379\", 36361], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"8016a076264c6c19d5b49cac30ae307cf05bf524d1f94c4e7c38667b51aa6b71\", 66936], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"600ceb444c040ae9053a9fa089dc23093f7c51544d2ab6376b83970808c81c19\", 11926], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"share.py\": [\"92b32c0a86229b055975dd3181707b31eaa6bd895444d0189ffc6801442d899e\", 7680], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"a0c68f8d536ddaca240981d33b45b5ee61fdd08e91a49d6fe0eee1cbebd73777\", 146766], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"8d2b04e8f90f7182e26d1dcbf1b7dcd38a2f48a94ef1e826a137f5cac7801f4b\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Today's readings: a Today so far total at the bottom (the last reading less the first)\", \"ref\": \"v1.3.38\", \"version\": \"1.3.38\"}",
+  "sig": "4d7fdf30d6ceb74e7b9d704b1490ed3d11226d6e169647f316a10527621f3fcc065287caf2d16a150e976835921e0d8a14d0f7da79bcadeaf8c87803bfaeba50954963ce2839bcf6fb99fa583f677a415b327b37dee054f544649a5ec41da3ab98916e1b469cbd152142a7472c1d450fe120946f99f34b39fe7008f0eab071eed42ed69d11cc704a25b28eef553fd9683a2deccd1f0a1b9f2d44b60c2443e8b31b16055f1a1a25bfefdf22fbd86544b103f096d89b554a1a554cfd2005dbba71aae422a68df9284e10aca50c561cb7c135f590216213dc3d8850116d4d25558b5fb0cc7f0aff173f9b8b1b86c2e9ab1f461de65b0eb12b70c9e516ce5b91aeaa"
  }
 }

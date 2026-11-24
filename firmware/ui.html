@@ -348,10 +348,11 @@ async function rdLoad(m){const t=S.tanks.find(x=>x.mac===m);if(!t)return;const m
  try{const ck=JSON.stringify(t.cfg);if(!RDCV[m]||RDCV[m].ck!==ck)RDCV[m]={ck,cv:await (await fetch('/api/curve?mac='+okMac(m))).json()};const cv=RDCV[m].cv;
   const rows=parse(await (await fetch('/api/hist?mac='+okMac(m)+'&since='+(since-6*3600))).arrayBuffer(),cv.h).filter(r=>r[0]>=since);  /* (from 6 hours before midnight: a false reading just after it is judged by the one before) */
   const hm=s=>new Date(s*1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),nx=t.listen&&t.listen.next;
-  let h='',miss=0;if(rows.length){h='<table class="rdt"><tr><th>Time</th><th>Distance</th><th>Litres</th><th>Change</th></tr>';let prev=null;
+  let h='',miss=0,first=null;if(rows.length){h='<table class="rdt"><tr><th>Time</th><th>Distance</th><th>Litres</th><th>Change</th></tr>';let prev=null;
    let pt=null;for(const[ts,mm]of rows){if(pt!=null)for(let g=pt+3600;ts-g>1200;g+=3600){h+='<tr class="mut"><td>'+hm(g)+'</td><td colspan="3" style="text-align:left">missed: not heard this hour</td></tr>';miss++}  /* a gap of an hour or more */
-    const L=toL(mm,cv),d=prev==null?'':(L-prev>=0?'+':'')+(L-prev).toFixed(1);h+='<tr><td>'+hm(ts)+'</td><td>'+mm+' mm</td><td>'+L.toFixed(1)+'</td><td>'+d+'</td></tr>';prev=L;pt=ts}
+    const L=toL(mm,cv),d=prev==null?'':(L-prev>=0?'+':'')+(L-prev).toFixed(1);h+='<tr><td>'+hm(ts)+'</td><td>'+mm+' mm</td><td>'+L.toFixed(1)+'</td><td>'+d+'</td></tr>';if(first==null)first=L;prev=L;pt=ts}
    for(let g=pt+3600;Date.now()/1000-g>1200;g+=3600){h+='<tr class="mut"><td>'+hm(g)+'</td><td colspan="3" style="text-align:left">missed: not heard this hour</td></tr>';miss++}  /* stopped since the last one */
+   if(rows.length>1){const n=prev-first;h+='<tr style="border-top:2px solid var(--line)"><td colspan="3" style="text-align:left"><b>Today so far</b></td><td><b>'+(n>=0?'+':'')+n.toFixed(1)+'</b></td></tr>'}  /* (the changes added up: the last reading less the first) */
    h+='</table>'}
   h+='<div class="mut" style="margin-top:6px">'+(rows.length?rows.length+' saved today'+(miss?', '+miss+' missed (a weak signal, or a reading the Pico threw out as a misread)':'')+'. ':'None saved yet today. ')+(nx?'Next due about '+hm(nx)+'.':'Waiting to learn when this monitor reads (about an hour after a restart).')+' Readings come once an hour, in 5 mm steps; a step or two up and down is the oil warming and cooling.'+clockTxt(t)+'</div>';
   RD[m]={key,at:Date.now(),html:h}}catch(e){RD[m]={key:'',at:0,html:'Could not load them: '+e.message}}
