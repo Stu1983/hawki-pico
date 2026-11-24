@@ -8,17 +8,25 @@
 //   GET    /v/<ID>   the support view: remembers the ID in a cookie, then / and /history are that Pico's own pages
 //                    (from GitHub, the release it runs) with its upload behind every /api/ call
 //
-// Stored per ID: one KV entry 'd:<ID>' (the upload as sent) with metadata {h: sha-256 of the key, at, size, fw}.
-// Nothing else is kept: no IP addresses, no logs of who looked.
+//   GET    /invite?c=<code>   is this invite code good? (the Pico's page asks before turning backup on)
+//
+// Who may start a backup: a new ID needs an invite code (X-Invite), from the INVITES secret: 'name=CODE,name=CODE'
+// (wrangler secret put INVITES; '*' lets anyone in; unset lets nobody new in). Taking a name out of INVITES stops
+// that person's backups too. At most MAX_IDS backups (a var, default 20); at most DAY_MAX uploads per ID a UTC day.
+// IDs made before invites (no 'inv' in their metadata) carry on.
+//
+// Stored per ID: one KV entry 'd:<ID>' (the upload as sent) with metadata {h: sha-256 of the key, at, size, fw,
+// inv: the invite's name, day, n: uploads that day}. Nothing else is kept: no IP addresses, no logs of who looked.
 
 export const ID = /^HK-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$/;
 export const MAX = 4000000;   // bytes: two years of hourly readings for four tanks is about 1 MB
-export const GAP = 240;       // seconds between uploads for one ID (the Pico sends one a day, or on "Upload now")
+export const GAP = 240;       // seconds between uploads for one ID (the Pico sends three a day, or on "Back up now")
+export const DAY_MAX = 8;     // uploads per ID per UTC day
 const REPO = 'https://raw.githubusercontent.com/Stu1983/hawki-pico/';
 const PAGES = {'/': 'ui.html', '/index.html': 'ui.html', '/history': 'hist.html', '/common.js': 'common.js.html'};
 
 const cors = {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
-              'Access-Control-Allow-Headers': 'X-Key, Content-Type'};
+              'Access-Control-Allow-Headers': 'X-Key, X-Invite, Content-Type'};
 const json = (o, status = 200, extra = {}) => new Response(JSON.stringify(o), {status,
   headers: Object.assign({'Content-Type': 'application/json', 'Cache-Control': 'no-store'}, extra)});
 const err = (msg, status, extra) => json({error: msg}, status, extra);
@@ -37,6 +45,35 @@ async function meta(env, id) {  // the metadata only (the value isn't read)
   const r = await env.SHARE.getWithMetadata('d:' + id, {type: 'stream'});
   if (r.value) await r.value.cancel();
   return r.value === null ? null : (r.metadata || {});
+}
+
+// INVITES -> {CODE: name} ('*' -> null: anyone)
+export function invites(env) {
+  const s = String(env.INVITES || '').trim();
+  if (s === '*') return null;
+  const o = {};
+  for (const part of s.split(',')) {
+    const i = part.indexOf('='), name = part.slice(0, i).trim(), code = part.slice(i + 1).trim().toUpperCase();
+    if (i > 0 && code && code.length <= 64) o[code] = name;  // (a Pico keeps up to 64 characters)
+  }
+  return o;
+}
+const okCode = c => String(c || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+function inviteName(env, code) {  // -> the invite's name, '*' (open server), or null
+  const inv = invites(env);
+  if (inv === null) return '*';
+  const c = okCode(code);
+  for (const k of Object.keys(inv)) if (c && okCode(k) === c) return inv[k];
+  return null;
+}
+function stillInvited(env, name) {
+  const inv = invites(env);
+  return name === undefined || name === '*' && inv === null || inv !== null && Object.values(inv).includes(name);
+}
+async function count(env) {  // backups stored (KV list: only when a new ID is started)
+  let n = 0, cursor;
+  do { const r = await env.SHARE.list({prefix: 'd:', cursor}); n += r.keys.length; cursor = r.list_complete ? null : r.cursor; } while (cursor);
+  return n;
 }
 
 async function upload(req, env, id, now) {
@@ -59,7 +96,20 @@ async function upload(req, env, id, now) {
   const m = await meta(env, id), h = await sha(key);
   if (m && m.h !== h) return err('not this Pico\'s ID', 403, cors);
   if (m && now - (m.at || 0) < GAP) return err('too soon: one upload every few minutes', 429, cors);
-  await env.SHARE.put('d:' + id, body, {metadata: {h, at: now, size: body.length, fw: String(u.fw || '').slice(0, 20)}});
+  const day = Math.floor(now / 86400), n = m && m.day === day ? (m.n || 1) + 1 : 1;
+  if (n > DAY_MAX) return err('too many uploads today', 429, cors);
+  let inv;
+  if (m) {
+    if (!stillInvited(env, m.inv)) return err('this backup\'s invite code has been cancelled', 403, cors);
+    inv = m.inv;
+  } else {
+    inv = inviteName(env, req.headers.get('X-Invite'));
+    if (inv === null) return err(req.headers.get('X-Invite') ? 'that invite code isn\'t right' : 'an invite code is needed', 403, cors);
+    if (await count(env) >= (+env.MAX_IDS || 20)) return err('the backup server is full', 403, cors);
+  }
+  const md = {h, at: now, size: body.length, fw: String(u.fw || '').slice(0, 20), day, n};
+  if (inv !== undefined) md.inv = inv;
+  await env.SHARE.put('d:' + id, body, {metadata: md});
   return json({ok: true, at: now}, 200, cors);
 }
 
@@ -152,6 +202,10 @@ function cookieId(req) {
 
 export async function handle(req, env, now = Math.floor(Date.now() / 1000)) {
   const url = new URL(req.url), p = url.pathname;
+  if (p === '/invite') {
+    if (req.method === 'OPTIONS') return new Response(null, {status: 204, headers: cors});
+    return inviteName(env, url.searchParams.get('c')) === null ? err('that invite code isn\'t right', 403, cors) : json({ok: true}, 200, cors);
+  }
   if (p.startsWith('/u/')) {
     if (req.method === 'OPTIONS') return new Response(null, {status: 204, headers: cors});
     const id = okId(p.slice(3));

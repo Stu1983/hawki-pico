@@ -1,4 +1,4 @@
-"""Online backup (opt-in; Config → Online backup, called "share" in the code): once a day this Pico's readings, tank settings, deliveries and weather go to the
+"""Online backup (opt-in; Config → Online backup, called "share" in the code): three times a day this Pico's readings, tank settings, deliveries and weather go to the
 share server (a Cloudflare Worker) under a random ID, like HK-7QM2-XFD9. The owner gives the ID to someone
 helping them, who sees the same Dashboard and Forecast pages; the same ID restores the readings to a new Pico.
 
@@ -120,7 +120,7 @@ def build(cfg, st, files, curves, battlog, fw, now, out=FILE):
     return os.stat(out)[6]
 
 
-def _send(method, host, path, key, body_file=None, deadline=60):
+def _send(method, host, path, key, body_file=None, deadline=60, invite=None):
     """One HTTPS request to the share server, the body streamed from a file. -> (status, first 300 bytes of the reply)."""
     import notify  # (its TLS context and per-read deadline)
     t0 = time.time()
@@ -133,7 +133,8 @@ def _send(method, host, path, key, body_file=None, deadline=60):
         raw, s = s, notify._ctx().wrap_socket(s, server_hostname=host)
         w = s.write if hasattr(s, 'write') else s.sendall
         w(('%s %s HTTP/1.0\r\nHost: %s\r\nUser-Agent: hawki-pico\r\nX-Key: %s\r\nContent-Type: application/json\r\n'
-           'Content-Length: %d\r\nConnection: close\r\n\r\n' % (method, path, host, key, n)).encode())
+           '%sContent-Length: %d\r\nConnection: close\r\n\r\n'
+           % (method, path, host, key, 'X-Invite: %s\r\n' % invite if invite else '', n)).encode())
         if body_file:
             with open(body_file, 'rb') as f:
                 while True:
@@ -168,8 +169,8 @@ def _why(status, body):
         return 'the backup server said %d' % status
 
 
-def upload(host, sid, key, path=FILE):
-    status, body = _send('PUT', host, '/u/' + sid, key, path)
+def upload(host, sid, key, path=FILE, invite=None):
+    status, body = _send('PUT', host, '/u/' + sid, key, path, invite=invite)
     if not 200 <= status < 300:
         raise OSError(_why(status, body))
 

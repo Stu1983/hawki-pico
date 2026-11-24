@@ -1,6 +1,6 @@
 // node test.mjs [upload.json]  - the share server against an in-memory KV; with NODE_PATH holding jsdom, also the
 // support view: the Pico's own pages (from firmware/, standing in for GitHub) drawn from the upload.
-import {handle, ID, GAP} from './src/share.js';
+import {handle, ID, GAP, DAY_MAX} from './src/share.js';
 import fs from 'fs';
 import path from 'path';
 import {createRequire} from 'module';
@@ -14,8 +14,9 @@ class KV {  // just what the Worker uses
   async getWithMetadata(k) { const e = this.m.get(k); return e ? {value: {cancel: async () => {}}, metadata: e.md} : {value: null, metadata: null}; }
   async put(k, v, o) { this.writes++; this.m.set(k, {v, md: o && o.metadata}); }
   async delete(k) { this.m.delete(k); }
+  async list({prefix}) { return {keys: [...this.m.keys()].filter(k => k.startsWith(prefix)).map(name => ({name})), list_complete: true}; }
 }
-const env = {SHARE: new KV()};
+const env = {SHARE: new KV(), INVITES: 'me=AB12-CD34, mate = zz99-qq88', MAX_IDS: '4'};
 let T = 1795500000;
 const call = (method, url, body, headers = {}) => handle(new Request('https://share.test' + url, {method, body, headers}), env, T);
 const K1 = 'a'.repeat(32), K2 = 'b'.repeat(32), SID = 'HK-7QM2-XFD9';
@@ -24,7 +25,14 @@ const up = fs.existsSync(process.argv[2] || '') ? fs.readFileSync(process.argv[2
 
 ok(ID.test(SID) && !ID.test('HK-7QM2-XFDU') && !ID.test('hk-7qm2-xfd9'), 'IDs: the Pico\'s alphabet only');
 let r = await call('PUT', '/u/' + SID, up, {'X-Key': K1});
-ok(r.status === 200 && env.SHARE.writes === 1, 'the first upload: stored, one KV write');
+ok(r.status === 403 && /invite code is needed/.test(await r.text()) && env.SHARE.writes === 0, 'a new ID without an invite code: refused');
+r = await call('PUT', '/u/' + SID, up, {'X-Key': K1, 'X-Invite': 'AB12-CD35'});
+ok(r.status === 403 && /isn't right/.test(await r.text()), 'a wrong invite code: refused');
+r = await call('GET', '/invite?c=ab12cd34');
+ok(r.status === 200 && r.headers.get('Access-Control-Allow-Origin') === '*', 'the page can check a code first (any case, with or without the dash)');
+ok((await call('GET', '/invite?c=AB12')).status === 403 && (await call('GET', '/invite')).status === 403, '...a wrong or empty one: no');
+r = await call('PUT', '/u/' + SID, up, {'X-Key': K1, 'X-Invite': 'ab12-cd34'});
+ok(r.status === 200 && env.SHARE.writes === 1 && env.SHARE.m.get('d:' + SID).md.inv === 'me', 'the first upload, with an invite: stored, one KV write, which invite noted');
 r = await call('GET', '/u/' + SID.toLowerCase());
 ok(r.status === 200 && (await r.text()) === up && r.headers.get('Access-Control-Allow-Origin') === '*', 'read back as sent (any case), open to a Pico\'s page');
 r = await call('PUT', '/u/' + SID, up, {'X-Key': K1});
@@ -36,6 +44,27 @@ r = await call('PUT', '/u/' + SID, up, {'X-Key': K1});
 ok(r.status === 200 && env.SHARE.writes === 2, 'the same Pico later: replaced');
 r = await call('PUT', '/u/' + SID, up, {});
 ok(r.status === 401, 'no key: refused');
+{ // the limits
+  const K3 = 'c'.repeat(32), ids = ['HK-0000-0003', 'HK-0000-0004', 'HK-0000-0005', 'HK-0000-0006'];
+  for (const i of ids.slice(0, 3)) await call('PUT', '/u/' + i, up, {'X-Key': K3, 'X-Invite': 'ZZ99-QQ88'});
+  r = await call('PUT', '/u/' + ids[3], up, {'X-Key': K3, 'X-Invite': 'ZZ99-QQ88'});
+  ok(r.status === 403 && /full/.test(await r.text()) && env.SHARE.m.size === 4, 'MAX_IDS backups: no more new ones');
+  const t0 = T; let last;
+  for (let k = 0; k < DAY_MAX + 1; k++) { T = (Math.floor(t0 / 86400) + 1) * 86400 + 60 + k * (GAP + 1); last = await call('PUT', '/u/' + ids[0], up, {'X-Key': K3}); }
+  ok(last.status === 429 && /too many uploads today/.test(await last.text()), DAY_MAX + ' uploads a day per ID, then refused');
+  T += 86400; ok((await call('PUT', '/u/' + ids[0], up, {'X-Key': K3})).status === 200, '...the next day: fine again');
+  env.INVITES = 'me=AB12-CD34'; T += GAP + 1;
+  r = await call('PUT', '/u/' + ids[1], up, {'X-Key': K3});
+  ok(r.status === 403 && /cancelled/.test(await r.text()), 'an invite taken out of INVITES: its backups stop');
+  ok((await call('GET', '/u/' + ids[1])).status === 200, '...though what is there can still be restored');
+  env.SHARE.m.get('d:' + ids[2]).md.inv = undefined; delete env.SHARE.m.get('d:' + ids[2]).md.inv;
+  ok((await call('PUT', '/u/' + ids[2], up, {'X-Key': K3})).status === 200, 'a backup from before invites: carries on');
+  env.INVITES = 'long=' + 'A'.repeat(65); ok((await call('GET', '/invite?c=' + 'A'.repeat(65))).status === 403, 'a code longer than a Pico keeps: never accepted');
+  delete env.INVITES; ok((await call('GET', '/invite?c=AB12-CD34')).status === 403, 'no INVITES at all: nobody new');
+  env.INVITES = '*'; ok((await call('GET', '/invite?c=')).status === 200, "INVITES '*': anyone (someone's own server)");
+  for (const i of ids) await env.SHARE.delete('d:' + i);
+  env.INVITES = 'me=AB12-CD34, mate = zz99-qq88'; T += GAP + 1;
+}
 r = await call('PUT', '/u/HK-0000-0001', '{"format":"other"}', {'X-Key': K1});
 ok(r.status === 400, 'not a share upload: refused');
 r = await call('PUT', '/u/HK-0000-0001', 'x'.repeat(4000001), {'X-Key': K1});
@@ -61,7 +90,7 @@ globalThis.fetch = async u => {  // GitHub, from the local firmware/
   return m && fs.existsSync(path.join(FW, m[1])) ? new Response(fs.readFileSync(path.join(FW, m[1]), 'utf8')) : new Response('', {status: 404});
 };
 const view = (url, method = 'GET') => call(method, url, method === 'GET' ? undefined : '{}', {Cookie: ck});
-const U = JSON.parse(up), mac = Object.keys(U.tanks)[0];
+const U = JSON.parse(up), mac = Object.keys(U.tanks).sort((a, b) => (U.history[b] || '').length - (U.history[a] || '').length)[0];  // (the tank with most readings)
 r = await view('/api/state');
 ok(JSON.stringify(await r.json()) === JSON.stringify(U.state), '/api/state: the upload\'s');
 r = await view('/api/hist?mac=' + mac);

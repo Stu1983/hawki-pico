@@ -3160,25 +3160,49 @@ async def weather_task():
 
 # ---------- oil prices (cheapestoil.co.uk, Northern Ireland) ----------
 # ---------- share for support (share.py) ----------
-# cfg['share'] = {'on', 'id', 'key', 'at' (last upload)}; cfg['share_del'] = [{'id', 'key'}]: uploads still to delete
-# (sharing switched off). A new ID each time it's switched on.
-share_state = {'err': None, 'size': None, 'want': False, 'next': 0, 'gap': 1800, 'busy': False}
+# cfg['share'] = {'on', 'id', 'key', 'at' (last upload), 'inv' (the invite code, sent with each upload)};
+# cfg['share_del'] = [{'id', 'key', 'host'}]: uploads still to delete (turned off). A new ID each time it's turned on.
+# cfg['share_host']: another backup server (someone's own); else share.HOST.
+share_state = {'err': None, 'derr': None, 'size': None, 'want': False, 'next': 0, 'gap': 1800, 'dnext': 0, 'dgap': 1800, 'busy': False}
+
+
+def share_host():
+    return cfg.get('share_host') or share.HOST
+
+
+def ok_host(h):  # a plain host name: letters, digits, dots, dashes
+    h = str(h or '').strip().lower()
+    if h.startswith('https://'):
+        h = h[8:]
+    h = h.rstrip('/')
+    parts = h.split('.')
+    return h if len(h) <= 100 and len(parts) > 1 and all(p and len(p) < 64 and p[0] != '-' and p[-1] != '-' and all(c.isalnum() or c == '-' for c in p)
+                                                         for p in parts) else None
 
 
 def share_view():
     sh = cfg.get('share') or {}
     return {'on': bool(sh.get('on')), 'id': sh.get('id') if sh.get('on') else None, 'at': sh.get('at') or None,
-            'err': share_state['err'], 'busy': share_state['busy'] or share_state['want'], 'host': share.HOST or None,
-            'deleting': bool(share_dels())}
+            'err': share_state['err'], 'derr': share_state['derr'], 'busy': share_state['busy'] or share_state['want'] and not share_state['err'], 'host': share_host() or None,
+            'deleting': bool(share_dels()), 'own_host': bool(cfg.get('share_host'))}
 
 
 def set_share(b):
     sh = cfg.get('share') or {}
-    if b.get('on') is True and not sh.get('on'):
-        cfg['share'] = {'on': True, 'id': share.new_id(), 'key': share.new_key(), 'at': 0}
+    if 'host' in b and not sh.get('on'):  # (only while off: an ID belongs to its server)
+        h = ok_host(b['host']) if b['host'] else ''
+        if h is None:
+            raise ValueError('that doesn\'t look like a server name')
+        if h and h != share.HOST:
+            cfg['share_host'] = h
+        else:
+            cfg.pop('share_host', None)
+    elif b.get('on') is True and not sh.get('on'):
+        cfg['share'] = {'on': True, 'id': share.new_id(), 'key': share.new_key(), 'at': 0,
+                        'inv': ''.join(c for c in str(b.get('invite') or '') if c.isalnum())[:64]}  # (as the server compares them)
         share_state['want'] = True
     elif b.get('on') is False and sh.get('on'):
-        cfg['share_del'] = share_dels() + [{'id': sh['id'], 'key': sh['key']}]  # (deleted from the server in the background)
+        cfg['share_del'] = share_dels() + [{'id': sh['id'], 'key': sh['key'], 'host': share_host()}]  # (deleted in the background)
         cfg['share'] = {'on': False}
         share_state['want'] = False
     elif b.get('now') and sh.get('on'):
@@ -3186,7 +3210,7 @@ def set_share(b):
     else:
         return share_view()
     share_state['err'] = None
-    share_state['next'] = 0
+    share_state['next'] = share_state['dnext'] = 0
     share_state['gap'] = 1800
     save_cfg(cfg)
     return share_view()
@@ -3197,14 +3221,17 @@ def share_dels():
     return [d] if isinstance(d, dict) else list(d or [])
 
 
+SHARE_EVERY = 8 * 3600  # three backups a day
+
+
 def share_due(sh, now):
-    # once a UTC day, at this Pico's own time of day (from its key: Picos spread over the day, never two in one day)
+    # every 8 hours, at this Pico's own times (from its key: Picos spread over the day, never two in one period)
     try:
-        slot = int(sh['key'][:8], 16) % 86400
+        slot = int(sh['key'][:8], 16) % SHARE_EVERY
     except (KeyError, TypeError, ValueError):
         slot = 0
     at = sh.get('at') or 0
-    return int(now // 86400) > int(at // 86400) and now % 86400 >= slot or now - at >= 2 * 86400
+    return int((now - slot) // SHARE_EVERY) > int((at - slot) // SHARE_EVERY) or now - at >= 2 * SHARE_EVERY
 
 
 def share_files():
@@ -3238,20 +3265,21 @@ def share_build(now):
 
 
 async def share_step():
-    host, now = share.HOST, time.time()
-    if not host or now < 1.7e9 or not wlan.isconnected() or mono_s() < share_state['next'] or installing[0]:
+    host, now = share_host(), time.time()
+    if not host or now < 1.7e9 or not wlan.isconnected() or installing[0]:
         return
     dels = share_dels()
-    d = dels[0] if dels else None
+    d = dels[0] if dels and mono_s() >= share_state['dnext'] else None  # (a server that's gone never holds up the backup)
     sh = cfg.get('share') or {}
-    if not d and not (sh.get('on') and (share_state['want'] or share_due(sh, now))):
+    up = sh.get('on') and (share_state['want'] or share_due(sh, now)) and mono_s() >= share_state['next']
+    if not d and not up:
         return
     await web_quiet()
     share_state['busy'] = True
     wd_hold[0] += 1
     try:
         if d:
-            with_room(share.delete, host, d['id'], d['key'])
+            with_room(share.delete, d.get('host') or share.HOST, d['id'], d['key'])
             left = [x for x in share_dels() if x.get('id') != d['id']]
             if left:
                 cfg['share_del'] = left
@@ -3262,16 +3290,17 @@ async def share_step():
             if share_size_guess() + 60000 > free_bytes():
                 raise OSError('not enough room on the Pico to put the upload together')
             share_state['size'] = share_build(now)
-            with_room(share.upload, host, sh['id'], sh['key'])
+            with_room(share.upload, host, sh['id'], sh['key'], share.FILE, sh.get('inv'))
             sh['at'] = int(now)
             save_cfg(cfg)
             share_state['want'] = False
-        share_state['err'] = None
-        share_state['gap'] = 1800
+        share_state['derr' if d else 'err'] = None
+        share_state['dgap' if d else 'gap'] = 1800
     except Exception as ex:
-        share_state['err'] = str(ex) or repr(ex)
-        share_state['next'] = mono_s() + share_state['gap']  # (30 minutes, doubling to 8 hours)
-        share_state['gap'] = min(8 * 3600, share_state['gap'] * 2)
+        share_state['derr' if d else 'err'] = str(ex) or repr(ex)
+        g = 'dgap' if d else 'gap'
+        share_state['dnext' if d else 'next'] = mono_s() + share_state[g]  # (30 minutes, doubling to 8 hours)
+        share_state[g] = min(8 * 3600, share_state[g] * 2)
     finally:
         wd_hold[0] -= 1
         share_state['busy'] = False

@@ -14,7 +14,17 @@ npx wrangler kv namespace create SHARE     # put the id it prints into wrangler.
 npx wrangler deploy                        # prints the address, e.g. hawki-share.<account>.workers.dev
 ```
 
-Then set `HOST` in `firmware/share.py` to that address and release.
+Who can start a backup: set the invite codes (a secret, never in the repo), one per person so each can be cancelled:
 
-Free plan limits that matter: KV 1,000 writes a day (one per upload: ~1,000 Picos sharing), 100,000 reads a day,
-1 GB stored (~300 KB to 1 MB a Pico). Test: `node test.mjs [upload.json]` (no packages; `NODE_PATH` with jsdom for the page check).
+```
+npx wrangler secret put INVITES            # e.g.  me=7QM2-XFD9,dave=K3P8-W2AA   ('*' = anyone; unset = nobody new)
+```
+
+Taking a name out stops that person's backups (what is there can still be restored). At most `MAX_IDS` backups
+(a var in wrangler.toml, default 20) and 8 uploads per backup a day.
+
+For the Picos: either set `HOST` in `firmware/share.py` and release, or type the address under
+Config → Online backup → Backup server on each Pico.
+
+Free plan limits that matter: KV 1,000 writes a day (one per upload; a Pico sends three a day), 100,000 reads a day,
+1 GB stored (~300 KB to 1 MB a Pico). Over a limit, requests fail until midnight UTC: the free plan never bills. Test: `node test.mjs [upload.json]` (no packages; `NODE_PATH` with jsdom for the page check).
