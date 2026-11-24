@@ -330,6 +330,9 @@ def irq(ev, data):
                 d['rx'] = time.time()
                 d['name'] = e['name']
                 lv = d.get('level')
+                mo = (cfg.get('moff') or {}).get(k)
+                if mo and mo.get('cm') and lv is not None and MIN_MM <= lv < 16382:  # the Magnus app's offset (in the monitor):
+                    lv = d['level'] = lv + 10 * mo['cm']  # back to the real distance (poke.read_offset); a blind-zone misread stays one
                 prev = hawki.get(k) or {}
                 if lv is None or lv == 16383 or lv < MIN_MM or odd_empty(lv, prev, d['raw'], cfg['tanks'].get(k), time.time()):  # no level, or inside the radar's blind zone: a misread
                     d['bad_level'] = lv            # (seen: 0 mm on a cold morning), never real. Keep showing the last good level
@@ -1316,7 +1319,7 @@ def rm(name):
         pass
 
 
-MUTATING = ('/api/tank', '/api/tank/delete', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
+MUTATING = ('/api/tank', '/api/tank/delete', '/api/tank/offset', '/api/wifi', '/api/delivery', '/api/restore', '/api/hist',
             '/api/update/install', '/api/restart', '/api/maint', '/api/primary', '/api/hostname', '/api/notify', '/api/notify/test', '/api/location', '/api/price', '/api/year', '/api/net', '/api/mqtt',
             '/api/wifi/try', '/api/setup/done', '/api/share')
 
@@ -1566,6 +1569,7 @@ def tank_view(mac, t, now):
             # misread: the rejected reading (-1: no level at all), or None
             'misread': (-1 if d['bad_level'] is None else d['bad_level']) if 'bad_level' in d else None, 'good_at': d.get('good_at'), 'saved': bool(d.get('saved')), 'litres_standard': std, 'total': r1(tot), 'total_standard': r1(tot_std), 'unusable': list(un) if un else un, 'listen': listener.info(mac),
             'battery': batt_of(d), 'starting': starting(d) or poke.stuck(d), 'poked': poke_info.get(mac), 'clock_set': clock_info.get(mac), 'rssi': d.get('rssi'),
+            'moff': moff_view(mac), 'moff_err': (moff_info.get(mac) or {}).get('err'), 'moff_busy': mac in moff_want,
             'age': (now - d['good_at'] if d.get('good_at') else None) if 'bad_level' in d or d.get('saved') else (now - d['rx']) if d.get('rx') else None,  # after a misread: the shown level's own age
             'cfg': cfg_view(t)}
 
@@ -2847,6 +2851,13 @@ async def handle(r, w):
             except Exception as ex:
                 return await send(w, 400, json.dumps('Could not save: %s' % ex))
             return await send(w, 200, json.dumps(res if res is not None else 'ok'))
+        if path == '/api/tank/offset' and method == 'POST':  # read the monitor's Magnus offset now (within a minute)
+            om = str(jb(body).get('mac', '')).lower()
+            if om not in cfg['tanks']:
+                return await send(w, 400, '"unknown tank"')
+            moff_want.add(om)
+            moff_info.pop(om, None)
+            return await send(w, 200, '"ok"')
         if path == '/api/tank/delete' and method == 'POST':
             dm = str(jb(body).get('mac', '')).lower()
             gone = cfg['tanks'].pop(dm, None) or {}
@@ -2859,6 +2870,12 @@ async def handle(r, w):
             poke_info.pop(dm, None)
             clock_st.pop(dm, None)
             clock_info.pop(dm, None)
+            moff_info.pop(dm, None)
+            moff_want.discard(dm)
+            moff_try.pop(dm, None)
+            moff_seen.pop(dm, None)
+            if (cfg.get('moff') or {}).pop(dm, None) is not None and not cfg['moff']:
+                cfg.pop('moff')
             unset.clear(dm)  # (readings kept aside while the clock was unset: not for a tank that's gone)
             last_saved.pop(dm, None)
             save_cfg(cfg)
@@ -3526,6 +3543,12 @@ poke_st = {}    # mac -> how long its monitor has been stuck starting up, and th
 poke_info = {}  # mac -> {'at': when we last asked it to measure (epoch), 'got': its answers, or 'err'}
 clock_st = {}   # mac -> how long its monitor's clock has looked unset, and the sets so far (poke.clock_due)
 clock_info = {}  # mac -> {'at': when we last set its clock (epoch), 'got': (read before, read after), or 'err'}
+moff_info = {}   # mac -> {'at': when its Magnus offset was last read (epoch), 'got': (cm, start, internal), or 'err'}
+moff_want = set()  # macs whose offset the page asked to read now
+moff_try = {}    # mac -> mono_s() of the last try
+moff_seen = {}   # mac -> epoch it was last read (cfg's 'at' is when it last changed)
+MOFF_EVERY_S = 86400
+MOFF_AGAIN_S = 3600
 
 
 async def gatt_turn(mac, info, job):
@@ -3579,6 +3602,49 @@ async def poke_task():
             await gatt_turn(mac, poke_info, lambda: poke.measure(ble, e['at'], mac, set_hook, asyncio))
             print('poke', mac, poke_info[mac])
             break
+        else:  # nothing more pressing: a monitor's Magnus offset, once a day, or now when asked (Read it again)
+            for mac in list(cfg['tanks']):
+                e = seen.get(mac)
+                if not e and mac in moff_want:  # (asked for, but not heard since the Pico started: say so)
+                    moff_want.discard(mac)
+                    moff_info[mac] = {'at': int(time.time()), 'err': 'not heard since the Pico started'}
+                if not e or not moff_due(mac, mono_s()):
+                    continue
+                moff_try[mac] = mono_s()
+                await gatt_turn(mac, moff_info, lambda: poke.read_offset(ble, e['at'], mac, set_hook, asyncio))
+                moff_want.discard(mac)
+                got = moff_info[mac].get('got')
+                print('moff', mac, moff_info[mac])
+                if got and mac in cfg['tanks']:
+                    moff_set(mac, got[0], int(time.time()) if ntp_ok[0] else None)
+                break
+
+
+def moff_due(mac, mono):
+    # asked for (the page's Read it again), never read on this start, or a day since; a failed read again after an hour
+    t = moff_try.get(mac)
+    if mac in moff_want or t is None:
+        return True
+    return mono - t >= (MOFF_AGAIN_S if 'err' in (moff_info.get(mac) or {}) else MOFF_EVERY_S)
+
+
+def moff_view(mac):
+    o = (cfg.get('moff') or {}).get(mac)
+    return None if o is None else {'cm': o.get('cm'), 'read': moff_seen.get(mac) or o.get('at')}
+
+
+def moff_set(mac, cm, at):
+    # the offset read from the monitor, kept in the settings (written only when it changes: the time it was read is
+    # kept in memory between changes, so the flash isn't written daily)
+    m = cfg.setdefault('moff', {})
+    o = m.get(mac) or {}
+    if o.get('cm') != cm:
+        d = hawki.get(mac)  # the last distance heard carried the old correction: the new one (odd_empty and the rest
+        if d and 'bad_level' not in d and MIN_MM <= (d.get('level') or 0) < 16382:  # compare with it next)
+            d['level'] += 10 * (cm - (o.get('cm') or 0))
+        m[mac] = {'cm': cm, 'at': at}
+        save_cfg(cfg)
+    moff_seen[mac] = at
 
 
 def set_hook(f):

@@ -230,3 +230,39 @@ def clock_due(d, st, now, mono):
     if mono - st['since'] < CLOCK_WAIT_S or st.get('n', 0) >= CLOCK_MOST or 'last' in st and mono - st['last'] < CLOCK_AGAIN_S:
         return False
     return True
+
+
+# The offset typed into the Magnus app when a tank is added ("monitor offset": the filling point to the monitor, 0-80
+# cm) is written INTO the monitor: RANGE_START (1964) becomes its built-in INTERNAL_OFFSET (1978) plus that, and the
+# distance it sends is short by the difference. The Pico wants the real distance (the tank's own heights place the
+# monitor), so it reads the two and adds the difference back. One byte each (low byte first if ever two), in cm:
+# Stu's monitors 2026-11-24, no offset set: 1978 = 2, 1964 = 2; Conor's 5 cm cut his readings by 50-55 mm.
+def le_num(b):
+    b = bytes(b or b'')
+    if not 1 <= len(b) <= 2:
+        raise ValueError('odd value ' + binascii.hexlify(b).decode())
+    return b[0] + (b[1] << 8 if len(b) > 1 else 0)
+
+
+def offset_cm(start, internal):
+    """The Magnus app's offset, cm, from RANGE_START and INTERNAL_OFFSET (the app allows 0-80)."""
+    d = start - internal
+    if not 0 <= d <= 100:
+        raise ValueError('odd offset: range start %d, internal %d' % (start, internal))
+    return d
+
+
+async def read_offset(ble, at, mac, set_hook, asyncio):
+    """Connect, read RANGE_START and INTERNAL_OFFSET, disconnect (tried 3 times). Returns (offset cm, start,
+    internal). Writes nothing. The caller stops scanning first and starts it again after."""
+    async def work(ble, c, ch, st, wait, asyncio):
+        v = []
+        for k in ('1964', '1978'):
+            if k not in ch:
+                raise OSError('no ' + k)
+            st['rd'].pop(ch[k], None)
+            ble.gattc_read(c, ch[k])
+            await wait('done')
+            v.append(le_num(st['rd'].get(ch[k])))
+        return offset_cm(v[0], v[1]), v[0], v[1]
+    return await _tries(ble, at, mac, set_hook, asyncio, work)

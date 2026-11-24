@@ -252,6 +252,7 @@ dialog::backdrop{background:#0008}
 </div></div>
 <div class="fpg" data-t="mea"><div class="grid">
 <label style="grid-column:1/-1">Base of the tank to the bottom of the monitor, cm<input id="f_top" type="number" step="0.1" min="10" required data-f="top"></label>
+<div class="hint" id="f_moff" style="grid-column:1/-1;margin-top:-4px;min-height:5.4em"></div>
 <label style="grid-column:1/-1">Base of the tank to the top of the outlet, cm<input id="f_out" type="number" step="0.5" min="0" max="1000" placeholder="0" data-f="outlet"></label>
 <div class="hint" style="grid-column:1/-1;margin-top:-4px" id="f_hh">&nbsp;</div>
 <label class="cub">Length, cm<input id="f_l" type="number" step="0.1" min="1" max="2000"></label>
@@ -465,8 +466,8 @@ function wmShow(){uEst();const cub=$('f_shape').value=='cuboid',nw=cub?+$('f_win
  ftab(FT);draw()}
 function fill(c){$('f_name').value=c.name||'';$('f_mode').value=modeOf(c);$('f_isoL').style.display=S.tanks.length+(S.tanks.some(x=>x.mac===cur)?0:1)>1||modeOf(c)!=='use'?'block':'none';  /* (a lone tank that isn't in use must still be able to go back) */  /* only means something with 2+ tanks */$('f_shape').value=c.shape||'cuboid';$('f_windows').value=c.windows??0;$('f_top').value=c.height_cm!=null?Math.round((c.height_cm+(c.outlet_cm||0))*100)/100:'';$('f_out').value=c.outlet_cm??'';$('f_l').value=c.length_cm??'';$('f_w').value=c.width_cm??'';$('f_c').value=c.tank_l??c.tank_l_equiv??c.capacity_l??'';$('f_r').value=c.reserve_l??'';
  $('f_wm').value=c.window_model||'standard';for(const k in MF)$(k).value=c[MF[k]]??'';const r=c.ribs_cm||[];$('m_nr').value=r.length;ribInputs(r);wmShow()}
-function add(mac){FT='det';cur=mac;curLevel=(S.found.find(f=>f.mac==mac)||{}).level??null;$('dlgT').textContent='Add tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='hidden';fill({});fromList();dlg.showModal()}
-function edit(mac){FT='det';const t=S.tanks.find(x=>x.mac==mac);cur=mac;curLevel=t.level;$('dlgT').textContent='Edit tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='visible';fill(Object.assign({name:t.name},t.cfg));fromList();dlg.showModal()}
+function add(mac){FT='det';cur=mac;curLevel=(S.found.find(f=>f.mac==mac)||{}).level??null;$('dlgT').textContent='Add tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='hidden';fill({});fromList();moffShow();dlg.showModal()}
+function edit(mac){FT='det';const t=S.tanks.find(x=>x.mac==mac);cur=mac;curLevel=t.level;$('dlgT').textContent='Edit tank';$('dlgMac').textContent=mac;$('dlgDel').style.visibility='visible';fill(Object.assign({name:t.name},t.cfg));fromList();moffShow();dlg.showModal()}
 // a Titan R1225 as measured on one (heights from the base of the tank; capacity checked against a metered delivery)
 const R1225={shape:'cuboid',windows:2,height_cm:123,outlet_cm:9.5,length_cm:173,width_cm:69,tank_l:1306,window_model:'measured',
  win_bottom_cm:45,win_top_cm:79,win_outer_w_cm:39,win_inner_w_cm:17,win_inner_h_cm:14,ribs_cm:[31.5,62.5,93.5],rib_h_cm:12.5,rib_depth_cm:1.5};
@@ -572,6 +573,13 @@ async function exportCsv(){try{bst('Preparing CSV…');const s=await api('/api/s
 /* the monitor's battery in volts (the advert's figure is a % of its 2.00-3.20 V range, a straight line on the voltage,
    not the life left: a new cell settles at about 3.0 V, "80%", for most of its life, so the % misleads), coloured, and what
    to do about it. The Magnus app says BAD at 2.74 V (62%); the low-battery alert goes at 2.78 V (65%) */
+/* the offset typed into the Magnus app when the tank was added: written into the monitor, which takes it off every distance it sends; the Pico reads it once a day and adds it back (poke.read_offset) */
+function moffTxt(t){if(!t)return 'The offset set in the Magnus app is read from the monitor once the tank is saved.';const o=t.moff,at=o&&o.read?' (read '+new Date(o.read*1000).toLocaleString([],{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+')':'',a=t.moff_busy?' Reading it from the monitor…':' <a href="#" class="lnk" style="margin:0" onclick="moffRead();return false">Read it '+(o?'again':'now')+'</a>';
+ return (o?o.cm?'Offset set in the Magnus app: <b>'+o.cm+' cm</b>, taken off by the monitor, added back by the Pico'+at+'. Readings from before: Config → Forecast → Correct earlier readings.':'No offset set in the Magnus app'+at+'.':t.moff_err?'Could not read the offset set in the Magnus app: '+esc(t.moff_err)+'.':'Offset set in the Magnus app: not read yet.')+(t.moff_err&&o?' Last try: '+esc(t.moff_err)+'.':'')+a}
+function moffShow(){const el=$('f_moff');if(el)el.innerHTML=moffTxt(cur&&S.tanks.find(x=>x.mac===cur))}
+let MOFFP=0;async function moffRead(){const mac=cur,g=++MOFFP;if(!mac)return;try{await api('/api/tank/offset',{mac});}catch(e){if(g===MOFFP&&dlg.open&&cur===mac)$('f_moff').textContent='Could not ask: '+e.message;return}
+ /* the Pico reads it within a minute or so (between readings): its answer, watched for here (the page doesn't refresh while this is open) */
+ for(let i=0;i<40&&g===MOFFP;i++){try{const s=await api('/api/state'),t=s.tanks.find(x=>x.mac===mac),k=S.tanks.findIndex(x=>x.mac===mac);if(t&&k>=0)S.tanks[k]=t;if(dlg.open&&cur===mac)moffShow();if(!t||!t.moff_busy)return}catch(e){}await new Promise(r=>setTimeout(r,5000))}}
 function battState(b){return b==null?null:b<=65?['bad','replace battery']:b<=72?['warn','order battery']:['good','good']}
 function battTxt(t){if(t.starting)return 'starting up'+(t.poked&&t.poked.at?' (asked it to measure at '+new Date(t.poked.at*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+')':'');const s=battState(t.battery);return s?`<b class="bt ${s[0]}">${(2+1.2*t.battery/100).toFixed(2)} V (${s[1]})</b>`:'–'}
 const pDay=t=>new Date(t*1000).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
