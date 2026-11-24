@@ -133,6 +133,10 @@ if (JSDOM && fs.existsSync(process.argv[2] || '')) {  // (the pages need a real 
     await new Promise(res => setTimeout(res, 1500));
     const got = check(w.document);
     ok(!errs.length && got && got.trim() && got.trim() !== '–', what + ': ' + JSON.stringify((got || '').trim().slice(0, 90)) + (errs.length ? ' ERR ' + errs[0] : ''));
+    { const d = w.document, bs = [...d.querySelectorAll('button')], live = bs.filter(b => !b.disabled).map(b => b.textContent.trim());
+      const fields = [...d.querySelectorAll('input,select,textarea')].filter(e => !e.disabled && !e.readOnly);
+      const bad = live.filter(t => /^(Save|Add|Delete|Remove|Turn|Restart|Set PIN|Change|Find|Send|Back up|Restore|Check for|Import|Use )/.test(t));
+      ok(!fields.length && !bad.length && live.some(t => /^(Config|Usage)$/.test(t)), url + ': read only (no field to type in, no button that changes anything; tabs still work)' + (bad.length ? ' LEFT: ' + bad.join(', ') : '') + (fields.length ? ' FIELDS: ' + fields.map(e => e.id).join(',') : '')); }
     ok(new w.Date().getTime() === U.at * 1000 && w.Date.now() === U.at * 1000 && new w.Date(0).getTime() === 0, url + ': the clock stands at the upload');
   }
 }

@@ -171,6 +171,24 @@ export function api(u, path, q) {
 const safe = o => JSON.stringify(o).replace(/</g, '\\u003c').replace(/\u2028|\u2029/g, ' ');  // (an upload's text inside a <script>: never able to close it)
 const fwOk = v => /^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(String(v || '')) ? String(v) : null;
 
+// Read only: only what looks around stays working (tabs, chart ranges, tank pickers, opening a tank's or a delivery's
+// details, Cancel/Close, exports to this phone); every other button is greyed out, every field read only, no form sent.
+// Re-applied whenever the page draws something new. (No backslashes in here: it sits in a template string.)
+export const RO = `(()=>{const OK=['sub(','page(','showTank(','edit(','editDel(','tankFull(','exportCsv(','exportBackup(','pinCancel('],VIEW=['prUnit'];
+const look=b=>{const oc=b.getAttribute('onclick')||'',t=(b.textContent||'').trim();
+ return b.getAttribute('role')==='tab'||b.hasAttribute('data-s')||b.hasAttribute('data-t')||b.hasAttribute('data-pg')||b.hasAttribute('aria-pressed')||b.hasAttribute('aria-current')
+  ||OK.some(k=>oc.indexOf(k)===0)&&oc.indexOf('(null')<0||oc.indexOf('.close()')>=0||t==='Cancel'||t==='Close'||t==='Edit'||t.indexOf('Edit ')===0};
+const ro=()=>{document.querySelectorAll('button').forEach(b=>{if(!look(b)&&!b.disabled){b.disabled=true;b.title='Read only: this is a backup'}});
+ document.querySelectorAll('input,select,textarea').forEach(e=>{const ty=(e.type||'').toLowerCase();
+  if(VIEW.indexOf(e.id)>=0)return;if(e.tagName==='SELECT'||['checkbox','radio','file','range','color','submit','button'].indexOf(ty)>=0){if(!e.disabled)e.disabled=true}else if(!e.readOnly)e.readOnly=true})};
+let q=0;const C='BUTTON,INPUT,SELECT,TEXTAREA';
+const again=rs=>{if(!q&&rs.some(r=>r.type==='attributes'||[].some.call(r.addedNodes,n=>n.nodeType===1&&(n.matches(C)||n.querySelector(C))))){q=1;setTimeout(()=>{q=0;ro()},0)}};
+const stop=e=>{e.preventDefault();e.stopImmediatePropagation()};
+addEventListener('submit',stop,true);
+addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t&&(t.readOnly||t.disabled))stop(e)},true);
+addEventListener('click',e=>{const a=e.target&&e.target.closest&&e.target.closest('a[onclick]');if(a&&!look(a))stop(e)},true);
+addEventListener('DOMContentLoaded',()=>{const st=document.createElement('style');st.textContent='button:disabled{opacity:.35!important;cursor:not-allowed!important;filter:grayscale(1)}input[readonly],textarea[readonly]{background:transparent!important;border-style:dashed!important}select:disabled{opacity:1!important;color:inherit!important;background:transparent!important;border-style:dashed!important}';document.head.append(st);ro();new MutationObserver(again).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled','readonly']})})})()`;
+
 export function inject(html, id, u) {
   const at = Math.max(0, Math.floor(+u.at || 0)), when = new Date(at * 1000).toISOString().slice(0, 16).replace('T', ' ');
   const area = u.area && u.area.pc ? ' · ' + u.area.pc : '';
@@ -178,7 +196,7 @@ export function inject(html, id, u) {
   const s = `<script>(()=>{const AT=${at * 1000},D=Date;class F extends D{constructor(...a){if(a.length)super(...a);else super(AT)}static now(){return AT}}window.Date=F;
 const f=window.fetch.bind(window);window.fetch=(x,o)=>o&&o.method&&String(o.method).toUpperCase()!=='GET'?Promise.resolve(new Response('{}',{status:200,headers:{'Content-Type':'application/json'}})):f(x,o);
 addEventListener('DOMContentLoaded',()=>{const b=document.createElement('div');b.textContent=${safe('Backup ' + id + area + ' · as at ' + when + ' UTC · v' + (fwOk(u.fw) || '?') + ' · read only')};
-b.style.cssText='position:sticky;top:0;z-index:99;background:#7a4a00;color:#fff;font:600 13px system-ui;padding:6px 10px;text-align:center';document.body.prepend(b)})})()</script>`;
+b.style.cssText='position:sticky;top:0;z-index:99;background:#7a4a00;color:#fff;font:600 13px system-ui;padding:6px 10px;text-align:center';document.body.prepend(b)})})();${RO}</script>`;
   return html.replace(/<head[^>]*>/i, m => m + s);
 }
 
