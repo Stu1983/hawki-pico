@@ -177,6 +177,14 @@ dialog::backdrop{background:#0008}
 <textarea id="pTxt" rows="6" spellcheck="false" autocapitalize="off" style="width:100%;box-sizing:border-box;margin-top:8px;font:inherit;font-size:16px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)" placeholder="2026-11-12 08:00 850 L" oninput="pastePrev()"></textarea>
 <div class="mut" id="pPrev" style="min-height:18px;margin-top:6px"></div>
 <div class="acts" style="justify-content:flex-start"><button id="pBtn" onclick="pasteAdd()" disabled>Add readings</button></div></div>
+<h2>Correct earlier readings</h2>
+<div class="card"><div class="mut">Changed the sensor offset in the Magnus app, or moved the monitor? The level jumps then, with nothing used or delivered. This moves every reading before that time by the same amount, so the charts, the use and the forecast carry on without the jump.</div>
+<div class="row" style="margin-top:10px"><label for="cTank">Tank</label><select id="cTank" style="width:auto" onchange="corrLoad()"></select></div>
+<div class="row"><label for="cAt">Readings before</label><input id="cAt" type="datetime-local" style="width:auto;margin:0" oninput="corrPrev()"></div>
+<div class="row"><label for="cDir">They read</label><span style="display:flex;gap:6px;align-items:center"><select id="cDir" style="width:auto;margin:0" onchange="corrPrev()"><option value="1">too high</option><option value="-1">too low</option></select> by <input id="cCm" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" placeholder="5" style="width:80px;margin:0" oninput="corrPrev()"> cm</span></div>
+<div class="mut" id="cHint" style="min-height:40px;margin-top:6px"></div>
+<div class="mut" id="cPrev" style="min-height:40px;margin-top:6px"></div>
+<div class="acts" style="justify-content:flex-start"><button id="cBtn" onclick="corrApply()" disabled>Correct readings</button></div></div>
 </div>
 <div id="p_ntf" hidden>
 <h2>Notifications</h2>
@@ -355,7 +363,7 @@ function readAt(t){const r=t.misread!=null||t.saved?t.good_at:t.listen&&t.listen
  return (late?'<b style="color:var(--bad)">no new reading since ':'read at ')+(late&&now-r>20*3600?d.toLocaleDateString([], {day:'numeric',month:'short'})+' ':'')+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(late?'</b>':'')}
 const okMac=m=>/^[0-9a-f:]{17}$/.test(m)?m:'';
 async function api(p,body){const r=await authFetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(r.status===401)throw new Error("The PIN is needed to change this.");if(!r.ok)throw new Error((await r.text()).replace(/^"|"$/g,''));return r.json()}  /* (the Pico's message, without its JSON quotes) */
-let LDN=0,FIRST=true;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render();if(!$('p_cfg').hidden&&SUB==='ntf')wjsLoad();if(!$('p_cfg').hidden&&SUB==='fc')pasteTanks();
+let LDN=0,FIRST=true;async function load(){const g=++LDN;try{const s=await api('/api/state');if(g!==LDN)return;S=s;render();if(!$('p_cfg').hidden&&SUB==='ntf')wjsLoad();if(!$('p_cfg').hidden&&SUB==='fc'){pasteTanks();corrTanks()}
  if(FIRST&&!SU){FIRST=false;if(!location.hash&&!S.tanks.length){history.replaceState(null,'','#tanks');tab('tanks')}}}catch(e){if(g===LDN){if(SU==='try'){$('s_tryM').textContent='Waiting for the monitor to answer (your phone may be rejoining the setup Wi-Fi)…';suFar()}else if(!FAR)$('status').textContent='Cannot reach the Pico: '+e.message}}}  /* (an older answer arriving after a newer one is dropped) */
 /* the Forecast tab opens the history page (forecast and history) for what the dashboard shows: its tank, or all tanks together (every refresh, whichever page is open) */
 function navHist(){const ts=S.tanks.filter(t=>modeOf(t.cfg)!=='off'),p=S.primary,t=p==='all'?(ts.length>1?'all':ts[0]&&ts[0].mac):S.tanks.some(x=>x.mac===p)?p:null;$('navHist').href=t?'/history?mac='+(t==='all'?'all':okMac(t)):'/history'}
@@ -584,7 +592,33 @@ async function pasteAdd(){const mac=okMac($('pTank').value),t=S.tanks.find(x=>x.
   if(!confirm('Add '+out.length+' reading'+(out.length===1?'':'s')+' to '+t.name+', '+pDay(out[0][0])+' to '+pDay(out[out.length-1][0])+'?'+(fix?'\n\n'+fix+' of them '+(fix===1?'replaces the reading':'replace the readings')+' saved for the same time:\n'+fixes.join('\n'):'')+(later?'\n\n'+later+' left out: '+(later===1?'a reading is':'readings are')+' already saved within 2 hours (the Pico\'s own, or added before).':'')+(full.length?'\n\n'+full.length+' left out: more than the tank holds ('+full.slice(0,3).join(', ')+' L). Check the tank\'s size under Tanks.':'')))return st('');
   const b=new DataView(new ArrayBuffer(out.length*6));out.forEach(([ts,mm],i)=>{b.setUint32(i*6,ts,true);b.setUint16(i*6+4,mm,true)});
   st('Adding…');const r=await authFetch('/api/hist?mac='+mac+(fix?'&replace=1':''),{method:'POST',body:b.buffer});if(!r.ok)throw new Error(await r.json().catch(()=>r.status));
-  $('pTxt').value='';pastePrev();st('Added '+out.length+' readings to '+t.name+'.');anReset();load()}catch(e){st('Could not add them: '+e.message)}}
+  $('pTxt').value='';pastePrev();st('Added '+out.length+' readings to '+t.name+'.');anReset();load();if(CR&&CR.mac===mac)corrLoad()}catch(e){st('Could not add them: '+e.message)}}
+/* Correct earlier readings: every reading before a time moved by the same distance (a sensor offset changed in the Magnus app, a monitor moved), posted back as replacements for the same times. Readings are distances from the monitor down to the oil: a level too high by d had a distance d too short */
+let CR=null;
+function corrTanks(){const el=$('cTank'),ts=(S&&S.tanks)||[],v=el.value,k=JSON.stringify(ts.map(t=>[t.mac,t.name]));if(el.dataset.k===k)return;el.dataset.k=k;el.textContent='';for(const t of ts){const o=document.createElement('option');o.value=t.mac;o.textContent=t.name;el.appendChild(o)}if(ts.some(t=>t.mac===v))el.value=v;corrLoad()}
+const corrMin=T=>{const d=new Date(T*1000),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())};
+const corrWhen=T=>pDay(T)+' '+new Date(T*1000).toTimeString().slice(0,5);
+async function corrLoad(){const mac=okMac($('cTank').value),g={};CR=g;$('cHint').textContent='';corrPrev();if(!mac)return;
+ try{const cv=await api('/api/curve?mac='+mac),v=new DataView(await getBin(mac)),a=[];for(let i=0;i+6<=v.byteLength;i+=6)a.push([v.getUint32(i,true),v.getUint16(i+4,true)]);a.sort((x,y)=>x[0]-y[0]);if(CR!==g)return;
+  Object.assign(g,{mac,cv,a});
+  /* a suggestion only: the biggest sudden fall in the last 60 days, one reading to the next (3 hours apart at most, 15 mm or more: a burner takes a few mm an hour) */
+  let best=null;const from=Date.now()/1000-60*86400;for(let i=1;i<a.length;i++){const[t0,m0]=a[i-1],[t1,m1]=a[i];if(t1<from||t1-t0>10800||m0===16382||m1===16382)continue;const d=m1-m0;if(d>=15&&(!best||d>best.d))best={t:t1,d,l:toL(m0,cv)-toL(m1,cv)}}
+  g.best=best;$('cHint').innerHTML=best?'Biggest sudden fall in the last 60 days: <b>'+corrWhen(best.t)+'</b>, '+(best.d/10).toFixed(1)+' cm ('+Math.round(best.l)+' L) from one reading to the next. <a href="#" class="lnk" style="margin:0" onclick="corrUse();return false">Use this</a> (only if nothing was used then)':'No sudden fall in the last 60 days.';corrPrev()}
+ catch(e){if(CR===g)$('cHint').textContent='Could not read the readings: '+e.message}}
+function corrUse(){const b=CR&&CR.best;if(!b)return;$('cAt').value=corrMin(b.t);$('cAt').dataset.t=b.t+'|'+$('cAt').value;  /* (the reading's own second, until the time is edited: a minute typed back can miss it, or land on the wrong side of a clock change) */$('cDir').value='1';$('cCm').value=(b.d/10).toFixed(1);corrPrev()}
+/* what would change: the readings before T, each moved by d mm of distance ('empty' left alone); one that would go past either end stops it all, so the other way back always undoes it */
+function corrPlan(){if(!CR||!CR.a)return null;const at=$('cAt').value,cm=+$('cCm').value;if(!at||!(cm>0&&cm<=100))return null;const k=($('cAt').dataset.t||'').split('|'),T=k[1]===at?+k[0]:new Date(at).getTime()/1000;if(!(T>0))return null;
+ const d=Math.round(cm*10)*+$('cDir').value,out=[];let i=0,clip=0;for(const[t,m]of CR.a){if(t>=T)break;i++;if(m===16382)continue;const n=m+d;if(n<0||n>16381){clip++;continue}out.push([t,n])}
+ const a=CR.a,cv=CR.cv,j=i<a.length?a[i]:null,p=i>0?a[i-1]:null;let jump=null;if(p&&j&&p[1]!==16382&&j[1]!==16382)jump=[toL(j[1],cv)-toL(p[1],cv),toL(j[1],cv)-toL(Math.max(0,Math.min(16381,p[1]+d)),cv)];return{T,d,out,jump,clip}}
+function corrPrev(){const P=corrPlan(),n=P?P.out.length:0;$('cBtn').disabled=!n||P.clip>0;
+ $('cPrev').textContent=!P?'':P.clip?P.clip+' reading'+(P.clip===1?'':'s')+' would go past the top or bottom of the tank: check the amount.':!n?'No readings before then.':n+' reading'+(n===1?'':'s')+', '+pDay(P.out[0][0])+' to '+corrWhen(P.out[n-1][0])+', move '+(P.d>0?'down':'up')+' '+(Math.abs(P.d)/10).toFixed(1)+' cm.'+(P.jump?' The step at that time: '+(P.jump[0]>=0?'+':'')+Math.round(P.jump[0])+' L now, '+(P.jump[1]>=0?'+':'')+Math.round(P.jump[1])+' L after.':'')}
+async function corrApply(){$('cBtn').disabled=true;await corrLoad();  /* (the readings as they are now: pasted ones since, a correction made in another tab) */
+ const P=corrPlan(),t=S&&S.tanks.find(x=>x.mac===(CR&&CR.mac));if(!P||!P.out.length||P.clip||!t)return;const st=x=>{$('cPrev').textContent=x},n=P.out.length;
+ if(n*6>600000){st('Too many readings to move at once ('+n+').');return}
+ if(!confirm('Move '+n+' reading'+(n===1?'':'s')+' of '+t.name+' '+(P.d>0?'down':'up')+' by '+(Math.abs(P.d)/10).toFixed(1)+' cm?\n\n'+pDay(P.out[0][0])+' to '+corrWhen(P.out[n-1][0])+'. To undo it, correct the same time the other way.'))return;
+ const b=new DataView(new ArrayBuffer(n*6));P.out.forEach(([ts,mm],i)=>{b.setUint32(i*6,ts,true);b.setUint16(i*6+4,mm,true)});
+ try{st('Correcting…');$('cBtn').disabled=true;const r=await authFetch('/api/hist?mac='+CR.mac+'&replace=1',{method:'POST',body:b.buffer});if(!r.ok)throw new Error(await r.json().catch(()=>r.status));
+  $('cCm').value='';anReset();load();await corrLoad();st('Moved '+n+' readings.')}catch(e){st('Could not correct them: '+e.message);corrPrev()}}
 async function importBackup(f,o){$('impf').value='';if(!f&&!o)return;  /* (o: a backup already read, from a share ID) */
  if(!o)try{o=JSON.parse(await f.text())}catch(e){alert('That file isn\'t a backup (not valid JSON).');return}
  if(!o||o.format!=='hawki-backup'||typeof o.tanks!=='object'){alert('That file isn\'t an Oil Tanks backup.');return}
@@ -613,7 +647,7 @@ function tab(p){if(SU){for(const k of PAGES)$('p_'+k).hidden=true;return}if(SUBS
 /* Config's three sub-tabs: Config (sensors nearby first: what a new monitor needs), Forecast, Notifications. The last one used is remembered */
 function sub(k,keep){if(!SUBS.includes(k))k='sys';SUB=k;try{localStorage.hawkiSub=k}catch(e){}if(!keep)history.replaceState(null,'','#'+(k==='sys'?'cfg':k));
  document.querySelectorAll('.sub button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===k));for(const x of SUBS)$('p_'+x).hidden=x!==k;
- if(k==='sys')seek();if(k==='ntf')wjsLoad();if(k==='fc')pasteTanks()}
+ if(k==='sys')seek();if(k==='ntf')wjsLoad();if(k==='fc'){pasteTanks();corrTanks()}}
 // Sensors nearby: the Pico normally only listens when a reading is due; ask it to look around while this is open
 /* the widget script for Scriptable: fetched when Config → Notifications opens, so a tap can copy it at once (iPhones only allow
    copying during the tap itself, not after waiting for a download) */
