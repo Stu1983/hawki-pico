@@ -10,7 +10,7 @@ key (made here, never shown). Runs on CPython and MicroPython.
 """
 import binascii, json, os, socket, time
 
-HOST = ''  # the share server, e.g. hawki-share.example.workers.dev ('' until it is deployed: the card says so)
+HOST = 'hawki-share.northcoast.workers.dev'  # the share server (cloud/share-worker)
 FILE = 'share.up'
 ALPH = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'  # Crockford's base 32: no I, L, O or U to misread
 STATE_KEYS = ('tanks', 'primary', 'year_l', 'switch', 'price')  # all else in /api/state stays on the Pico

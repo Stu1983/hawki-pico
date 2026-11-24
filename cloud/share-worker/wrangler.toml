@@ -5,4 +5,4 @@ compatibility_date = "2026-11-01"
 
 [[kv_namespaces]]
 binding = "SHARE"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"   # npx wrangler kv namespace create SHARE
+id = "228a3e82df94434ea1a1b5efd9e9004a"   # npx wrangler kv namespace create SHARE
