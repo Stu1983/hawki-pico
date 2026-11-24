@@ -227,9 +227,11 @@ export function inject(html, id, u, B) {
   const area = u.area && u.area.pc ? ' · ' + u.area.pc : '';
   // the clock stands at the upload (so "last heard", "today" and the forecast read as they did then); nothing is saved
   const s = `<script>(()=>{const AT=${at * 1000},D=Date;class F extends D{constructor(...a){if(a.length)super(...a);else super(AT)}static now(){return AT}}window.Date=F;
-const B=${B ? safe(B) : '{}'};${SHIM}const f=window.fetch.bind(window);window.fetch=(x,o)=>{if(String(o&&o.method||x&&x.method||'GET').toUpperCase()!=='GET')return Promise.resolve(new Response('{}',{status:200,headers:{'Content-Type':'application/json'}}));const r=ans(x);return r?Promise.resolve(r):f(x,o)};
+const B=${B ? safe(B) : '{}'};const V0='/v/'+${safe(id)},rebase=x=>{try{const u=new URL(typeof x==='string'?x:x.url,location.href);if(u.origin!==location.origin||u.pathname.indexOf('/api/')!==0)return x;const n=V0+u.pathname+u.search;return typeof x==='string'?n:new Request(n,x)}catch(e){return x}};${SHIM}const f=window.fetch.bind(window);window.fetch=(x,o)=>{if(String(o&&o.method||x&&x.method||'GET').toUpperCase()!=='GET')return Promise.resolve(new Response('{}',{status:200,headers:{'Content-Type':'application/json'}}));const r=ans(x);return r?Promise.resolve(r):f(rebase(x),o)};
 addEventListener('DOMContentLoaded',()=>{const b=document.createElement('div');b.textContent=${safe('Backup ' + id + area + ' · as at ' + when + ' UTC · v' + (fwOk(u.fw) || '?') + ' · read only')};
-b.style.cssText='position:sticky;top:0;z-index:99;background:#7a4a00;color:#fff;font:600 13px system-ui;padding:6px 10px;text-align:center';document.body.prepend(b)})})();${RO}</script>`;
+b.style.cssText='position:sticky;top:0;z-index:99;background:#7a4a00;color:#fff;font:600 13px system-ui;padding:6px 10px;text-align:center';document.body.prepend(b)});
+const V=V0,keep=e=>{const a=e.target&&e.target.closest&&e.target.closest('a[href]'),h=a&&a.getAttribute('href');if(h&&h[0]==='/'&&(h==='/'||'#?'.indexOf(h[1])>=0||h.indexOf('/history')===0))a.setAttribute('href',V+h)};
+['click','auxclick','contextmenu','touchstart','mousedown','focusin'].forEach(k=>addEventListener(k,keep,true))})();${RO}</script>`;
   return html.replace(/<head[^>]*>/i, m => m + s);
 }
 
@@ -319,11 +321,23 @@ export async function handle(req, env, now = Math.floor(Date.now() / 1000)) {
     return err('not allowed', 405, cors);
   }
   if (p.startsWith('/v/')) {
-    const id = okId(p.slice(3));
+    const seg = p.slice(3).split('/')[0], id = okId(seg);
     if (!id || !(await meta(env, id))) return new Response(HOME.replace('<p>', '<p style="color:#b00">Nothing is backed up under that ID.</p><p>'), {status: 404, headers: {'Content-Type': 'text/html'}});
-    return new Response(null, {status: 302, headers: {'Location': '/', 'Set-Cookie': `hkv=${id}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax`}});
+    const rest = p.slice(3 + seg.length);
+    if (rest === '') {  // the address to share: on to the pages under it (the cookie only for
+      return new Response(null, {status: 302, headers: {'Location': '/v/' + id + '/',  // pages opened at the old addresses)
+        'Set-Cookie': `hkv=${id}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax`}});
+    }
+    if (rest[0] !== '/') return err('not found', 404);
+    return view(req, env, now, url, id, rest);
   }
-  const id = cookieId(req);
+  // the old addresses (/, /history, /api/...): the backup opened last in this browser, from the cookie
+  return view(req, env, now, url, cookieId(req), p);
+}
+
+// Each backup's pages sit under its own /v/<ID>/, so two backups open in two tabs never swap (one cookie for every
+// tab did: Conor's Forecast tab showed Stu's, 2026-11-24).
+async function view(req, env, now, url, id, p) {
   if (!id) return p === '/' ? new Response(HOME, {headers: {'Content-Type': 'text/html'}}) : err('not found', 404);
   const u = await data(env, id, now);
   if (!u) return new Response(HOME.replace('<p>', '<p style="color:#b00">Nothing is backed up under that ID any more.</p><p>'), {status: 404, headers: {'Content-Type': 'text/html'}});

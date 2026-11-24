@@ -83,7 +83,7 @@ r = await call('GET', '/v/HK-0000-0002');
 ok(r.status === 404 && /Nothing is backed up/.test(await r.text()), 'an ID with nothing: says so');
 r = await call('GET', '/v/' + SID.toLowerCase());
 const ck = (r.headers.get('Set-Cookie') || '').split(';')[0];
-ok(r.status === 302 && r.headers.get('Location') === '/' && ck === 'hkv=' + SID, 'the view remembers the ID and opens the dashboard');
+ok(r.status === 302 && r.headers.get('Location') === '/v/' + SID + '/' && ck === 'hkv=' + SID, 'the view opens the dashboard under its own address (the cookie kept for the old addresses)');
 const realFetch = globalThis.fetch;
 globalThis.fetch = async u => {  // GitHub, from the local firmware/
   const m = /\/firmware\/(.+)$/.exec(String(u));
@@ -91,6 +91,21 @@ globalThis.fetch = async u => {  // GitHub, from the local firmware/
   return m && fs.existsSync(path.join(FW, m[1])) ? new Response(fs.readFileSync(path.join(FW, m[1]), 'utf8')) : new Response('', {status: 404});
 };
 const view = (url, method = 'GET') => call(method, url, method === 'GET' ? undefined : '{}', {Cookie: ck});
+// each backup's pages under its own address: another backup opened in another tab (the cookie) changes nothing
+{
+  const other = {Cookie: 'hkv=HK-0000-0002'};
+  let x = await call('GET', '/v/' + SID + '/', undefined, other), h = await x.text();
+  ok(x.status === 200 && h.includes('Backup ' + SID) && h.includes("const V0='/v/'+\"" + SID + '"'), 'dashboard at /v/<ID>/: that backup, whatever the cookie says; its links kept under it');
+  x = await call('GET', '/v/' + SID.toLowerCase() + '/history?mac=x', undefined, other);
+  ok(x.status === 200 && (await x.text()).includes('Backup ' + SID), 'forecast page at /v/<ID>/history: that backup');
+  x = await call('GET', '/v/' + SID + '/api/state');
+  ok(x.status === 200 && /tanks/.test(await x.text()), 'its data under it too, no cookie needed');
+  ok(h.includes('f(rebase(x),o)') && h.includes("u.pathname.indexOf('/api/')!==0"), 'anything not in the page goes to /v/<ID>/api/..., never to another tab\'s backup');
+  x = await call('GET', '/v/' + SID + 'X/');
+  ok(x.status === 404, 'a bad ID in the address: not found');
+  x = await call('GET', '/v/' + SID + '/', undefined, other);
+  ok(!x.headers.get('Set-Cookie'), 'the pages themselves set no cookie (only the shared address does)');
+}
 const U = JSON.parse(up), mac = Object.keys(U.tanks).sort((a, b) => (U.history[b] || '').length - (U.history[a] || '').length)[0];  // (the tank with most readings)
 r = await view('/api/state');
 ok(JSON.stringify(await r.json()) === JSON.stringify(U.state), '/api/state: the upload\'s');
