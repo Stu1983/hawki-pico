@@ -142,12 +142,13 @@ dialog::backdrop{background:#0008}
 <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button onclick="exportBackup()">Export backup</button><button onclick="exportCsv()">Export readings (CSV)</button><button onclick="$('impf').click()">Import backup</button>
 <input type="file" id="impf" accept=".json,application/json" hidden onchange="importBackup(this.files[0])"></div><div class="mut" id="bkst" style="min-height:18px;margin-top:6px"></div></div>
 
-<h2>Share for support</h2>
-<div class="card"><div class="mut">Once a day, this Pico's readings, tank settings, deliveries and weather go to the share server under an ID you can give to someone helping you: they see these same pages, read only. Tank names and delivery notes go as you typed them. Never sent: the Wi-Fi name or password, the PIN, notification keys, network details or the place name. Where you are goes only as your postcode district (if set under Oil prices) and to within about 15 miles. Stopping deletes it from the server.</div>
-<div class="row" style="margin-top:10px;align-items:center;gap:10px;min-height:40px"><b id="shId" style="font:700 20px ui-monospace,monospace;letter-spacing:1px">–</b><button id="shCopy" onclick="shCopy()" style="visibility:hidden">Copy</button></div>
+<h2>Online backup</h2>
+<div class="card"><div class="mut">Keeps a copy of this Pico's readings, tank settings and deliveries online, updated once a day, so months or years of history aren't lost if the Pico breaks or is replaced: on the new one, type the backup ID under Restore. Keep the ID somewhere safe. You can also give it to someone helping you: they see these same pages, read only. Tank names and delivery notes are kept as you typed them. Never sent: the Wi-Fi name or password, the PIN, notification keys, network details or the place name. Where you are goes only as your postcode district (if set under Oil prices) and to within about 15 miles. Turning it off deletes the online copy.</div>
+<div class="row" style="margin-top:10px;align-items:center;gap:10px;min-height:40px"><b id="shId" style="font:700 20px ui-monospace,monospace;letter-spacing:1px;user-select:all;-webkit-user-select:all">–</b><button id="shCopy" onclick="shCopy()" style="visibility:hidden">Copy</button></div>
+<div id="shNote" style="min-height:40px;font-weight:600;color:#b45309"></div>
 <div class="mut" id="shSt" style="min-height:38px"></div>
-<div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button class="pri" id="shBtn" onclick="shToggle()">Start sharing</button><button id="shNow" onclick="shNow()">Send now</button></div>
-<div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap;align-items:center"><label for="shIn">Restore from an ID</label><input id="shIn" placeholder="HK-7QM2-XFD9" style="width:9em" autocapitalize="characters" spellcheck="false"><button id="shRes" onclick="shRestore()">Restore</button></div></div>
+<div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button class="pri" id="shBtn" onclick="shToggle()">Turn on</button><button id="shNow" onclick="shNow()">Back up now</button></div>
+<div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap;align-items:center"><label for="shIn">Restore from a backup ID</label><input id="shIn" placeholder="HK-7QM2-XFD9" style="width:9em" autocapitalize="characters" spellcheck="false"><button id="shRes" onclick="shRestore()">Restore</button></div></div>
 </div>
 <div id="p_fc" hidden>
 <h2>Forecast</h2>
@@ -516,15 +517,21 @@ async function restartPico(){const b=$('rstBtn'),m=$('rstM');
  b.disabled=false}
 
 // ---------- share for support ----------
-function shRender(){const h=S.share||{},on=!!h.on,id=on&&h.id;$('shId').textContent=id||'–';$('shCopy').style.visibility=id?'visible':'hidden';
- $('shBtn').textContent=on?'Stop sharing':'Start sharing';$('shBtn').className=on?'':'pri';$('shBtn').disabled=!h.host;$('shNow').disabled=!on||!h.host||!!h.busy;$('shRes').disabled=!h.host;
- $('shSt').textContent=!h.host?'The share server isn\'t ready yet: it comes in an update.':!on?'Not sharing.':h.busy?'Sending…':h.err?'Could not send: '+h.err+'. It tries again later.':h.at?'Last sent '+new Date(h.at*1000).toLocaleString([],{weekday:'short',hour:'2-digit',minute:'2-digit'})+'. Give the ID to whoever is helping: they open '+h.host+'/v/'+id:'Sending in a minute or two…'}
-async function shToggle(){const on=!(S.share&&S.share.on);if(!on&&!confirm('Stop sharing? What was sent is deleted from the share server and the ID stops working.'))return;try{await api('/api/share',{on});await load()}catch(x){alert(x.message)}}
+function shRender(){const h=S.share||{},on=!!h.on,id=on&&h.id;if($('shId').textContent!==(id||'–'))$('shId').textContent=id||'–';  /* (only when it changes: a selected ID stays selected) */$('shCopy').style.visibility=id?'visible':'hidden';$('shNote').textContent=id?'Make a note of this ID now and keep it somewhere other than the Pico (a photo or a note on your phone). If the Pico dies, it\'s the only way to get your history back.':'';
+ $('shBtn').textContent=on?'Turn off':'Turn on';$('shBtn').className=on?'':'pri';$('shBtn').disabled=!h.host;$('shNow').disabled=!on||!h.host||!!h.busy;$('shRes').disabled=!h.host;
+ $('shSt').textContent=!h.host?'Online backup isn\'t ready yet: it comes in an update.':!on?(h.deleting?'Off. Deleting the online copy'+(h.err?' (could not yet: '+h.err+'; it tries again later)':'…'):'Off: nothing is kept online.'):h.busy?'Backing up…':h.err?'Could not back up: '+h.err+'. It tries again later.':h.at?'Last backed up '+new Date(h.at*1000).toLocaleString([],{weekday:'short',hour:'2-digit',minute:'2-digit'})+'. To let someone see your charts, give them the ID: they open '+h.host+'/v/'+id:'Backing up in a minute or two…'}
+async function shToggle(){const on=!(S.share&&S.share.on);if(!on&&!confirm('Turn off online backup? The online copy is deleted and the ID stops working.'))return;try{await api('/api/share',{on});await load();const id=on&&S.share&&S.share.id;if(id)alert('Your backup ID is '+id+'.\n\nMake a note of it now and keep it somewhere other than the Pico (a photo or a note on your phone). If the Pico dies, it\'s the only way to get your history back.')}catch(x){alert(x.message)}}
 async function shNow(){try{await api('/api/share',{now:1});await load()}catch(x){alert(x.message)}}
-function shCopy(){const id=S.share&&S.share.id;if(id&&navigator.clipboard)navigator.clipboard.writeText(id).then(()=>{$('shCopy').textContent='Copied'},()=>{})}
+/* copy text: the old way first (the Pico's page is http, where navigator.clipboard is missing), then the new one -> Promise of true/false */
+function copyText(x){let done=false;try{const t=document.createElement('textarea');t.value=x;t.readOnly=true;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);
+  t.focus();t.select();t.setSelectionRange(0,x.length);done=document.execCommand('copy');t.remove()}catch(e){}
+ if(!done&&navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(x).then(()=>true,()=>false);return Promise.resolve(done)}
+async function shCopy(){const id=S.share&&S.share.id;if(!id)return;const b=$('shCopy');
+ if(await copyText(id)){b.textContent='Copied';setTimeout(()=>{b.textContent='Copy'},2000)}
+ else{const r=document.createRange();r.selectNodeContents($('shId'));const g=getSelection();g.removeAllRanges();g.addRange(r);alert('Your browser wouldn\'t copy it here. The ID is selected: press and hold it, then Copy.')}}
 function shOkId(v){let s=String(v||'').toUpperCase().replace(/[^0-9A-Z]/g,'');if(s.startsWith('HK')&&s.length===10)s=s.slice(2);s=s.replace(/O/g,'0').replace(/[IL]/g,'1');return /^[0-9A-HJKMNP-TV-Z]{8}$/.test(s)?'HK-'+s.slice(0,4)+'-'+s.slice(4):null}
-async function shRestore(){const id=shOkId($('shIn').value),h=S.share||{};if(!id){alert('A share ID looks like HK-7QM2-XFD9.');return}
- try{$('shRes').disabled=true;bst('Fetching '+id+'…');const r=await fetch('https://'+h.host+'/u/'+id);if(r.status===404)throw new Error('nothing is shared under '+id);if(!r.ok)throw new Error('the share server said '+r.status);
+async function shRestore(){const id=shOkId($('shIn').value),h=S.share||{};if(!id){alert('A backup ID looks like HK-7QM2-XFD9.');return}
+ try{$('shRes').disabled=true;bst('Fetching '+id+'…');const r=await fetch('https://'+h.host+'/u/'+id);if(r.status===404)throw new Error('nothing is backed up under '+id);if(!r.ok)throw new Error('the backup server said '+r.status);
   const o=await r.json();bst('');await importBackup(null,o)}catch(e){bst('');alert('Could not restore: '+e.message)}finally{$('shRes').disabled=!h.host}}
 // ---------- backup ----------
 const bst=t=>{$('bkst').textContent=t};
@@ -603,11 +610,8 @@ let WJS=null,WJSH=null,WJSP=null,WJSG=0;  /* the script, the Pico name it was fe
 function wjsLoad(){if(!S||!S.update)return;const h=S.hostname;  /* (only once the Pico's details are in: the script carries its name) */if(WJS&&WJSH!==h){WJS=null;WJSP=null}  /* (renamed: fetch it again, with the new name in it) */
  if(WJS||WJSP)return;const g=++WJSG;
  WJSP=fetch('/widget.js').then(r=>r.ok?r.text():null).then(t=>{if(g===WJSG){WJS=t||null;WJSH=h}}).catch(()=>{}).finally(()=>{if(g===WJSG)WJSP=null})}
-function copyWidget(){const M=$('wjst');wjsLoad();if(!WJS){M.textContent='Getting it from the monitor: tap Copy again in a moment.';return}
- let done=false;try{const t=document.createElement('textarea');t.value=WJS;t.readOnly=true;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);
-  t.focus();t.select();t.setSelectionRange(0,WJS.length);done=document.execCommand('copy');t.remove()}catch(x){}
- if(!done&&navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(WJS).then(()=>{M.textContent='Copied. Now paste it into Scriptable (step 3).'}).catch(()=>{});return}
- M.textContent=done?'Copied. Now paste it into Scriptable (step 3).':'Your browser wouldn\'t copy it here: tap Show it, then press and hold the text, Select All, Copy.'}
+async function copyWidget(){const M=$('wjst');wjsLoad();if(!WJS){M.textContent='Getting it from the monitor: tap Copy again in a moment.';return}
+ M.textContent=(await copyText(WJS))?'Copied. Now paste it into Scriptable (step 3).':'Your browser wouldn\'t copy it here: tap Show it, then press and hold the text, Select All, Copy.'}
 function seek(){if((!$('p_cfg').hidden&&SUB==='sys'||!$('p_tanks').hidden&&S&&S.tanks&&!S.tanks.length)&&!document.hidden)fetch('/api/discover').catch(()=>{})}
 setInterval(seek,60000);
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{history.replaceState(null,'','#'+b.dataset.p);tab(b.dataset.p)});

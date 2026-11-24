@@ -1,4 +1,4 @@
-// node tests/tests_share_card.js firmware/  - Config → Share for support: switching it on and off, the ID shown,
+// node tests/tests_share_card.js firmware/  - Config → Online backup: switching it on and off, the ID shown,
 // "Send now", and Restore from an ID (fetched from the share server, imported the way a backup file is).
 const {JSDOM}=require('jsdom');const fs=require('fs');const path=require('path');
 const dir=process.argv[2]||path.join(__dirname,'..','firmware'),common=fs.readFileSync(path.join(dir,'common.js.html'),'utf8');
@@ -20,22 +20,30 @@ const w=new JSDOM(html,{url:'http://pico/#cfg',runScripts:'dangerously',pretendT
  w.onerror=x=>console.log('ERR',x)}}).window;
 const $=id=>w.document.getElementById(id);
 (async()=>{await wait(400);w.tab('cfg');await w.load();await wait(50);
- ok($('shBtn').disabled&&$('shRes').disabled&&/isn't ready yet/.test($('shSt').textContent)&&$('shId').textContent==='–','no share server yet: says so, nothing to press');
+ ok(!$('shNote').textContent&&$('shNote').style.minHeight==='40px'&&$('shBtn').disabled&&$('shRes').disabled&&/isn't ready yet/.test($('shSt').textContent)&&$('shId').textContent==='–','no share server yet: says so, nothing to press');
  const box=$('shSt').getBoundingClientRect?$('shSt').style.minHeight:'';ok(box==='38px'&&$('shCopy').style.visibility==='hidden','its space kept (the card never jumps)');
  state.share.host='share.example';await w.load();await wait(50);
- ok(!$('shBtn').disabled&&$('shBtn').textContent==='Start sharing'&&$('shNow').disabled&&/Not sharing/.test($('shSt').textContent),'ready: Start sharing; nothing to send yet');
+ ok(!$('shBtn').disabled&&$('shBtn').textContent==='Turn on'&&$('shNow').disabled&&/Off: nothing is kept online/.test($('shSt').textContent),'ready: Turn on; nothing to back up yet');
  await w.shToggle();await wait(50);
- ok(posts.length===1&&posts[0][0]==='/api/share'&&JSON.parse(posts[0][1]).on===true,'Start sharing: asks the Pico');
- ok($('shId').textContent==='HK-7QM2-XFD9'&&$('shCopy').style.visibility==='visible'&&$('shBtn').textContent==='Stop sharing'&&/Sending/.test($('shSt').textContent),'the ID shown, with Copy; sending');
+ ok(posts.length===1&&posts[0][0]==='/api/share'&&JSON.parse(posts[0][1]).on===true,'Turn on: asks the Pico');
+ ok($('shId').textContent==='HK-7QM2-XFD9'&&$('shCopy').style.visibility==='visible'&&$('shBtn').textContent==='Turn off'&&/Backing up/.test($('shSt').textContent),'the ID shown, with Copy; backing up');
+ ok(/Your backup ID is HK-7QM2-XFD9[\s\S]*Make a note of it/.test(alerted)&&/Make a note of this ID/.test($('shNote').textContent),'turning on: told to note the ID (once, and always under it)');
+ {let copied=null;w.document.execCommand=c=>{copied=w.document.activeElement&&w.document.activeElement.value;return c==='copy'};await w.shCopy();
+  ok(copied==='HK-7QM2-XFD9'&&$('shCopy').textContent==='Copied','Copy: works on the Pico\'s plain-http page (no navigator.clipboard there)');
+  w.document.execCommand=()=>false;alerted=null;await w.shCopy();ok(/press and hold/.test(alerted)&&w.getSelection().toString()==='HK-7QM2-XFD9','a browser that won\'t copy: the ID selected, and says how');
+  await w.load();await wait(50);ok(w.getSelection().toString()==='HK-7QM2-XFD9','...and still selected after the page refreshes')}
  Object.assign(state.share,{busy:false,at:1795500000});await w.load();await wait(50);
- ok(/Last sent/.test($('shSt').textContent)&&/share\.example\/v\/HK-7QM2-XFD9/.test($('shSt').textContent)&&!$('shNow').disabled,'sent: when, and the address to give: '+$('shSt').textContent);
- state.share.err='the share server said 500';await w.load();await wait(50);
- ok(/Could not send: the share server said 500/.test($('shSt').textContent),'a failure: said');state.share.err=null;
+ ok(/Last backed up/.test($('shSt').textContent)&&/share\.example\/v\/HK-7QM2-XFD9/.test($('shSt').textContent)&&!$('shNow').disabled,'sent: when, and the address to give: '+$('shSt').textContent);
+ state.share.err='the backup server said 500';await w.load();await wait(50);
+ ok(/Could not back up: the backup server said 500/.test($('shSt').textContent),'a failure: said');state.share.err=null;
  asked=null;await w.shToggle();await wait(50);
- ok(/deleted from the share server/.test(asked)&&posts.length===1,'Stop sharing: asks first (says what happens), nothing sent if not confirmed');
+ ok(/online copy is deleted/.test(asked)&&posts.length===1,'Turn off: asks first (says what happens), nothing sent if not confirmed');
+ Object.assign(state.share,{on:false,id:null,deleting:true,err:'the backup server said 500'});await w.load();await wait(50);
+ ok(/Off\. Deleting the online copy \(could not yet: the backup server said 500/.test($('shSt').textContent),'turned off, not deleted yet: says so: '+$('shSt').textContent);
+ Object.assign(state.share,{deleting:false,err:null});await w.load();await wait(50);ok(/Off: nothing is kept online/.test($('shSt').textContent),'deleted: nothing kept online');
  /* restore */
  $('shIn').value='nope';await w.shRestore();ok(/looks like HK-/.test(alerted)&&!gets.some(u=>u.startsWith('https://')),'a mistyped ID: said, nothing fetched');
  $('shIn').value=' hk 7qm2 xfd9 ';asked=null;await w.shRestore();await wait(50);
  ok(gets.includes('https://share.example/u/HK-7QM2-XFD9')&&/Import from the backup of 2026-11-23/.test(asked)&&/Back tank/.test(asked),'Restore: fetched by its ID (as typed), then the backup\'s own question: '+JSON.stringify((asked||'').slice(0,60)));
- $('shIn').value='HK-0000-0001';alerted=null;await w.shRestore();ok(/nothing is shared under HK-0000-0001/.test(alerted),'an ID with nothing: said');
+ $('shIn').value='HK-0000-0001';alerted=null;await w.shRestore();ok(/nothing is backed up under HK-0000-0001/.test(alerted),'an ID with nothing: said');
  process.exit(fails?1:0)})();

@@ -1,8 +1,9 @@
-# HAWKi share server
+# HAWKi online backup server
 
-A Cloudflare Worker and one KV namespace (free plan). Picos with **Config → Share for support** switched on
-upload once a day under a random ID (`HK-XXXX-XXXX`); `/v/<ID>` shows that Pico's own pages, read only, as they
-stood at the upload; **Restore from ID** on a Pico's page reads `/u/<ID>` back in.
+A Cloudflare Worker and one KV namespace (free plan). Picos with **Config → Online backup** turned on upload
+once a day under a random ID (`HK-XXXX-XXXX`), so their history survives the Pico dying: **Restore from a backup ID**
+on a new Pico's page reads `/u/<ID>` back in. The same ID lets someone helping see that Pico's own pages, read only,
+as they stood at the upload: `/v/<ID>`.
 
 Deploy (needs an API token with *Workers Scripts: Edit* and *Workers KV Storage: Edit*):
 

@@ -49,9 +49,9 @@ ok(r.status === 204 && /X-Key/.test(r.headers.get('Access-Control-Allow-Headers'
 
 // ---- the support view
 r = await call('GET', '/');
-ok(r.status === 200 && /Enter the share ID/.test(await r.text()), 'the home page asks for an ID');
+ok(r.status === 200 && /Enter the backup ID/.test(await r.text()), 'the home page asks for an ID');
 r = await call('GET', '/v/HK-0000-0002');
-ok(r.status === 404 && /Nothing is shared/.test(await r.text()), 'an ID with nothing: says so');
+ok(r.status === 404 && /Nothing is backed up/.test(await r.text()), 'an ID with nothing: says so');
 r = await call('GET', '/v/' + SID.toLowerCase());
 const ck = (r.headers.get('Set-Cookie') || '').split(';')[0];
 ok(r.status === 302 && r.headers.get('Location') === '/' && ck === 'hkv=' + SID, 'the view remembers the ID and opens the dashboard');
@@ -85,7 +85,7 @@ r = await view('/api/wifi/scan');
 ok(r.status === 404, 'anything else on the Pico: not there');
 r = await view('/');
 const html = await r.text();
-ok(r.status === 200 && /Shared readings HK-7QM2-XFD9/.test(html) && /class F extends D/.test(html) && /<html|<!doctype/i.test(html), 'the dashboard page: the Pico\'s own, with the banner and the clock at the upload');
+ok(r.status === 200 && /Backup HK-7QM2-XFD9/.test(html) && /class F extends D/.test(html) && /<html|<!doctype/i.test(html), 'the dashboard page: the Pico\'s own, with the banner and the clock at the upload');
 
 // ---- the pages themselves, drawn from the upload (jsdom)
 let JSDOM = null;

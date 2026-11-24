@@ -1,11 +1,11 @@
 {
- "version": "1.3.30",
- "ref": "v1.3.30",
- "notes": "Config \u2192 Share for support: opt in to a daily upload under a random ID, so someone helping you can see your charts; restore from that ID onto a new Pico",
+ "version": "1.3.31",
+ "ref": "v1.3.31",
+ "notes": "Online backup: the card now says what it's for (keeping your history safe if the Pico dies), reminds you to note the ID, and Copy works",
  "files": {
   "app.py": [
-   "18ff1b001a13961d051bcf9b9574f96475d7be8eadb04455b362971a3ed50f3c",
-   165725
+   "72ff031ea10c96a46482c44572ea3ca88f9682be170c788c410e4d300c4a8a87",
+   165769
   ],
   "battlog.py": [
    "ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de",
@@ -68,16 +68,16 @@
    3981
   ],
   "share.py": [
-   "2376b0298af05f15b7b13a7b31e45ca28633eb80bf92ffa8d61a154bafa76240",
-   7519
+   "ebf2ce478d28bbbd44cd8f91c6f3b398c1bae5f611e7e61d21bcfb6672696957",
+   7572
   ],
   "tankcalc.py": [
    "6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229",
    14435
   ],
   "ui.html": [
-   "3023348a867f18ac54fc7295a0cf7e7ca6789eac4ac979a5882bf70887483be1",
-   133754
+   "b75d7c2d2c55f50a9f183297e0d489033aa1d5b31d3807e78d7ea1b6693cf9d0",
+   135092
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -88,7 +88,7 @@
    13431
   ],
   "version.py": [
-   "cfcceb73e7e59da03e13de44ff6fe537b1d98847520c3b4551eda1e95698823e",
+   "88d0f27ecd8932dcf2e83bb15c4765eab2e1c036587859c44caac3a161cf7f61",
    19
   ],
   "weather.py": [
@@ -101,7 +101,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"18ff1b001a13961d051bcf9b9574f96475d7be8eadb04455b362971a3ed50f3c\", 165725], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"01f88e5e80f0c2818a1f496649bf0af33369e88a9a22ee75da999d301757e379\", 36361], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"d8946f71364761fed3ecbce9bb35d2831dd0ab6edfb66bc764e459fdfa305750\", 66929], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"c59ac52b04c72687e5709c9be895430e9efbc16a7248db56e4a8d0258b1997af\", 10182], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"share.py\": [\"2376b0298af05f15b7b13a7b31e45ca28633eb80bf92ffa8d61a154bafa76240\", 7519], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"3023348a867f18ac54fc7295a0cf7e7ca6789eac4ac979a5882bf70887483be1\", 133754], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"cfcceb73e7e59da03e13de44ff6fe537b1d98847520c3b4551eda1e95698823e\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Config \\u2192 Share for support: opt in to a daily upload under a random ID, so someone helping you can see your charts; restore from that ID onto a new Pico\", \"ref\": \"v1.3.30\", \"version\": \"1.3.30\"}",
-  "sig": "3dfbf06b88d7ba4ea2f848672e287fb16f8b03d9eef67cdfca14d2e5af6fc37af868e8109b4a7be2b7bc55880dd449a16d579a38c9f40a862640b3297a8a16af0460a0f2efc0164788462de65604cf69b63b6e790b8a6f25ff42fe904198a1a5613a67ca359f5ba92d0e47cef4d68774908498ecfc92921b00577ef26da669de8fd254968ddd89d9fe5e9b2e5f15ba206cc4113033419ca62c01afcfcd52778f5bd568c5ca731cfcb2a09be7991d0f92e27525c08879b7c3c6e30e9ed5fcf81a3f0f01b6a078df9b1a0f3788ac84f47c5c6501964406e94d2f847b1eb5462d71dd8edaa74a6a0ff88d9c54068389cefd8ee29032c4eb2c011a52406ba182398c"
+  "body": "{\"files\": {\"app.py\": [\"72ff031ea10c96a46482c44572ea3ca88f9682be170c788c410e4d300c4a8a87\", 165769], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"01f88e5e80f0c2818a1f496649bf0af33369e88a9a22ee75da999d301757e379\", 36361], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"d8946f71364761fed3ecbce9bb35d2831dd0ab6edfb66bc764e459fdfa305750\", 66929], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"c59ac52b04c72687e5709c9be895430e9efbc16a7248db56e4a8d0258b1997af\", 10182], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"share.py\": [\"ebf2ce478d28bbbd44cd8f91c6f3b398c1bae5f611e7e61d21bcfb6672696957\", 7572], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"b75d7c2d2c55f50a9f183297e0d489033aa1d5b31d3807e78d7ea1b6693cf9d0\", 135092], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"88d0f27ecd8932dcf2e83bb15c4765eab2e1c036587859c44caac3a161cf7f61\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Online backup: the card now says what it's for (keeping your history safe if the Pico dies), reminds you to note the ID, and Copy works\", \"ref\": \"v1.3.31\", \"version\": \"1.3.31\"}",
+  "sig": "5be90200822cd4be97b57fadd09b5cb12ddde8b06804fb5ddff5eb4eaca2bd4a5f07ef552c95f8f9fcbd58e968e4034a5e4f1b743b6ccb162e3c0360a9e323094bb8fd8370965768f4be0ce7c034ddd243e109f67d749f1fe526d31e4bd275bfdf1365f5e5afba5fe59e9bba1006af9eb6f7d9e56fb9de67cf09a904a5a29c4e9f41c217665830f05b9e63a8128d1501e6a164e57f7f47125ae1b07dce2fa147bcecc75f1c0877c16dfd1229b8176cc431ba2412c7ab8c01f99b94af5640719aabde76e7c425ba4a84ca384e4b06626c630bad75631c67108266c06b51bb212b4d136771e52ee4a1a16c1571734eca61de6b6fab173dd53d10e0f4fe1363d5f8"
  }
 }

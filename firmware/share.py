@@ -1,4 +1,4 @@
-"""Share for support (opt-in): once a day this Pico's readings, tank settings, deliveries and weather go to the
+"""Online backup (opt-in; Config → Online backup, called "share" in the code): once a day this Pico's readings, tank settings, deliveries and weather go to the
 share server (a Cloudflare Worker) under a random ID, like HK-7QM2-XFD9. The owner gives the ID to someone
 helping them, who sees the same Dashboard and Forecast pages; the same ID restores the readings to a new Pico.
 
@@ -155,7 +155,7 @@ def _send(method, host, path, key, body_file=None, deadline=60):
         try:
             status = int(got.split(b' ', 2)[1])
         except (IndexError, ValueError):
-            raise OSError('no reply from the share server')
+            raise OSError('no reply from the backup server')
         return status, got.split(b'\r\n\r\n', 1)[-1][:300].decode('utf-8', 'replace')
     finally:
         s.close()
@@ -163,9 +163,9 @@ def _send(method, host, path, key, body_file=None, deadline=60):
 
 def _why(status, body):
     try:
-        return json.loads(body).get('error') or 'the share server said %d' % status
+        return json.loads(body).get('error') or 'the backup server said %d' % status
     except Exception:
-        return 'the share server said %d' % status
+        return 'the backup server said %d' % status
 
 
 def upload(host, sid, key, path=FILE):

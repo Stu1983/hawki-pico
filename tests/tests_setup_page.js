@@ -218,7 +218,7 @@ const until=async(f,ms=3000)=>{for(let t=0;t<ms;t+=20){if(f())return true;await 
   ok(/On your phone/.test($(w31,'p_ntf').textContent)&&/Add to Home Screen/.test($(w31,'p_ntf').textContent)&&/Scriptable/.test($(w31,'p_ntf').textContent),'Notifications has an On your phone card: the icon and the widget, step by step');
   {const h=id=>[...$(w31,id).querySelectorAll('h2')].map(e=>e.textContent).join(' | '),nav=[...w31.document.querySelectorAll('.tabs button,.tabs a')].map(b=>b.textContent).join(' | '),sb=[...w31.document.querySelectorAll('.sub button')].map(b=>b.textContent).join(' | ');
    ok(nav==='Dashboard | Tanks | Forecast | Config'&&sb==='Config | Forecast | Notifications','the tabs: '+nav+'; Config\'s sub-tabs: '+sb);
-   ok(h('p_fc')==='Forecast | Weather | Oil prices | Earlier readings'&&h('p_ntf')==='Notifications | On your phone | Home Assistant'&&h('p_sys')==='Sensors nearby | Software | Wi-Fi & network | Security | Backup | Share for support','each tab\'s cards, Sensors nearby first on Config (needed when setting up): '+[h('p_fc'),h('p_ntf'),h('p_sys')].join(' / '));
+   ok(h('p_fc')==='Forecast | Weather | Oil prices | Earlier readings'&&h('p_ntf')==='Notifications | On your phone | Home Assistant'&&h('p_sys')==='Sensors nearby | Software | Wi-Fi & network | Security | Backup | Online backup','each tab\'s cards, Sensors nearby first on Config (needed when setting up): '+[h('p_fc'),h('p_ntf'),h('p_sys')].join(' / '));
    w31.tab('fc');ok(!$(w31,'p_cfg').hidden&&!$(w31,'p_fc').hidden&&$(w31,'p_sys').hidden&&$(w31,'p_ntf').hidden&&w31.document.querySelector('.sub button[data-s="fc"]').getAttribute('aria-pressed')==='true','#fc (an old link): Config, on its Forecast sub-tab, the others hidden');
    w31.sub('sys');ok(!$(w31,'p_sys').hidden&&$(w31,'p_fc').hidden&&w31.location.hash==='#cfg','a sub-tab tapped: shows alone, the address says #cfg');
    w31.tab('dash');w31.tab('cfg');ok(!$(w31,'p_sys').hidden,'Config opens on the sub-tab used last');
@@ -226,8 +226,8 @@ const until=async(f,ms=3000)=>{for(let t=0;t<ms;t+=20){if(f())return true;await 
    {const hr=js=>{w31.eval(js+';navHist()');return w31.document.getElementById('navHist').getAttribute('href')};w31.eval('var S0=S');
     const h1=hr("S=Object.assign({},S0,{primary:'all',tanks:[{mac:'aa:bb:cc:00:00:01',cfg:{mode:'off'}},{mac:'aa:bb:cc:00:00:02',cfg:{}}]})"),h2=hr("S.primary='aa:bb:cc:00:00:01'"),h3=hr("S=Object.assign({},S0,{tanks:[],primary:null})");w31.eval('S=S0');
     ok(h1==='/history?mac=aa:bb:cc:00:00:02'&&h2==='/history?mac=aa:bb:cc:00:00:01'&&h3==='/history','Forecast (the history page) follows what the dashboard shows, on every refresh: '+[h1,h2,h3].join(', '))}w31.tab('ntf')}
-  w31.copyWidget();ok(copied==='const PICO = 1; // widget'&&/Copied/.test($(w31,'wjst').textContent),'Copy the widget script: copied there and then ("'+$(w31,'wjst').textContent+'")');
-  w31.document.execCommand=()=>false;w31.copyWidget();ok(/press and hold the text/.test($(w31,'wjst').textContent),'a browser that won\'t copy: says how to copy it from Show it');
+  await w31.copyWidget();ok(copied==='const PICO = 1; // widget'&&/Copied/.test($(w31,'wjst').textContent),'Copy the widget script: copied there and then ("'+$(w31,'wjst').textContent+'")');
+  w31.document.execCommand=()=>false;await w31.copyWidget();ok(/press and hold the text/.test($(w31,'wjst').textContent),'a browser that won\'t copy: says how to copy it from Show it');
   ok($(w31,'p_ntf').querySelector('a[href="/widget.js"]'),'...with a Show it link to the script')}
  {const w32=open(()=>base({via_ap:false,ssid:'HomeNet',ip:'192.168.1.57',pin_set:true}));let n=0;
   w32.fetch=(f=>async(u,o)=>{if(u==='/widget.js'){n++;throw new TypeError('x')}return f(u,o)})(w32.fetch);

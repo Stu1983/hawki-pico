@@ -1,4 +1,4 @@
-"""python3 tests/test_share.py - Share for support (firmware/share.py and app.py's share_* functions): what the upload
+"""python3 tests/test_share.py - Online backup (firmware/share.py and app.py's share_* functions): what the upload
 holds (and never holds), the ID, and when it uploads, retries, and deletes."""
 import ast, asyncio, base64, json, os, struct, sys, tempfile
 FW = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'firmware')
@@ -140,10 +140,10 @@ g['share_state']['want'] = False
 g['set_share']({'now': 1})
 step()
 ok(len(calls) == 3, '"Upload now": again at once')
-Sh.fail = 'the share server said 500'
+Sh.fail = 'the backup server said 500'
 g['set_share']({'now': 1})
 step()
-ok(len(calls) == 4 and g['share_state']['err'] == 'the share server said 500' and g['share_state']['want'], 'a failure: said, and still wanted')
+ok(len(calls) == 4 and g['share_state']['err'] == 'the backup server said 500' and g['share_state']['want'], 'a failure: said, and still wanted')
 step()
 ok(len(calls) == 4, '...not tried again straight away')
 M[0] += 1801
@@ -155,6 +155,7 @@ step()
 ok(len(calls) == 6 and g['share_state']['err'] is None and not g['share_state']['want'], '...and once through, all clear')
 g['set_share']({'on': False})
 ok(g['cfg']['share'] == {'on': False} and g['cfg']['share_del'][0]['id'] == sid and g['share_view']()['id'] is None, 'switched off: the ID forgotten, its upload to delete')
+ok(g['share_view']()['deleting'], 'switched off, not yet deleted: the card can say so')
 step()
 ok(calls[-1] == ('DELETE', sid) and 'share_del' not in g['cfg'], '...and deleted from the server')
 step()

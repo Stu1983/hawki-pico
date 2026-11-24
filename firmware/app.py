@@ -3168,7 +3168,8 @@ share_state = {'err': None, 'size': None, 'want': False, 'next': 0, 'gap': 1800,
 def share_view():
     sh = cfg.get('share') or {}
     return {'on': bool(sh.get('on')), 'id': sh.get('id') if sh.get('on') else None, 'at': sh.get('at') or None,
-            'err': share_state['err'], 'busy': share_state['busy'] or share_state['want'], 'host': share.HOST or None}
+            'err': share_state['err'], 'busy': share_state['busy'] or share_state['want'], 'host': share.HOST or None,
+            'deleting': bool(share_dels())}
 
 
 def set_share(b):

@@ -1,4 +1,4 @@
-// HAWKi share server (a Cloudflare Worker + one KV namespace, SHARE): Picos with "Share for support" switched on
+// HAWKi share server (a Cloudflare Worker + one KV namespace, SHARE): Picos with "Online backup" switched on
 // upload their readings once a day under a random ID; whoever is given the ID can look at the same pages
 // (read only, as they stood at the upload) or restore the readings to a new Pico.
 //
@@ -44,7 +44,7 @@ async function upload(req, env, id, now) {
   if (!/^[0-9a-f]{32}$/.test(key)) return err('no key', 401, cors);
   if (req.method === 'DELETE') {
     const m = await meta(env, id);
-    if (!m) return err('nothing shared under that ID', 404, cors);
+    if (!m) return err('nothing backed up under that ID', 404, cors);
     if (m.h !== await sha(key)) return err('not this Pico\'s ID', 403, cors);
     await env.SHARE.delete('d:' + id);
     return json({ok: true}, 200, cors);
@@ -127,7 +127,7 @@ export function inject(html, id, u) {
   // the clock stands at the upload (so "last heard", "today" and the forecast read as they did then); nothing is saved
   const s = `<script>(()=>{const AT=${at * 1000},D=Date;class F extends D{constructor(...a){if(a.length)super(...a);else super(AT)}static now(){return AT}}window.Date=F;
 const f=window.fetch.bind(window);window.fetch=(x,o)=>o&&o.method&&String(o.method).toUpperCase()!=='GET'?Promise.resolve(new Response('{}',{status:200,headers:{'Content-Type':'application/json'}})):f(x,o);
-addEventListener('DOMContentLoaded',()=>{const b=document.createElement('div');b.textContent=${safe('Shared readings ' + id + area + ' · as at ' + when + ' UTC · v' + (fwOk(u.fw) || '?') + ' · read only')};
+addEventListener('DOMContentLoaded',()=>{const b=document.createElement('div');b.textContent=${safe('Backup ' + id + area + ' · as at ' + when + ' UTC · v' + (fwOk(u.fw) || '?') + ' · read only')};
 b.style.cssText='position:sticky;top:0;z-index:99;background:#7a4a00;color:#fff;font:600 13px system-ui;padding:6px 10px;text-align:center';document.body.prepend(b)})})()</script>`;
   return html.replace(/<head[^>]*>/i, m => m + s);
 }
@@ -140,9 +140,9 @@ async function page(name, fw) {
   return null;
 }
 
-const HOME = `<!doctype html><meta name=viewport content="width=device-width"><title>Shared oil readings</title>
-<body style="font:16px system-ui;max-width:420px;margin:40px auto;padding:0 16px"><h2>Shared oil readings</h2>
-<p>Enter the share ID from the Pico's Config page (like HK-7QM2-XFD9).</p>
+const HOME = `<!doctype html><meta name=viewport content="width=device-width"><title>Oil monitor backups</title>
+<body style="font:16px system-ui;max-width:420px;margin:40px auto;padding:0 16px"><h2>Oil monitor backups</h2>
+<p>Enter the backup ID from the Pico's Config page, under Online backup (like HK-7QM2-XFD9).</p>
 <form onsubmit="location.href='/v/'+encodeURIComponent(this.id.value.trim());return false"><input name=id autofocus style="font:inherit;padding:6px;width:14em"> <button>Look</button></form>`;
 
 function cookieId(req) {
@@ -155,10 +155,10 @@ export async function handle(req, env, now = Math.floor(Date.now() / 1000)) {
   if (p.startsWith('/u/')) {
     if (req.method === 'OPTIONS') return new Response(null, {status: 204, headers: cors});
     const id = okId(p.slice(3));
-    if (!id) return err('a share ID looks like HK-7QM2-XFD9', 400, cors);
+    if (!id) return err('a backup ID looks like HK-7QM2-XFD9', 400, cors);
     if (req.method === 'GET') {
       const v = await env.SHARE.get('d:' + id, 'text');
-      return v === null ? err('nothing shared under that ID', 404, cors)
+      return v === null ? err('nothing backed up under that ID', 404, cors)
         : new Response(v, {headers: Object.assign({'Content-Type': 'application/json', 'Cache-Control': 'no-store'}, cors)});
     }
     if (req.method === 'PUT' || req.method === 'DELETE') return upload(req, env, id, now);
@@ -166,13 +166,13 @@ export async function handle(req, env, now = Math.floor(Date.now() / 1000)) {
   }
   if (p.startsWith('/v/')) {
     const id = okId(p.slice(3));
-    if (!id || !(await meta(env, id))) return new Response(HOME.replace('<p>', '<p style="color:#b00">Nothing is shared under that ID.</p><p>'), {status: 404, headers: {'Content-Type': 'text/html'}});
+    if (!id || !(await meta(env, id))) return new Response(HOME.replace('<p>', '<p style="color:#b00">Nothing is backed up under that ID.</p><p>'), {status: 404, headers: {'Content-Type': 'text/html'}});
     return new Response(null, {status: 302, headers: {'Location': '/', 'Set-Cookie': `hkv=${id}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax`}});
   }
   const id = cookieId(req);
   if (!id) return p === '/' ? new Response(HOME, {headers: {'Content-Type': 'text/html'}}) : err('not found', 404);
   const u = await data(env, id, now);
-  if (!u) return new Response(HOME.replace('<p>', '<p style="color:#b00">Nothing is shared under that ID any more.</p><p>'), {status: 404, headers: {'Content-Type': 'text/html'}});
+  if (!u) return new Response(HOME.replace('<p>', '<p style="color:#b00">Nothing is backed up under that ID any more.</p><p>'), {status: 404, headers: {'Content-Type': 'text/html'}});
   if (req.method !== 'GET') return json({});  // read only
   if (p === '/api/prices' && url.searchParams.get('h') === '1') {
     const r = await fetch(REPO + 'main/data/priceh.bin', {cf: {cacheTtl: 86400, cacheEverything: true}});
