@@ -199,6 +199,9 @@ dialog::backdrop{background:#0008}
 <h2>On your phone</h2>
 <div class="card"><b>An icon on your home screen</b>
 <div class="mut" style="margin-top:4px">iPhone or iPad: in Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>. Android: in Chrome's menu, <b>Add to Home screen</b>. It opens this page full screen; sign in with your PIN once there.</div>
+<b style="display:block;margin-top:14px">An icon that works away from home too</b>
+<div class="mut" style="margin-top:4px">Opens a page with two choices: <b>Live</b> (at home, straight from this monitor) or <b>Last backup</b> (anywhere, up to 8 hours old). It needs Online backup turned on (Config, Online backup). On your phone, tap the link below, then on the page that opens add it to your home screen the same way as above.</div>
+<div class="acts" style="justify-content:flex-start;align-items:center;min-height:40px"><a class="lnk" id="goLink" target="_blank" rel="noopener" hidden>Open the shortcut page</a><span class="mut" id="goSt"></span></div>
 <b style="display:block;margin-top:14px">A widget showing the oil left (iPhone, iPad)</b>
 <ol class="mut" style="margin:6px 0 0;padding-left:20px">
 <li>Install the free <a class="lnk" style="margin:0" href="https://apps.apple.com/app/scriptable/id1405459188" target="_blank" rel="noopener">Scriptable</a> app.</li>
@@ -521,7 +524,7 @@ async function restartPico(){const b=$('rstBtn'),m=$('rstM');
 
 // ---------- share for support ----------
 function shRender(){const h=S.share||{},on=!!h.on,id=on&&h.id;if($('shId').textContent!==(id||'–'))$('shId').textContent=id||'–';  /* (only when it changes: a selected ID stays selected) */$('shCopy').style.visibility=id?'visible':'hidden';$('shNote').textContent=id?'Make a note of this ID now and keep it somewhere other than the Pico (a photo or a note on your phone). If the Pico dies, it\'s the only way to get your history back.':'';
- $('shBtn').textContent=on?'Turn off':'Turn on';$('shBtn').className=on?'':'pri';$('shBtn').disabled=!h.host;$('shInvRow').style.visibility=on?'hidden':'visible';$('shHost').textContent=(h.host||'none')+(h.own_host?' (your own)':'');$('shHostIn').disabled=$('shHostBtn').disabled=$('shHostDef').disabled=on;$('shHostDef').style.visibility=h.own_host?'visible':'hidden';$('shNow').disabled=!on||!h.host||!!h.busy;$('shRes').disabled=!h.host;
+ $('shBtn').textContent=on?'Turn off':'Turn on';$('shBtn').className=on?'':'pri';$('shBtn').disabled=!h.host;$('shInvRow').style.visibility=on?'hidden':'visible';const go=on&&id&&h.host?'https://'+h.host+'/go#id='+id+'&pico='+encodeURIComponent(location.origin):'';$('goLink').hidden=!go;if(go)$('goLink').href=go;$('goSt').textContent=go?'':'Turn on Online backup first.';$('shHost').textContent=(h.host||'none')+(h.own_host?' (your own)':'');$('shHostIn').disabled=$('shHostBtn').disabled=$('shHostDef').disabled=on;$('shHostDef').style.visibility=h.own_host?'visible':'hidden';$('shNow').disabled=!on||!h.host||!!h.busy;$('shRes').disabled=!h.host;
  $('shSt').textContent=!h.host?'Online backup isn\'t ready yet: it comes in an update.':!on?(h.deleting?'Off. Deleting the online copy'+(h.derr?' (could not yet: '+h.derr+'; it tries again later)':'…'):'Off: nothing is kept online.'):h.busy?'Backing up…':h.err?'Could not back up: '+h.err+'. It tries again later.':h.at?'Last backed up '+new Date(h.at*1000).toLocaleString([],{weekday:'short',hour:'2-digit',minute:'2-digit'})+'. To let someone see your charts, give them the ID: they open '+h.host+'/v/'+id:'Backing up in a minute or two…'}
 async function shToggle(){const on=!(S.share&&S.share.on),h=S.share||{};let invite;if(!on&&!confirm('Turn off online backup? The online copy is deleted and the ID stops working.'))return;
  if(on){invite=$('shInv').value.trim();

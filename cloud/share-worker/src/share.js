@@ -190,6 +190,37 @@ async function page(name, fw) {
   return null;
 }
 
+// ---------- /go: the home-screen shortcut's first page (the same everywhere: never reads a backup)
+// Its link carries the backup ID and the Pico's own address after '#', which a browser never sends: the server never
+// learns them. Cached for a month, so most opens cost no request at all; only "Last backup" reads the backup.
+export const GO = `<!doctype html><html lang=en><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1"><title>Oil</title>
+<link rel=apple-touch-icon href=/icon.png><link rel=icon type=image/png href=/icon.png>
+<style>body{font:17px system-ui,sans-serif;margin:0;background:#f4f5f7;color:#1f2937}main{max-width:420px;margin:0 auto;padding:40px 18px}
+h1{font-size:24px;margin:0 0 22px}a.b{display:block;text-decoration:none;color:inherit;background:#fff;border-radius:14px;padding:18px 18px;margin:0 0 14px;box-shadow:0 1px 3px #0002}
+a.b b{display:block;font-size:20px;margin-bottom:4px}a.b span{color:#6b7280;font-size:15px}a.b.pri{background:#2563eb;color:#fff}a.b.pri span{color:#dbeafe}
+p{color:#6b7280;font-size:14px}[hidden]{display:none!important}</style></head><body><main><h1>Oil</h1>
+<a class="b pri" id=live hidden><b>Live</b><span>At home (or on your VPN): straight from the monitor</span></a>
+<a class=b id=bk hidden><b>Last backup</b><span>Anywhere: the readings as they were at the last backup (up to 8 hours old)</span></a>
+<p id=no hidden>This shortcut is missing its details. Make it again from the monitor's page: Config, Notifications, On your phone.</p>
+</main><script>
+var h=new URLSearchParams(location.hash.slice(1)),id=(h.get('id')||'').toUpperCase(),pico=h.get('pico')||'';
+if(/^https?:[/][/][A-Za-z0-9.-]+(:[0-9]{1,5})?$/.test(pico)){document.getElementById('live').href=pico+'/';document.getElementById('live').hidden=false}
+if(/^HK-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$/.test(id)){document.getElementById('bk').href='/v/'+id;document.getElementById('bk').hidden=false}
+if(document.getElementById('live').hidden&&document.getElementById('bk').hidden)document.getElementById('no').hidden=false;
+</script></body></html>`;
+
+let iconPng = null;
+async function icon() {  // the Pico's own home-screen icon (firmware/icon.py, from GitHub; kept once fetched)
+  if (iconPng) return iconPng;
+  const r = await fetch(REPO + 'main/firmware/icon.py', {cf: {cacheTtl: 604800, cacheEverything: true}});
+  if (!r.ok) return null;
+  const b64 = [...(await r.text()).matchAll(/'([A-Za-z0-9+/=]+)'/g)].map(m => m[1]).join('');
+  const png = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  if (png.length > 100 && png[1] === 0x50) iconPng = png;  // (only a real PNG is kept)
+  return png.length > 100 ? png : null;
+}
+
 const HOME = `<!doctype html><meta name=viewport content="width=device-width"><title>Oil monitor backups</title>
 <body style="font:16px system-ui;max-width:420px;margin:40px auto;padding:0 16px"><h2>Oil monitor backups</h2>
 <p>Enter the backup ID from the Pico's Config page, under Online backup (like HK-7QM2-XFD9).</p>
@@ -202,6 +233,11 @@ function cookieId(req) {
 
 export async function handle(req, env, now = Math.floor(Date.now() / 1000)) {
   const url = new URL(req.url), p = url.pathname;
+  if (p === '/go') return new Response(GO, {headers: {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=2592000'}});
+  if (p === '/icon.png' || p === '/apple-touch-icon.png' || p === '/apple-touch-icon-precomposed.png') {
+    const png = await icon();
+    return png ? new Response(png, {headers: {'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=604800'}}) : err('not found', 404);
+  }
   if (p === '/invite') {
     if (req.method === 'OPTIONS') return new Response(null, {status: 204, headers: cors});
     return inviteName(env, url.searchParams.get('c')) === null ? err('that invite code isn\'t right', 403, cors) : json({ok: true}, 200, cors);

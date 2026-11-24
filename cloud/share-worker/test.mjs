@@ -150,6 +150,24 @@ if (JSDOM && fs.existsSync(process.argv[2] || '')) {  // (the pages need a real 
   ok(JSON.stringify(got) === JSON.stringify({tanks: [{mac: 'x', name: 'Stus btank/b', level: 'svg onload=x()', n: 5}]}), 'what the pages are handed is plain text: ' + JSON.stringify(got.tanks[0])); }
 globalThis.fetch = realFetch;
 
+// ---- /go: the home-screen shortcut's first page
+{ const reads0 = env.SHARE.reads = 0; const g0 = env.SHARE.get, w0 = env.SHARE.getWithMetadata; let kv = 0;
+  env.SHARE.get = async (...a) => { kv++; return g0.apply(env.SHARE, a); }; env.SHARE.getWithMetadata = async (...a) => { kv++; return w0.apply(env.SHARE, a); };
+  r = await call('GET', '/go');
+  const t = await r.text(); env.SHARE.get = g0; env.SHARE.getWithMetadata = w0;
+  ok(r.status === 200 && kv === 0 && /max-age=2592000/.test(r.headers.get('Cache-Control')) && /Last backup/.test(t) && /Live/.test(t), '/go: the same page for everyone, cached a month, never reads a backup');
+  ok(/\[hidden\]\{display:none!important\}/.test(t), '/go: hidden choices stay hidden (the buttons\' display:block would win otherwise; checked in Chromium)');
+  if (JSDOM) for (const [hash, live, bk, what] of [['#id=hk-7qm2-xfd9&pico=' + encodeURIComponent('http://192.168.1.225'), 'http://192.168.1.225/', '/v/HK-7QM2-XFD9', 'both'],
+      ['#id=HK-7QM2-XFD9', null, '/v/HK-7QM2-XFD9', 'no Pico address: Last backup only'],
+      ['#id=x&pico=' + encodeURIComponent('javascript:alert(1)'), null, null, 'bad details: neither, and says how to make it again']]) {
+    const d = new JSDOM(t, {url: 'https://share.test/go' + hash, runScripts: 'dangerously'}).window.document;
+    const L = d.getElementById('live'), B = d.getElementById('bk');
+    ok((live ? !L.hidden && L.getAttribute('href') === live : L.hidden) && (bk ? !B.hidden && B.getAttribute('href') === bk : B.hidden) && d.getElementById('no').hidden === !!(live || bk), '/go' + hash.slice(0, 40) + ': ' + what);
+  }
+  const f0 = globalThis.fetch; globalThis.fetch = async u => new Response(fs.readFileSync(path.join(FW, 'icon.py'), 'utf8'));
+  r = await call('GET', '/apple-touch-icon.png'); const png = new Uint8Array(await r.arrayBuffer()); globalThis.fetch = f0;
+  ok(r.status === 200 && r.headers.get('Content-Type') === 'image/png' && png[1] === 0x50 && png[2] === 0x4e && png[3] === 0x47 && png.length > 1000, 'the icon: the Pico\'s own (' + png.length + ' bytes)'); }
+
 r = await call('DELETE', '/u/' + SID, undefined, {'X-Key': K2});
 ok(r.status === 403, 'deleting with another key: refused');
 r = await call('DELETE', '/u/' + SID, undefined, {'X-Key': K1});
