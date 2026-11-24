@@ -168,6 +168,39 @@ export function api(u, path, q) {
   return null;
 }
 
+// ---------- one request per page: the script and every answer the page asks for, inside the page itself
+// B: '/api/...' -> [kind, body]: 'j' JSON text, 'b' base64 bytes. The page's fetch() answers from it (a reading list
+// asked 'since' a time is cut down in the page); anything not in it still goes to the server.
+export function bundle(u, priceh) {
+  const B = {}, J = o => ['j', JSON.stringify(plain(o))], f = u.files || {};
+  B['/api/state'] = J(u.state || {tanks: []});
+  B['/api/deliveries'] = J(u.deliveries || {});
+  for (const m of new Set([...Object.keys(u.tanks || {}), ...Object.keys(u.history || {})])) {
+    const k = String(m);
+    if (!/^[0-9a-f:]{17}$/.test(k)) continue;  // (as the server: it looks tanks up in lower case only)
+    B['/api/hist?mac=' + k] = ['b', String((u.history || {})[m] || '')];
+    if (u.curves && u.curves[m]) B['/api/curve?mac=' + k] = J(u.curves[m]);
+    B['/api/battlog?mac=' + k] = J((u.battlog || {})[m] || []);
+  }
+  B['/api/weather'] = ['b', String(f.wx || '')];
+  B['/api/weather?f=1'] = ['b', String(f.wxf || '')];
+  B['/api/prices'] = ['b', String(f.prices || '')];
+  if (priceh) B['/api/prices?h=1'] = ['b', priceh];
+  for (const k of Object.keys(B)) if (B[k][0] === 'b') { const v = B[k][1].replace(/\s+/g, ''); if (/^[A-Za-z0-9+/=]*$/.test(v)) B[k][1] = v; else delete B[k]; }
+  return B;
+}
+// (No backslashes in here: it sits in a template string.)
+const SHIM = `const KEY=u=>{const p=u.pathname,q=u.searchParams,m=(q.get('mac')||'').toLowerCase();
+ if(p==='/api/curve'&&q.get('tank_l'))return null;
+ return p+(m?'?mac='+m:'')+(q.get('f')==='1'?'?f=1':'')+(q.get('h')==='1'?'?h=1':'')};
+const ans=(x)=>{let u;try{u=new URL(typeof x==='string'?x:x.url,location.href)}catch(e){return null}if(u.origin!==location.origin)return null;
+ const k=KEY(u),e=k&&B[k];if(!e)return null;
+ if(e[0]==='j')return new Response(e[1],{status:200,headers:{'Content-Type':'application/json'}});
+ let b=Uint8Array.from(atob(e[1]),c=>c.charCodeAt(0));const since=+u.searchParams.get('since')||0;
+ if(since&&u.pathname==='/api/hist'){const v=new DataView(b.buffer);let i=0;while(i+6<=b.length&&v.getUint32(i,true)<since)i+=6;b=b.slice(i)}
+ return new Response(b,{status:200,headers:{'Content-Type':'application/octet-stream'}})};`;
+
+export const SHIM_FOR_TEST = SHIM;
 const safe = o => JSON.stringify(o).replace(/</g, '\\u003c').replace(/\u2028|\u2029/g, ' ');  // (an upload's text inside a <script>: never able to close it)
 const fwOk = v => /^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(String(v || '')) ? String(v) : null;
 
@@ -189,12 +222,12 @@ addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t&&(t.readOn
 addEventListener('click',e=>{const a=e.target&&e.target.closest&&e.target.closest('a[onclick]');if(a&&!look(a))stop(e)},true);
 addEventListener('DOMContentLoaded',()=>{const st=document.createElement('style');st.textContent='button:disabled{opacity:.35!important;cursor:not-allowed!important;filter:grayscale(1)}input[readonly],textarea[readonly]{background:transparent!important;border-style:dashed!important}select:disabled{opacity:1!important;color:inherit!important;background:transparent!important;border-style:dashed!important}';document.head.append(st);ro();new MutationObserver(again).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled','readonly']})})})()`;
 
-export function inject(html, id, u) {
+export function inject(html, id, u, B) {
   const at = Math.max(0, Math.floor(+u.at || 0)), when = new Date(at * 1000).toISOString().slice(0, 16).replace('T', ' ');
   const area = u.area && u.area.pc ? ' · ' + u.area.pc : '';
   // the clock stands at the upload (so "last heard", "today" and the forecast read as they did then); nothing is saved
   const s = `<script>(()=>{const AT=${at * 1000},D=Date;class F extends D{constructor(...a){if(a.length)super(...a);else super(AT)}static now(){return AT}}window.Date=F;
-const f=window.fetch.bind(window);window.fetch=(x,o)=>o&&o.method&&String(o.method).toUpperCase()!=='GET'?Promise.resolve(new Response('{}',{status:200,headers:{'Content-Type':'application/json'}})):f(x,o);
+const B=${B ? safe(B) : '{}'};${SHIM}const f=window.fetch.bind(window);window.fetch=(x,o)=>{if(String(o&&o.method||x&&x.method||'GET').toUpperCase()!=='GET')return Promise.resolve(new Response('{}',{status:200,headers:{'Content-Type':'application/json'}}));const r=ans(x);return r?Promise.resolve(r):f(x,o)};
 addEventListener('DOMContentLoaded',()=>{const b=document.createElement('div');b.textContent=${safe('Backup ' + id + area + ' · as at ' + when + ' UTC · v' + (fwOk(u.fw) || '?') + ' · read only')};
 b.style.cssText='position:sticky;top:0;z-index:99;background:#7a4a00;color:#fff;font:600 13px system-ui;padding:6px 10px;text-align:center';document.body.prepend(b)})})();${RO}</script>`;
   return html.replace(/<head[^>]*>/i, m => m + s);
@@ -227,6 +260,19 @@ if(/^https?:[/][/][A-Za-z0-9.-]+(:[0-9]{1,5})?$/.test(pico)){document.getElement
 if(/^HK-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$/.test(id)){document.getElementById('bk').href='/v/'+id;document.getElementById('bk').hidden=false}
 if(document.getElementById('live').hidden&&document.getElementById('bk').hidden)document.getElementById('no').hidden=false;
 </script></body></html>`;
+
+async function priceh() {  // the older prices every Pico downloads (data/priceh.bin, from GitHub, cached a day)
+  const r = await fetch(REPO + 'main/data/priceh.bin', {cf: {cacheTtl: 86400, cacheEverything: true}});
+  return r.ok ? new Uint8Array(await r.arrayBuffer()) : null;
+}
+async function pricehB64() {  // (optional: a failure only leaves the page to ask for it, as before)
+  let b = null;
+  try { b = await priceh(); } catch (e) { return null; }
+  if (!b) return null;
+  let s = '';
+  for (let i = 0; i < b.length; i += 8192) s += String.fromCharCode(...b.subarray(i, i + 8192));
+  return btoa(s);
+}
 
 let iconPng = null;
 async function icon() {  // the Pico's own home-screen icon (firmware/icon.py, from GitHub; kept once fetched)
@@ -283,8 +329,8 @@ export async function handle(req, env, now = Math.floor(Date.now() / 1000)) {
   if (!u) return new Response(HOME.replace('<p>', '<p style="color:#b00">Nothing is backed up under that ID any more.</p><p>'), {status: 404, headers: {'Content-Type': 'text/html'}});
   if (req.method !== 'GET') return json({});  // read only
   if (p === '/api/prices' && url.searchParams.get('h') === '1') {
-    const r = await fetch(REPO + 'main/data/priceh.bin', {cf: {cacheTtl: 86400, cacheEverything: true}});
-    return r.ok ? bin(new Uint8Array(await r.arrayBuffer())) : bin(new Uint8Array(0));
+    const b = await priceh();
+    return bin(b || new Uint8Array(0));
   }
   if (p.startsWith('/api/')) return api(u, p, url.searchParams) || err('not available in a shared view', 404);
   const name = PAGES[p];
@@ -292,6 +338,10 @@ export async function handle(req, env, now = Math.floor(Date.now() / 1000)) {
   const t = await page(name, fwOk(u.fw));
   if (t == null) return err('could not fetch the page from GitHub', 502);
   if (name === 'common.js.html') return new Response(t, {headers: {'Content-Type': 'application/javascript'}});
-  return new Response(inject(t, id, u), {headers: {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store'}});
+  let html = t;
+  const cj = html.includes('<script src="/common.js"></script>') ? await page('common.js.html', fwOk(u.fw)) : null;
+  if (cj != null && !/<\/script/i.test(cj)) html = html.replace('<script src="/common.js"></script>', () => '<script>' + cj + '</script>');
+  const B = bundle(u, name === 'hist.html' ? await pricehB64() : null);
+  return new Response(inject(html, id, u, B), {headers: {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store'}});
 }
 

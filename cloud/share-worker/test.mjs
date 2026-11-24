@@ -87,6 +87,7 @@ ok(r.status === 302 && r.headers.get('Location') === '/' && ck === 'hkv=' + SID,
 const realFetch = globalThis.fetch;
 globalThis.fetch = async u => {  // GitHub, from the local firmware/
   const m = /\/firmware\/(.+)$/.exec(String(u));
+  if (/\/main\/data\/priceh\.bin$/.test(String(u))) return new Response(fs.readFileSync(path.join(FW, '..', 'data', 'priceh.bin')));
   return m && fs.existsSync(path.join(FW, m[1])) ? new Response(fs.readFileSync(path.join(FW, m[1]), 'utf8')) : new Response('', {status: 404});
 };
 const view = (url, method = 'GET') => call(method, url, method === 'GET' ? undefined : '{}', {Cookie: ck});
@@ -124,9 +125,9 @@ if (JSDOM && fs.existsSync(process.argv[2] || '')) {  // (the pages need a real 
   for (const [url, check, what] of [['/', d => d.getElementById('d_l').textContent, 'dashboard: oil left'],
     ['/history?mac=' + mac, d => d.getElementById('c2s') && d.getElementById('c2s').textContent, 'forecast page: usage by month']]) {
     const h = (await (await view(url)).text()).replace('<script src="/common.js"></script>', () => '<script>' + common + '</script>');
-    const errs = [];
+    const errs = [], apiCalls = [];
     const w = new JSDOM(h, {url: 'https://share.test' + url, runScripts: 'dangerously', pretendToBeVisual: true, beforeParse(w) {
-      w.fetch = async (u, o) => { const x = await view(String(u).replace(/^https:\/\/share\.test/, ''), (o && o.method) || 'GET'); return x; };
+      w.fetch = async (u, o) => { if (/\/api\//.test(String(u))) apiCalls.push(String(u)); const x = await view(String(u).replace(/^https:\/\/share\.test/, ''), (o && o.method) || 'GET'); return x; };
       w.Response = Response; w.setInterval = () => 0; w.onerror = e => errs.push(String(e));
       w.HTMLDialogElement.prototype.showModal = function () { this.open = true; }; w.HTMLDialogElement.prototype.close = function () { this.open = false; };
     }}).window;
@@ -137,6 +138,7 @@ if (JSDOM && fs.existsSync(process.argv[2] || '')) {  // (the pages need a real 
       const fields = [...d.querySelectorAll('input,select,textarea')].filter(e => !e.disabled && !e.readOnly && e.id !== 'prUnit');  // (prices per litre or per order: a view choice)
       const bad = live.filter(t => /^(Save|Add|Delete|Remove|Turn|Restart|Set PIN|Change|Find|Send|Back up|Restore|Check for|Import|Use )/.test(t));
       ok(!fields.length && !bad.length && live.some(t => /^(Config|Usage)$/.test(t)), url + ': read only (no field to type in, no button that changes anything; tabs still work)' + (bad.length ? ' LEFT: ' + bad.join(', ') : '') + (fields.length ? ' FIELDS: ' + fields.map(e => e.id).join(',') : '')); }
+    ok(!apiCalls.length && !/src="\/common\.js"/.test(h), url + ': one request: the script and every answer inside the page' + (apiCalls.length ? ' ASKED: ' + apiCalls.join(' ') : ''));
     ok(new w.Date().getTime() === U.at * 1000 && w.Date.now() === U.at * 1000 && new w.Date(0).getTime() === 0, url + ': the clock stands at the upload');
   }
 }
@@ -153,6 +155,29 @@ if (JSDOM && fs.existsSync(process.argv[2] || '')) {  // (the pages need a real 
   const got = await api({state: st}, '/api/state', new URLSearchParams()).json();
   ok(JSON.stringify(got) === JSON.stringify({tanks: [{mac: 'x', name: 'Stus btank/b', level: 'svg onload=x()', n: 5}]}), 'what the pages are handed is plain text: ' + JSON.stringify(got.tanks[0])); }
 globalThis.fetch = realFetch;
+
+// ---- the page's own answers (the bundle) match the server's
+{ const {bundle} = await import('./src/share.js'); const B = bundle(U, 'AAEC');
+  const m0 = mac.toLowerCase(), hb64 = B['/api/hist?mac=' + m0][1], all = Buffer.from(hb64, 'base64');
+  ok(B['/api/state'][1] === JSON.stringify(JSON.parse(await (await view('/api/state')).text())) && all.length === Buffer.from(U.history[mac] || '', 'base64').length && B['/api/prices?h=1'][1] === 'AAEC',
+     'the bundle: the same state, all the readings, and the older prices');
+  if (all.length >= 12) {  // the page's own "since" cut, run as the page runs it
+    const SHIM = (await import('./src/share.js')).SHIM_FOR_TEST;
+    const t1 = all.readUInt32LE(6), fn = new Function('B', 'location', 'Response', 'atob', SHIM + 'return ans;')(B, {href: 'https://share.test/', origin: 'https://share.test'}, Response, atob);
+    const got = new Uint8Array(await fn('/api/hist?mac=' + m0.toUpperCase() + '&since=' + t1).arrayBuffer());
+    const srv = new Uint8Array(await (await view('/api/hist?mac=' + m0 + '&since=' + t1)).arrayBuffer());
+    ok(got.length === srv.length && got.every((x, i) => x === srv[i]) && fn('https://elsewhere.example/api/state') === null && fn('/api/curve?mac=' + m0 + '&tank_l=900') === null,
+       'the page answers "since" as the server would; other sites and trial capacities still go out');
+  }
+}
+
+{ const {bundle} = await import('./src/share.js');
+  const B = bundle({tanks: {'AA:BB:CC:DD:EE:01': {}}, history: {'aa:bb:cc:dd:ee:02': 'AA EC', 'aa:bb:cc:dd:ee:03': '<x>'}, state: {}}, null);
+  ok(!('/api/hist?mac=aa:bb:cc:dd:ee:01' in B) && B['/api/hist?mac=aa:bb:cc:dd:ee:02'][1] === 'AAEC' && !('/api/hist?mac=aa:bb:cc:dd:ee:03' in B) && !('/api/prices?h=1' in B),
+     'the bundle as the server: no upper-case tank, spaces ignored, nothing that isn\'t base 64, no older prices if GitHub failed');
+  const f0 = globalThis.fetch; globalThis.fetch = async u => { if (/priceh/.test(String(u))) throw new Error('GitHub down'); return f0(u); };
+  r = await view('/history?mac=' + mac); const t = await r.text(); globalThis.fetch = f0;
+  ok(r.status === 200 && /Backup HK-7QM2-XFD9/.test(t) && !t.includes('"/api/prices?h=1":'), 'the older prices unavailable: the page still comes (and asks for them itself)'); }
 
 // ---- /go: the home-screen shortcut's first page
 { const reads0 = env.SHARE.reads = 0; const g0 = env.SHARE.get, w0 = env.SHARE.getWithMetadata; let kv = 0;
