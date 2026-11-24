@@ -3176,7 +3176,7 @@ def ok_host(h):  # a plain host name: letters, digits, dots, dashes
         h = h[8:]
     h = h.rstrip('/')
     parts = h.split('.')
-    return h if len(h) <= 100 and len(parts) > 1 and all(p and len(p) < 64 and p[0] != '-' and p[-1] != '-' and all(c.isalnum() or c == '-' for c in p)
+    return h if len(h) <= 100 and len(parts) > 1 and all(p and len(p) < 64 and p[0] != '-' and p[-1] != '-' and all(c.isalpha() or c.isdigit() or c == '-' for c in p)
                                                          for p in parts) else None
 
 
@@ -3199,7 +3199,7 @@ def set_share(b):
             cfg.pop('share_host', None)
     elif b.get('on') is True and not sh.get('on'):
         cfg['share'] = {'on': True, 'id': share.new_id(), 'key': share.new_key(), 'at': 0,
-                        'inv': ''.join(c for c in str(b.get('invite') or '') if c.isalnum())[:64]}  # (as the server compares them)
+                        'inv': ''.join(c for c in str(b.get('invite') or '') if c.isalpha() or c.isdigit())[:64]}  # (as the server compares them)
         share_state['want'] = True
     elif b.get('on') is False and sh.get('on'):
         cfg['share_del'] = share_dels() + [{'id': sh['id'], 'key': sh['key'], 'host': share_host()}]  # (deleted in the background)
