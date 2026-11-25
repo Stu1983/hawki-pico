@@ -3615,8 +3615,9 @@ async def poke_task():
                 moff_want.discard(mac)
                 got = moff_info[mac].get('got')
                 print('moff', mac, moff_info[mac])
-                if got and mac in cfg['tanks']:
-                    moff_set(mac, got[0], int(time.time()) if ntp_ok[0] else None)
+                if got and mac in cfg['tanks']:  # (reach: the furthest real distance it reports, cm from the monitor)
+                    moff_set(mac, got[0], int(time.time()) if ntp_ok[0] else None,
+                             got[3] - got[2] if len(got) > 4 and got[3] is not None else None, got[4] if len(got) > 4 else None)
                 break
 
 
@@ -3630,19 +3631,27 @@ def moff_due(mac, mono):
 
 def moff_view(mac):
     o = (cfg.get('moff') or {}).get(mac)
-    return None if o is None else {'cm': o.get('cm'), 'read': moff_seen.get(mac) or o.get('at')}
+    return None if o is None else {'cm': o.get('cm'), 'read': moff_seen.get(mac) or o.get('at'), 'reach': o.get('reach'),
+                                   'near': o.get('near')}
 
 
-def moff_set(mac, cm, at):
+def moff_set(mac, cm, at, reach=None, near=None):
     # the offset read from the monitor, kept in the settings (written only when it changes: the time it was read is
-    # kept in memory between changes, so the flash isn't written daily)
+    # kept in memory between changes, so the flash isn't written daily). With it, how far the monitor's range set by
+    # the Magnus app reaches and its nearest distance (cm from the monitor; the page warns when they cut the tank).
     m = cfg.setdefault('moff', {})
     o = m.get(mac) or {}
     if o.get('cm') != cm:
         d = hawki.get(mac)  # the last distance heard carried the old correction: the new one (odd_empty and the rest
         if d and 'bad_level' not in d and MIN_MM <= (d.get('level') or 0) < 16382:  # compare with it next)
             d['level'] += 10 * (cm - (o.get('cm') or 0))
-        m[mac] = {'cm': cm, 'at': at}
+    n = {'cm': cm, 'at': at if o.get('cm') != cm else o.get('at')}
+    for k, v in (('reach', reach), ('near', near)):  # (not read this time: the last known kept)
+        v = o.get(k) if v is None else v
+        if v is not None:
+            n[k] = v
+    if n != o:
+        m[mac] = n
         save_cfg(cfg)
     moff_seen[mac] = at
 

@@ -79,9 +79,31 @@ def run(ble):
 
 
 b = Ble({'1964': b'\x07', '1978': b'\x02', '1965': b'0138\x00', '1962': b'00796 002 310 0'})
-ok(run(b) == (5, 7, 2) and b.reads == ['1964', '1978'] and not b.writes, "Conor's 5 cm: read, nothing written, nothing else read")
+ok(run(b) == (5, 7, 2, 138, None) and b.reads == ['1964', '1978', '1965'] and not b.writes,
+   "Conor's 5 cm: read, nothing written, nothing else read (its range stop; no MIN_MEASURABLE_DISTANCE here: None)")
+ok(b.reads == ['1964', '1978', '1965'], 'reads: ' + str(b.reads))
+b = Ble({'1964': b'\x02', '1978': b'\x02', '1965': b'0126\x00', '1967': b'\x0b'})
+ok(run(b) == (0, 2, 2, 126, 11) and not b.writes, "Stu's Tank 2 (2026-11-25): no offset, range stop 126 cm, nearest 11 cm")
 b = Ble({'1964': b'\x02', '1978': b'\x02'})
-ok(run(b) == (0, 2, 2), "Stu's monitors (2026-11-24): no offset")
+ok(run(b) == (0, 2, 2, None, None), "an older monitor without them: the offset still read")
+b = Ble({'1964': b'\x02', '1978': b'\x02', '1965': b'\xff\x01', '1967': b''})
+ok(run(b) == (0, 2, 2, None, None), "odd range stop or nearest distance: None, the offset still read")
+class Flaky(Ble):
+    def gattc_read(self, c, vh):
+        if self.hs[vh] in ('1965', '1967'):
+            self.reads.append(self.hs[vh])
+            raise OSError(-110)
+        Ble.gattc_read(self, c, vh)
+b = Flaky({'1964': b'\x07', '1978': b'\x02', '1965': b'0138\x00', '1967': b'\x0b'})
+ok(run(b) == (5, 7, 2, None, None), 'reading the range stop or nearest distance fails: the offset still read')
+class Silent(Ble):
+    def gattc_read(self, c, vh):
+        if self.hs[vh] == '1965':
+            return  # no answer: wait('done') times out
+        Ble.gattc_read(self, c, vh)
+b = Silent({'1964': b'\x07', '1978': b'\x02', '1965': b'0138\x00', '1967': b'\x0b'})
+ok(run(b)[:3] == (5, 7, 2), 'no answer for the range stop: the offset still read')
+ok(poke.ascii_num(b'0138\x00') == 138 and raises(poke.ascii_num, b'') and raises(poke.ascii_num, b'01a8\x00'), 'RANGE_STOP: ASCII digits')
 b = Ble({'1964': b'\x02'})
 try:
     run(b)
@@ -110,10 +132,17 @@ g['moff_set']('m1', 5, 1000)
 g['moff_set']('m1', 5, 2000)
 ok(len(saves) == 1 and g['cfg']['moff']['m1'] == {'cm': 5, 'at': 1000}, 'the settings written only when it changes')
 ok(g['hawki']['m1']['level'] == 850, 'the last distance heard moves with it (odd_empty compares the next one with it)')
-ok(g['moff_view']('m1') == {'cm': 5, 'read': 2000} and g['moff_view']('m2') is None, 'shown: the offset and when it was last read')
+ok(g['moff_view']('m1') == {'cm': 5, 'read': 2000, 'reach': None, 'near': None} and g['moff_view']('m2') is None, 'shown: the offset and when it was last read')
 g['moff_set']('m1', 0, 3000)
 ok(len(saves) == 2 and g['cfg']['moff']['m1']['cm'] == 0, 'taken off in the Magnus app: 0 kept (and shown as none)')
 ok(g['hawki']['m1']['level'] == 800, '... and the last distance heard moves back')
+g['moff_set']('m1', 0, 4000, 136, 11)
+ok(len(saves) == 3 and g['cfg']['moff']['m1'] == {'cm': 0, 'at': 3000, 'reach': 136, 'near': 11}, 'its reach and nearest kept (when the offset changed still says when)')
+g['moff_set']('m1', 0, 5000, 136, 11)
+ok(len(saves) == 3 and g['moff_view']('m1') == {'cm': 0, 'read': 5000, 'reach': 136, 'near': 11}, '... written only when they change; shown')
+ok(g['hawki']['m1']['level'] == 800, '... the last distance heard not moved by them')
+g['moff_set']('m1', 0, 6000, None, None)
+ok(len(saves) == 3 and g['cfg']['moff']['m1'] == {'cm': 0, 'at': 3000, 'reach': 136, 'near': 11}, 'not read this time: the last known kept, nothing written')
 
 # the advert: added back only to a real distance, before the misread checks
 i = src.index("mo = (cfg.get('moff') or {}).get(k)")

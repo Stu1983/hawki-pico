@@ -1,11 +1,11 @@
 {
- "version": "1.3.39",
- "ref": "v1.3.39",
- "notes": "Today's readings: the So far row also shows how long (first reading to the last), the distance moved and the litres now",
+ "version": "1.3.40",
+ "ref": "v1.3.40",
+ "notes": "Magnus app settings in the monitor: its range (tank model) and nearest distance read with the offset; Edit tank warns when they cut the tank",
  "files": {
   "app.py": [
-   "a170ae94476c60445d0312931e9bd240b5d7d939e5e1800b9c9443f83de34a44",
-   170985
+   "d7bef26cd2c142b9f24c057243276e24c66ecd1d59e0725d8173b49f1f2c5b33",
+   171700
   ],
   "battlog.py": [
    "ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de",
@@ -60,8 +60,8 @@
    5451
   ],
   "poke.py": [
-   "600ceb444c040ae9053a9fa089dc23093f7c51544d2ab6376b83970808c81c19",
-   11926
+   "963366b902d47f648c043e86a4adfba56a9c67153a00e4a10e6e89011bd14dc2",
+   13306
   ],
   "price.py": [
    "b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90",
@@ -76,8 +76,8 @@
    14435
   ],
   "ui.html": [
-   "d16f5316e13a36d6e400e25872ffae4f9e20e7f8b912ff9126b5e0f5aef5461f",
-   147041
+   "4eee1597ab4a8010df8002d11997310df59fb81542f115183f9736234976cb54",
+   148386
   ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
@@ -88,7 +88,7 @@
    13431
   ],
   "version.py": [
-   "569725fdfbf9501f1aac85372d794bf02af6216a318824c2e632a8ed82cb806e",
+   "3a68d8839eb184c7f26f4a1e8a3bdbbf31bf1a45e0b8453d5a141ccc473c1517",
    19
   ],
   "weather.py": [
@@ -101,7 +101,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"a170ae94476c60445d0312931e9bd240b5d7d939e5e1800b9c9443f83de34a44\", 170985], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"01f88e5e80f0c2818a1f496649bf0af33369e88a9a22ee75da999d301757e379\", 36361], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"8016a076264c6c19d5b49cac30ae307cf05bf524d1f94c4e7c38667b51aa6b71\", 66936], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"600ceb444c040ae9053a9fa089dc23093f7c51544d2ab6376b83970808c81c19\", 11926], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"share.py\": [\"92b32c0a86229b055975dd3181707b31eaa6bd895444d0189ffc6801442d899e\", 7680], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"d16f5316e13a36d6e400e25872ffae4f9e20e7f8b912ff9126b5e0f5aef5461f\", 147041], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"569725fdfbf9501f1aac85372d794bf02af6216a318824c2e632a8ed82cb806e\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Today's readings: the So far row also shows how long (first reading to the last), the distance moved and the litres now\", \"ref\": \"v1.3.39\", \"version\": \"1.3.39\"}",
-  "sig": "2319b8cbd8b7cdd96013fb661e0c43c76e5c2c39de732f478ecabf8426bd236f3c059c1ecffbe0fb2288cbdf3cad5d7d83862eb8f231e016021d086999d586804d2ce77579cc7ec47c246bd55fc3a621dd298ce1b47fedcdde41b667ae28bb8e8cb25a29eac20e459a37960a296fe8522b5e3a4bf69da44a9b58e57c36051e5c8981b1aca83c316805dbc1b37b5d604b43ccc24e11ccb4c4b9bfc3f9050a73f60b246d97cc598dad40e1695c66e4f750c50f825838ae319dfc2a904ee38863c9fafd2e292e098e31b53430a3b39337ff123fda7b0631c5b5af14bcab06c2ea9c764abc2187abfd2d92d0c680c5b20590f059361a2d59573c182ecc9563f9700a"
+  "body": "{\"files\": {\"app.py\": [\"d7bef26cd2c142b9f24c057243276e24c66ecd1d59e0725d8173b49f1f2c5b33\", 171700], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"01f88e5e80f0c2818a1f496649bf0af33369e88a9a22ee75da999d301757e379\", 36361], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"8016a076264c6c19d5b49cac30ae307cf05bf524d1f94c4e7c38667b51aa6b71\", 66936], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"963366b902d47f648c043e86a4adfba56a9c67153a00e4a10e6e89011bd14dc2\", 13306], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"share.py\": [\"92b32c0a86229b055975dd3181707b31eaa6bd895444d0189ffc6801442d899e\", 7680], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"4eee1597ab4a8010df8002d11997310df59fb81542f115183f9736234976cb54\", 148386], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"3a68d8839eb184c7f26f4a1e8a3bdbbf31bf1a45e0b8453d5a141ccc473c1517\", 19], \"weather.py\": [\"4ae891fa3605588157b0b32ea36bd495994a57e3aa5f2a0b1e3c5a762716688a\", 8744], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Magnus app settings in the monitor: its range (tank model) and nearest distance read with the offset; Edit tank warns when they cut the tank\", \"ref\": \"v1.3.40\", \"version\": \"1.3.40\"}",
+  "sig": "3d4dcd56efe048d3ac82498bf36025e1c634d30e89f33981d5b02bc7c3af8f99b6d7f27fdaec4c4cc295f25e13c498958d809b9b7bfc203dfa6949502860ed7214c9731e366288b125e7b26f86b636248718028e2ffc20eda53f9c70a1523d6db18a696633ef4fea2db32c41effda58ead0090c4dd5413293a4636359822b8cd86a96cf581ac652fbcfc5fd33d721747325ce5e386824fc44a7b6e4cc1b0ec69a07e92d1476974f62ec02e6c68df7997356f04e5fa81ef4d030aa95babd37b5594ae76685d79e3a245a178c68f432512b709d6b630eee0dd2303c371a7edef5075f638b4b9569459f7565915a8f6e52ae18e86480df34f6cdf335924cae662ca"
  }
 }

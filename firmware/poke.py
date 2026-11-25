@@ -252,17 +252,39 @@ def offset_cm(start, internal):
     return d
 
 
+def ascii_num(b):
+    """RANGE_STOP (1965): ASCII digits, cm, NUL-ended ("0138\\0"; Stu's two monitors 2026-11-25: 0138 and 0126)."""
+    t = bytes(b or b'').split(b'\x00')[0]
+    if not 1 <= len(t) <= 5 or any(not 48 <= c <= 57 for c in t):
+        raise ValueError('odd value ' + binascii.hexlify(bytes(b or b'')).decode())
+    return int(t)
+
+
+# The Magnus app writes two more that matter (seen in its code, 2026-11-25): picking a tank model sets RANGE_STOP
+# (1965) to RANGE_START + the model's height less its bottom dead zone, and an offset moves it with RANGE_START; past it
+# the monitor reports 'nearly empty' (16382; the app's isNearlyEmpty) instead of a distance. And an offset taking
+# RANGE_START past 11 cm raises MIN_MEASURABLE_DISTANCE (1967, one byte, cm; 11 on Stu's) to it: nearer than that,
+# no distance. Both read here when the monitor has them (None when not, or odd): the page warns when they cut the tank.
 async def read_offset(ble, at, mac, set_hook, asyncio):
-    """Connect, read RANGE_START and INTERNAL_OFFSET, disconnect (tried 3 times). Returns (offset cm, start,
-    internal). Writes nothing. The caller stops scanning first and starts it again after."""
+    """Connect, read RANGE_START and INTERNAL_OFFSET (and RANGE_STOP, MIN_MEASURABLE_DISTANCE if there), disconnect
+    (tried 3 times). Returns (offset cm, start, internal, stop or None, min distance or None). Writes nothing. The
+    caller stops scanning first and starts it again after."""
     async def work(ble, c, ch, st, wait, asyncio):
         v = []
-        for k in ('1964', '1978'):
+        for k, f, need in (('1964', le_num, 1), ('1978', le_num, 1), ('1965', ascii_num, 0), ('1967', le_num, 0)):
             if k not in ch:
-                raise OSError('no ' + k)
-            st['rd'].pop(ch[k], None)
-            ble.gattc_read(c, ch[k])
-            await wait('done')
-            v.append(le_num(st['rd'].get(ch[k])))
-        return offset_cm(v[0], v[1]), v[0], v[1]
+                if need:
+                    raise OSError('no ' + k)
+                v.append(None)
+                continue
+            try:
+                st['rd'].pop(ch[k], None)
+                ble.gattc_read(c, ch[k])
+                await wait('done')
+                v.append(f(st['rd'].get(ch[k])))
+            except Exception:  # (an optional one failing never costs the offset)
+                if need:
+                    raise
+                v.append(None)
+        return (offset_cm(v[0], v[1]),) + tuple(v)
     return await _tries(ble, at, mac, set_hook, asyncio, work)
