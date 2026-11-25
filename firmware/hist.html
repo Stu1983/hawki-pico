@@ -319,17 +319,27 @@ function drawMonths(){
   prev.forEach(yy=>{const y2=i<6?yy:yy+1,o=M[y2+'-'+q.m];cell(tr,o?usedTxt(o,y2,q.m):'–')});
   cell(tr,(q.o?usedTxt(q.o,q.y,q.m):'')+(q.fc>0?(q.o?' + ':'')+'≈'+Math.round(q.fc)+' L':'')||'–');if(hasAvg)cell(tr,q.avg!=null?Math.round(q.avg)+' L':'–');$('tbl').appendChild(tr)})}
 // Average L/hour for each hour of the day over the last 30 days, from consecutive hourly readings
-// (deliveries skipped). Readings move in ~5 L steps and with temperature, so single hours mean little;
-// a month of them averages out to a usable pattern.
+// (deliveries skipped). Readings move in 5 mm steps (3-5 L, by the tank and its level) and flicker a step up and
+// down as the oil cools and warms, so they are first fitted with the nearest level that only falls (falls() below)
+// between deliveries: the flicker cancels out and each step lands in the hours it was used.
+function falls(y){const b=[];for(const v of y){b.push([v,1]);while(b.length>1&&b[b.length-2][0]/b[b.length-2][1]<b[b.length-1][0]/b[b.length-1][1]){const[s,n]=b.pop();b[b.length-1][0]+=s;b[b.length-1][1]+=n}}
+ const o=[];for(const[s,n]of b)for(let i=0;i<n;i++)o.push(s/n);return o}  /* (pool adjacent violators: the least-squares non-increasing fit) */
 function hourly(P,fills,tnow){const b=Array.from({length:24},()=>({l:0,h:0,n:0}));let days=new Set();
- for(let i=1;i<P.length;i++){const[t0,l0]=P[i-1],[t1,l1]=P[i],dt=t1-t0;
-  if(t1<tnow-30*DAY||dt<=0||dt>1.6*H||l1-l0>10||fills.some(f=>f.t>t0-6*H&&f.t<=t1+6*H))continue;  // skip top-ups, deliveries, gaps
+ const Q=P.filter(p=>p[0]>=tnow-30*DAY-2*H),F=[];let seg=[];
+ const brk=(a,c)=>c[1]-a[1]>10||fills.some(f=>f.t>a[0]-6*H&&f.t<=c[0]+6*H);  /* a top-up or delivery: fitted apart */
+ Q.forEach((p,i)=>{if(i&&brk(Q[i-1],p)){F.push(...falls(seg));seg=[]}seg.push(p[1])});F.push(...falls(seg));
+ for(let i=1;i<Q.length;i++){const t0=Q[i-1][0],t1=Q[i][0],l0=F[i-1],l1=F[i],dt=t1-t0;
+  if(t1<tnow-30*DAY||dt<=0||dt>1.6*H||brk(Q[i-1],Q[i]))continue;  // skip top-ups, deliveries, gaps
   const k=new Date((t0+t1)/2*1000).getHours();b[k].l+=l0-l1;b[k].h+=dt/H;b[k].n++;days.add(midnight(t1))}
  return{bins:b.map(x=>x.h?{lph:x.l/x.h,n:x.n}:null),days:days.size}}
+/* litres in one 5 mm step of the sensor at each tank's level now (the tank's shape makes it 3-5 L) */
+function stepTxt(){const one=(mm,cv)=>mm!=null&&mm<16382&&cv?toL(mm,cv)-toL(mm+5,cv):null,f=x=>x.toFixed(1)+' L';
+ if(T&&T.all){const v=T.tanks.map(t=>[t.name,one(t.level,CVS&&CVS[t.mac])]).filter(x=>x[1]!=null);return v.length?v.map(x=>f(x[1])+' ('+x[0]+')').join(', '):null}
+ const last=P.length?P[P.length-1][2]:null,v=one(T&&T.level!=null&&T.level!==16383?T.level:last,CV);return v!=null?f(v):null}
 function drawHours(){const svg=$('c3');svg.textContent='';const Hh=200,W=fit(svg,Hh),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
  const r=hourly(P,(A&&A.fills)||[],now),vals=r.bins.filter(Boolean).map(x=>x.lph);
  $('hrNote').textContent=r.days<3?'Needs a few days of hourly readings (imported history is too far apart). Check back in a week; it is best after a month.'
-  :'Average over the last '+Math.min(30,r.days)+' days of hourly readings. The sensor reads in roughly 5 L steps, and the oil shrinks a little as it cools at night and grows as it warms, so treat this as the shape of your day rather than exact figures.';
+  :'Average over the last '+Math.min(30,r.days)+' days of hourly readings. The sensor reads in 5 mm steps'+((x=>x?' ('+x+' at the level now)':'')(stepTxt()))+', and the oil shrinks and grows a little as it cools and warms: the readings are smoothed to a level that only falls, so treat this as the shape of your day rather than exact figures.';
  if(r.days<3){el('text',{x:W/2,y:Hh/2,'text-anchor':'middle'},svg,'Not enough hourly readings yet');return}
  const st=niceStep(Math.max(0.5,...vals),4),max=Math.ceil(Math.max(0.5,...vals)/st)*st,y=v=>mt+ph-Math.max(0,v)/max*ph;
  for(let v=0;v<=max+1e-9;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},svg);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},svg,(st%1?v.toFixed(1):v)+(v+st>max+1e-9?' L/h':''))}
