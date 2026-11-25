@@ -89,8 +89,15 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 
 <h2>Use by hour of day</h2>
 <div class="card">
- <svg id="c3" viewBox="0 0 640 200" role="img" aria-label="Average litres used in each hour of the day, last 30 days"></svg>
+ <svg id="c3" viewBox="0 0 640 200" role="img" aria-label="Average litres used in each hour of the day on weekdays and at weekends, last 30 days"></svg>
+ <div class="legend" id="hrLeg"><span><i style="background:var(--s1)"></i>Weekdays</span><span><i style="background:var(--s2)"></i>Weekends</span></div>
  <div class="mut" id="hrNote" style="min-height:36px;margin-top:6px">&nbsp;</div>
+</div>
+
+<h2>Use by day of the week</h2>
+<div class="card">
+ <svg id="cdow" viewBox="0 0 640 200" role="img" aria-label="Litres used on each day of the week, allowing for the weather"></svg>
+ <div class="mut" id="dowNote" style="min-height:9em;margin-top:6px">&nbsp;</div>
 </div>
 
 </div>
@@ -197,7 +204,7 @@ const ymdL=t=>{const d=new Date(t*1000);return d.getFullYear()+'-'+pad(d.getMont
 async function loadWx(g){try{const b=await (await fetch('/api/weather')).arrayBuffer(),v=new DataView(b),m={};if(g!==LG)return;
  for(let i=0;i+6<=b.byteLength;i+=6){const d=new Date((946684800+v.getUint16(i,true)*86400)*1000),k=d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate());if(v.getInt16(i+2,true)!==-32768)m[k]=[v.getInt16(i+2,true)/10,v.getInt16(i+4,true)/10]}
  WX=m}catch(e){if(g!==LG)return;WX={}}drawWeather()}  /* (g: an older load's late answer is dropped) */
-function drawWeather(){const c4=$('c4'),c5=$('c5'),c6=$('c6');[c4,c5,c6].forEach(x=>x.textContent='');
+function drawWeather(){drawDow();const c4=$('c4'),c5=$('c5'),c6=$('c6');[c4,c5,c6].forEach(x=>x.textContent='');
  const has=WX&&Object.keys(WX).length,note=$('wxNote');
  const H4=150,W=fit(c4,H4);fit(c5,H4);const H6=220,W6=fit(c6,H6),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr;
  if(!has){[c4,c5,c6].forEach(x=>el('text',{x:W/2,y:60,'text-anchor':'middle'},x,WX?'No temperatures yet':'Loading…'));
@@ -324,31 +331,74 @@ function drawMonths(){
 // between deliveries: the flicker cancels out and each step lands in the hours it was used.
 function falls(y){const b=[];for(const v of y){b.push([v,1]);while(b.length>1&&b[b.length-2][0]/b[b.length-2][1]<b[b.length-1][0]/b[b.length-1][1]){const[s,n]=b.pop();b[b.length-1][0]+=s;b[b.length-1][1]+=n}}
  const o=[];for(const[s,n]of b)for(let i=0;i<n;i++)o.push(s/n);return o}  /* (pool adjacent violators: the least-squares non-increasing fit) */
-function hourly(P,fills,tnow){const b=Array.from({length:24},()=>({l:0,h:0,n:0}));let days=new Set();
- const Q=P.filter(p=>p[0]>=tnow-30*DAY-2*H),F=[];let seg=[];
- const brk=(a,c)=>c[1]-a[1]>10||fills.some(f=>f.t>a[0]-6*H&&f.t<=c[0]+6*H);  /* a top-up or delivery: fitted apart */
- Q.forEach((p,i)=>{if(i&&brk(Q[i-1],p)){F.push(...falls(seg));seg=[]}seg.push(p[1])});F.push(...falls(seg));
+/* the readings from t0 on with the smoothed level (F, index for index) and where a top-up or delivery breaks them */
+function smoothed(P,fills,t0){const Q=P.filter(p=>p[0]>=t0),F=[],brk=(a,c)=>c[1]-a[1]>10||fills.some(f=>f.t>a[0]-6*H&&f.t<=c[0]+6*H);let seg=[];
+ Q.forEach((p,i)=>{if(i&&brk(Q[i-1],p)){F.push(...falls(seg));seg=[]}seg.push(p[1])});F.push(...falls(seg));return{Q,F,brk}}
+const isWE=t=>{const d=new Date(t*1000).getDay();return d===0||d===6};
+function hourly(P,fills,tnow){const mk=()=>Array.from({length:24},()=>({l:0,h:0,n:0})),B={wd:mk(),we:mk()},days={wd:new Set(),we:new Set()};
+ const{Q,F,brk}=smoothed(P,fills,tnow-30*DAY-2*H);
  for(let i=1;i<Q.length;i++){const t0=Q[i-1][0],t1=Q[i][0],l0=F[i-1],l1=F[i],dt=t1-t0;
   if(t1<tnow-30*DAY||dt<=0||dt>1.6*H||brk(Q[i-1],Q[i]))continue;  // skip top-ups, deliveries, gaps
-  const k=new Date((t0+t1)/2*1000).getHours();b[k].l+=l0-l1;b[k].h+=dt/H;b[k].n++;days.add(midnight(t1))}
- return{bins:b.map(x=>x.h?{lph:x.l/x.h,n:x.n}:null),days:days.size}}
+  const m=(t0+t1)/2,g=isWE(m)?'we':'wd',k=new Date(m*1000).getHours();B[g][k].l+=l0-l1;B[g][k].h+=dt/H;B[g][k].n++;days[g].add(midnight(m))}
+ const out=b=>b.map(x=>x.h?{lph:x.l/x.h,n:x.n}:null);return{wd:out(B.wd),we:out(B.we),dwd:days.wd.size,dwe:days.we.size,days:days.wd.size+days.we.size}}
 /* litres in one 5 mm step of the sensor at each tank's level now (the tank's shape makes it 3-5 L) */
 function stepTxt(){const one=(mm,cv)=>mm!=null&&mm<16382&&cv?toL(mm,cv)-toL(mm+5,cv):null,f=x=>x.toFixed(1)+' L';
  if(T&&T.all){const v=T.tanks.map(t=>[t.name,one(t.level,CVS&&CVS[t.mac])]).filter(x=>x[1]!=null);return v.length?v.map(x=>f(x[1])+' ('+x[0]+')').join(', '):null}
  const last=P.length?P[P.length-1][2]:null,v=one(T&&T.level!=null&&T.level!==16383?T.level:last,CV);return v!=null?f(v):null}
 function drawHours(){const svg=$('c3');svg.textContent='';const Hh=200,W=fit(svg,Hh),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
- const r=hourly(P,(A&&A.fills)||[],now),vals=r.bins.filter(Boolean).map(x=>x.lph);
+ const r=hourly(P,(A&&A.fills)||[],now),vals=r.wd.concat(r.we).filter(Boolean).map(x=>x.lph);
  $('hrNote').textContent=r.days<3?'Needs a few days of hourly readings (imported history is too far apart). Check back in a week; it is best after a month.'
-  :'Average over the last '+Math.min(30,r.days)+' days of hourly readings. The sensor reads in 5 mm steps'+((x=>x?' ('+x+' at the level now)':'')(stepTxt()))+', and the oil shrinks and grows a little as it cools and warms: the readings are smoothed to a level that only falls, so treat this as the shape of your day rather than exact figures.';
+  :'Average over the last '+Math.min(30,r.days)+' days of hourly readings ('+r.dwd+' weekdays, '+r.dwe+' weekend days'+(r.dwe<4?': the weekend bars settle after a few more weekends':'')+'). The sensor reads in 5 mm steps'+((x=>x?' ('+x+' at the level now)':'')(stepTxt()))+', and the oil shrinks and grows a little as it cools and warms: the readings are smoothed to a level that only falls, so treat this as the shape of your day rather than exact figures.';
  if(r.days<3){el('text',{x:W/2,y:Hh/2,'text-anchor':'middle'},svg,'Not enough hourly readings yet');return}
  const st=niceStep(Math.max(0.5,...vals),4),max=Math.ceil(Math.max(0.5,...vals)/st)*st,y=v=>mt+ph-Math.max(0,v)/max*ph;
  for(let v=0;v<=max+1e-9;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},svg);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},svg,(st%1?v.toFixed(1):v)+(v+st>max+1e-9?' L/h':''))}
  el('line',{x1:ml,x2:W-mr,y1:mt+ph,y2:mt+ph,class:'ax'},svg);
- const gw=pw/24,bw=gw-3;
- r.bins.forEach((x,k)=>{const bx=ml+k*gw+1.5;if(k%(gw*3<44?6:3)===0)el('text',{x:bx+bw/2,y:Hh-6,'text-anchor':'middle'},svg,String(k).padStart(2,'0')+':00');
-  if(!x)return;const top=y(x.lph),h=mt+ph-top;
-  const lines=[(x.lph<0?'0':x.lph.toFixed(1))+' L an hour',String(k).padStart(2,'0')+':00–'+String((k+1)%24).padStart(2,'0')+':00 · '+x.n+' hours of readings'+(x.lph<0?' (the oil warmed up)':'')];
-  const e=el('path',{d:h>0.5?bar(bx,top,bw,h):`M${bx},${mt+ph-1}h${bw}v1h${-bw}Z`,fill:'var(--s1)',class:'bar',tabindex:0},svg);
+ const gw=pw/24,bw=Math.max(1,(gw-3)/2),hh=k=>String(k).padStart(2,'0')+':00';
+ for(let k=0;k<24;k++){const bx=ml+k*gw+1.5;if(k%(gw*3<44?6:3)===0)el('text',{x:bx+bw,y:Hh-6,'text-anchor':'middle'},svg,hh(k));
+  [['wd','var(--s1)','Weekdays',0],['we','var(--s2)','Weekends',bw]].forEach(([g,c,nm,dx])=>{const x=r[g][k];if(!x)return;const top=y(x.lph),h=mt+ph-top,bx2=bx+dx;
+   const lines=[nm+': '+x.lph.toFixed(1)+' L an hour',hh(k)+'–'+hh((k+1)%24)+' · '+x.n+' hours of readings'];
+   const e=el('path',{d:h>0.5?bar(bx2,top,bw,h):`M${bx2},${mt+ph-1}h${bw}v1h${-bw}Z`,fill:c,class:'bar',tabindex:0},svg);
+   e.addEventListener('pointermove',ev=>showTip(ev,lines));e.addEventListener('pointerdown',ev=>showTip(ev,lines));e.addEventListener('pointerleave',hideTip)})}}
+/* Each day of the week's use, allowing for the weather: each whole day's litres (the smoothed level at one midnight
+   less the next; no delivery, no gap over 3 hours) over the last 12 weeks, against what the weather that day would
+   suggest (a straight line fitted to litres against degree days: base use plus so much per degree of cold), so a
+   cold Monday doesn't read as a busy Monday. Each day's figure: its litres over its expected, times the average
+   expected (litres on a day of average weather for those weeks). A day of use is only 2-3 sensor steps, so it means
+   little until each day of the week has DOW_MIN of them; until then the bars are drawn faint. */
+const DOW_MIN=5,DOW_N=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function dayTotals(P,fills,tnow){const m0=addDays(midnight(tnow),-84),{Q,F,brk}=smoothed(P,fills,m0-3*H),ts=Q.map(q=>q[0]),out=[];  /* (from a midnight: across a clock change too) */
+ /* the smoothed level at t, and the readings around it (s..e: the pairs from there on to check); null across a gap or a delivery */
+ const at=t=>{let lo=0,hi=ts.length;while(lo<hi){const m=lo+hi>>1;if(ts[m]<t)lo=m+1;else hi=m}const i=lo;
+  if(i<ts.length&&ts[i]===t)return{l:F[i],s:i+1,e:i};
+  if(i<1||i>=ts.length||ts[i]-ts[i-1]>3*H||brk(Q[i-1],Q[i]))return null;const f=(t-ts[i-1])/(ts[i]-ts[i-1]);return{l:F[i-1]+(F[i]-F[i-1])*f,s:i,e:i}};
+ for(let m=m0;m<midnight(tnow);m=addDays(m,1)){const n=addDays(m,1),a=at(m),b=at(n);if(!a||!b)continue;
+  let ok=true;for(let k=Math.max(1,a.s);k<=b.e&&ok;k++)if(ts[k]-ts[k-1]>3*H||brk(Q[k-1],Q[k]))ok=false;
+  if(ok)out.push({t:m,l:Math.max(0,a.l-b.l),dow:(new Date(m*1000).getDay()+6)%7})}
+ return out}
+function drawDow(){const svg=$('cdow');if(!svg)return;svg.textContent='';const Hh=200,W=fit(svg,Hh),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
+ const D=dayTotals(P,(A&&A.fills)||[],now),dd=d=>{const w=WX&&WX[ymdL(d.t+DAY/2)];return w?Math.max(0,WX_BASE-(w[0]+w[1])/2):null};
+ /* the weather line: least squares of litres on degree days over the days that have both (a and b kept >= 0) */
+ const wd=D.filter(d=>dd(d)!=null);let fitW=null;
+ if(wd.length>=10){const n=wd.length,mx=wd.reduce((s,d)=>s+dd(d),0)/n,my=wd.reduce((s,d)=>s+d.l,0)/n,sxx=wd.reduce((s,d)=>s+(dd(d)-mx)**2,0),sxy=wd.reduce((s,d)=>s+(dd(d)-mx)*(d.l-my),0);
+  let b=sxx>0?sxy/sxx:0,a=my-b*mx;if(a<0){a=0;const s2=wd.reduce((s,d)=>s+dd(d)**2,0);b=s2>0?wd.reduce((s,d)=>s+dd(d)*d.l,0)/s2:0}if(b<0){b=0;a=my}
+  if(a+b*mx>0)fitW={a,b}}
+ const use=fitW?wd:D,ex=d=>fitW?fitW.a+fitW.b*dd(d):1,eAvg=use.reduce((s,d)=>s+ex(d),0)/(use.length||1);
+ const per=DOW_N.map((nm,k)=>{const ds=use.filter(d=>d.dow===k),L=ds.reduce((s,d)=>s+d.l,0),E=ds.reduce((s,d)=>s+ex(d),0);
+  return{nm,n:ds.length,v:ds.length?(fitW?(E>0?L/E*eAvg:L>0?null:0):L/ds.length):null,raw:ds.length?L/ds.length:null}});
+ const short=per.filter(x=>x.n<DOW_MIN),ready=!short.length;
+ $('dowNote').textContent=!use.length?'Needs whole days of hourly readings: check back in a week. A day uses only 2-3 sensor steps, so it means something once each day of the week has '+DOW_MIN+' (about '+DOW_MIN+' weeks).'
+  :(ready?'':'Faint: fewer than '+DOW_MIN+' of that day so far (under each), too few to mean much: a day uses only 2-3 sensor steps. ')
+  +(fitW?'Litres on a day of average weather over the last '+Math.round(use.length/7)+' weeks: each day set against what that day\'s outside temperature would suggest ('+fitW.a.toFixed(1)+' L plus '+fitW.b.toFixed(2)+' L per degree below '+WX_BASE+' °C), so a cold Monday doesn\'t read as a busy one.'
+   :'Average litres a day, not yet allowing for the weather ('+(!(WX&&Object.keys(WX).length)?'set your location under Config → Forecast → Weather':wd.length<10?'that needs 10 whole days with temperatures':'no pattern with the temperature yet')+').');
+ const vals=per.filter(x=>x.v!=null).map(x=>x.v);
+ if(!vals.length){el('text',{x:W/2,y:Hh/2,'text-anchor':'middle'},svg,'Not enough whole days of readings yet');return}
+ const st=niceStep(Math.max(1,...vals),4),max=Math.ceil(Math.max(1,...vals)/st)*st,y=v=>mt+ph-Math.max(0,v)/max*ph;
+ for(let v=0;v<=max+1e-9;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},svg);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},svg,(st%1?v.toFixed(1):v)+(v+st>max+1e-9?' L':''))}
+ el('line',{x1:ml,x2:W-mr,y1:mt+ph,y2:mt+ph,class:'ax'},svg);
+ const gw=pw/7,bw=Math.min(60,gw-10);
+ per.forEach((x,k)=>{const bx=ml+k*gw+(gw-bw)/2;el('text',{x:bx+bw/2,y:Hh-6,'text-anchor':'middle'},svg,x.nm+(ready?'':' ('+x.n+')'));if(x.v==null)return;const top=y(x.v),h=Math.max(1,mt+ph-top);
+  const lines=[x.nm+': '+x.v.toFixed(1)+' L'+(fitW?' on a day of average weather':' a day'),x.n+' day'+(x.n===1?'':'s')+(fitW?' · '+x.raw.toFixed(1)+' L a day as measured':'')+(x.n<DOW_MIN?' · too few yet':'')];
+  const e=el('path',{d:bar(bx,top,bw,h),fill:k>=5?'var(--s2)':'var(--s1)',class:'bar',tabindex:0,opacity:x.n<DOW_MIN?0.35:1},svg);
   e.addEventListener('pointermove',ev=>showTip(ev,lines));e.addEventListener('pointerdown',ev=>showTip(ev,lines));e.addEventListener('pointerleave',hideTip)})}
 function bar(x,y,w,h){const r=Math.min(4,w/2,h);return `M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`}
 
