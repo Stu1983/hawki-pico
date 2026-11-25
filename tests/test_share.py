@@ -36,7 +36,7 @@ cfg = {'ssid': 'MyHomeWiFi', 'pw': 'secret-wifi', 'pin': 'x', 'wx': {'lat': 55.0
 st = {'tanks': [{'mac': 'aa:bb:cc:dd:ee:01', 'name': 'Back tank', 'level': 850, 'litres': 310.5, 'cfg': {'height_cm': 120, 'tank_l': 1100}}],
       'found': [{'mac': 'ff:ff:ff:ff:ff:ff'}], 'ssid': 'MyHomeWiFi', 'ip': '192.168.1.50', 'net': {'gw': '192.168.1.1'}, 'hostname': 'oil',
       'notify': {'po_user': True}, 'mqtt': {'host': '192.168.1.9', 'user': 'me'}, 'mac': '28:cd:c1:00:00:01', 'wifi_saved': 'MyHomeWiFi',
-      'wx': {'lat': 55.04321, 'lon': -6.51234, 'name': '12 Main St, Coleraine BT51 3AB', 'norm': [1, 2]}, 'price': {'on': True, 'pc': 'BT51'},
+      'wx': {'lat': 55.04321, 'lon': -6.51234, 'name': '12 Main St, Coleraine BT51 3AB', 'norm': [1, 2], 'normw': [3, 4]}, 'price': {'on': True, 'pc': 'BT51'},
       'year_l': 2200, 'primary': 'aa:bb:cc:dd:ee:01', 'update': {'version': '1.3.30', 'last': {'x': 1}}, 'maint': True}
 hist = b''.join(struct.pack('<IH', 1795000000 + i * 3600, 850 + i % 7) for i in range(5000))  # 30 KB
 open('h.bin', 'wb').write(hist)
@@ -56,6 +56,7 @@ ok(u['curves']['aa:bb:cc:dd:ee:01']['h'] == 1200 and u['battlog']['aa:bb:cc:dd:e
    'what the support view needs: curves, battery log, the dashboard\'s state')
 for secret in ('MyHomeWiFi', 'secret-wifi', '192.168.', 'maint-token', 'uuuu', 'tttt', 'Main St', '3AB', '55.04', '-6.51', '28:cd:c1', 'oil"', 'ff:ff:ff'):
     ok(secret not in raw, 'never sent: ' + secret)
+ok(u['state']['wx']['norm'] == [1, 2] and u['state']['wx']['normw'] == [3, 4], 'the usual temperatures and wind kept (the shared forecast counts the wind as at home)')
 ok(u['area'] == {'pc': 'BT51', 'lat': 55.0, 'lon': -6.5} and u['state']['wx']['lat'] == 55.0 and u['state']['wx']['name'] == 'BT51',
    'where: the postcode district and the weather location to a quarter degree only: %r' % u['area'])
 ok(sorted(u['state']) == ['found', 'pin_set', 'price', 'primary', 'tanks', 'update', 'wx', 'year_l'] and u['state']['found'] == [] and u['state']['update'] == {'version': '1.3.30'},
@@ -111,7 +112,7 @@ async def quiet():
 g = {'cfg': {'tanks': {'aa:bb:cc:dd:ee:01': {}}}, 'share': Sh, 'time': type('t', (), {'time': staticmethod(lambda: T[0])}), 'wlan': W(),
      'mono_s': lambda: M[0], 'web_quiet': quiet, 'wd_hold': [0], 'with_room': lambda f, *a: f(*a), 'save_cfg': lambda c: saved.append(1),
      'installing': [False], 'free_bytes': lambda: 10 ** 7, 'rm': lambda n: None, 'share_build': lambda now: 1234, 'os': os, 'hist_name': lambda m: 'h.bin',
-     'weather': type('w', (), {'FILE': 'wx.bin', 'FFILE': 'wxf.bin'}), 'price': type('p', (), {'FILE': 'p.bin'})}
+     'weather': type('w', (), {'FILE': 'wx.bin', 'FFILE': 'wxf.bin', 'WFILE': 'wxw.bin', 'FWFILE': 'wxfw.bin'}), 'price': type('p', (), {'FILE': 'p.bin'})}
 exec(compile(ast.Module(keep, []), 'app.py', 'exec'), g)
 step = lambda: asyncio.run(g['share_step']())
 step()

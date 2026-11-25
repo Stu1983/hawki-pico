@@ -4,6 +4,9 @@ Open-Meteo's archive API covers 1940 to today, so the history can be filled in b
 reading. Stored in wx.bin as 6-byte records <uint16 day (days since 2000-01-01), int16 min x10,
 int16 max x10>, one per day (~2 KB a year). Days are the location's own calendar days
 (timezone=auto), the same days the history page groups your use into. Runs on CPython and MicroPython.
+The day's mean wind (10 m, km/h) is kept beside it, 4-byte records <uint16 day, uint16 km/h x10>: recorded days in
+wxw.bin, the forecast's in wxfw.bin (replaced whole each time, as wxf.bin): their own files, so wx.bin's format (and
+every copy of it already shared) stays.
 """
 import json, socket, ssl, struct, time
 
@@ -11,6 +14,9 @@ HOST = 'archive-api.open-meteo.com'
 FHOST = 'api.open-meteo.com'  # the forecast (next 16 days, plus the last week the archive hasn't caught up on)
 FILE = 'wx.bin'
 FFILE = 'wxf.bin'  # the forecast, same format as wx.bin
+WFILE = 'wxw.bin'  # the day's mean wind, recorded
+FWFILE = 'wxfw.bin'  # ... and the forecast's
+WNONE = 0xFFFF
 NFILE = 'wxn.json'  # the usual weather for each month: average degree days over the last NYEARS full years
 NYEARS = 10
 BASE = 13.5  # degree days below this daily mean (C): heating needed. 15.5 is the usual base, less the mild days
@@ -63,6 +69,39 @@ def save(days, name=FILE):
     os.rename(name + '.tmp', name)
 
 
+def load_w(name=WFILE):
+    """{day: km/h} (None: asked, but Open-Meteo has no figure)."""
+    out = {}
+    try:
+        with open(name, 'rb') as f:
+            b = f.read()
+    except OSError:
+        return out
+    for i in range(0, len(b) - 3, 4):
+        d, v = struct.unpack_from('<HH', b, i)
+        out[d] = None if v == WNONE else v / 10
+    return out
+
+
+def save_w(days, name=WFILE):
+    with open(name + '.tmp', 'wb') as f:
+        for d in sorted(days):
+            v = days[d]
+            f.write(struct.pack('<HH', d, WNONE if v is None else min(WNONE - 1, int(round(v * 10)))))
+    import os
+    os.rename(name + '.tmp', name)
+
+
+def parse_w(body):
+    """Open-Meteo JSON -> {day: mean wind km/h}; days without one are left out."""
+    j = json.loads(body)['daily']
+    out = {}
+    for s, v in zip(j['time'], j.get('wind_speed_10m_mean') or []):
+        if v is not None and 0 <= v < 400:
+            out[_day(s)] = v
+    return out
+
+
 def parse(body):
     """Open-Meteo JSON -> {day: (min, max)}; days with a missing figure are left out."""
     j = json.loads(body)['daily']
@@ -73,20 +112,22 @@ def parse(body):
     return out
 
 
-def url(lat, lon, d0, d1):
+def url(lat, lon, d0, d1, wind=False):
     return ('/v1/archive?latitude=%.4f&longitude=%.4f&start_date=%s&end_date=%s'
-            '&daily=temperature_2m_max,temperature_2m_min&timezone=auto' % (lat, lon, ymd(d0), ymd(d1)))
+            '&daily=temperature_2m_max,temperature_2m_min%s&timezone=auto' % (lat, lon, ymd(d0), ymd(d1), ',wind_speed_10m_mean' if wind else ''))
 
 
-def fetch(lat, lon, d0, d1, deadline=25):
-    """Recorded days d0..d1 (archive)."""
-    return parse(get(HOST, url(lat, lon, d0, d1), deadline))
+def fetch(lat, lon, d0, d1, deadline=25, wind=False):
+    """Recorded days d0..d1 (archive): {day: (min, max)}, or with wind ({day: (min, max)}, {day: km/h})."""
+    body = get(HOST, url(lat, lon, d0, d1, wind), deadline)
+    return (parse(body), parse_w(body)) if wind else parse(body)
 
 
 def forecast(lat, lon, deadline=25):
-    """The next 16 days, and the last 7 (which the archive only has a few days later)."""
-    return parse(get(FHOST, '/v1/forecast?latitude=%.4f&longitude=%.4f&daily=temperature_2m_max,temperature_2m_min'
-                            '&timezone=auto&past_days=7&forecast_days=16' % (lat, lon), deadline))
+    """The next 16 days, and the last 7 (which the archive only has a few days later): (temperatures, winds)."""
+    body = get(FHOST, '/v1/forecast?latitude=%.4f&longitude=%.4f&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_mean'
+                      '&timezone=auto&past_days=7&forecast_days=16' % (lat, lon), deadline)
+    return parse(body), parse_w(body)
 
 
 def _within(s, raw, t0, deadline, what, cap=15):
@@ -157,16 +198,17 @@ def fill(have, got, d0, d1):
     return have
 
 
-def plan(have, first_day, today, chunk=180):
-    """Which (start, end) day ranges to fetch: everything from first_day missing, plus the last 10 days
-    again (recent figures settle), at most `chunk` days per request, NEWEST first (so old gaps can
-    never hold up recent days)."""
+def plan(have, first_day, today, chunk=180, wind=None):
+    """Which (start, end) day ranges to fetch: everything from first_day missing (from have, or from wind when
+    given: days kept from before the wind was), plus the last 10 days again (recent figures settle), at most
+    `chunk` days per request, NEWEST first (so old gaps can never hold up recent days)."""
     want = []
     d = first_day
+    miss = lambda d: d not in have or wind is not None and d not in wind
     while d <= today:
-        if d not in have or d >= today - 10:
+        if miss(d) or d >= today - 10:
             e = d
-            while e + 1 <= today and e + 1 - d < chunk and (e + 1 not in have or e + 1 >= today - 10):
+            while e + 1 <= today and e + 1 - d < chunk and (miss(e + 1) or e + 1 >= today - 10):
                 e += 1
             want.append((d, e))
             d = e + 1
@@ -182,7 +224,8 @@ def dd(v):
 
 
 def norm_load(lat, lon, name=NFILE):
-    """{'at': [lat, lon], 'y': {'2025': [[12 sums of daily degree days], [12 day counts]], ...}}"""
+    """{'at': [lat, lon], 'y': {'2025': [[12 sums of daily degree days], [12 day counts], [12 sums of daily mean wind],
+    [12 wind day counts]], ...}} (a year saved before the wind was kept has only the first two: fetched again)"""
     try:
         with open(name) as f:
             n = json.load(f)
@@ -197,14 +240,18 @@ def _window(this_year):
     return range(this_year - 1, this_year - 1 - NYEARS, -1)  # the last NYEARS full years, newest first
 
 
-def norm_add(n, year, got, this_year):
-    """Add one full year's recorded days; years that have dropped out of the window are let go."""
-    s, c = [0.0] * 12, [0] * 12
+def norm_add(n, year, got, this_year, wind=None):
+    """Add one full year's recorded days (and their wind); years that have dropped out of the window are let go."""
+    s, c, ws, wc = [0.0] * 12, [0] * 12, [0.0] * 12, [0] * 12
     for d, v in got.items():
         m = time.gmtime(D2000 + d * 86400)[1] - 1
         s[m] += dd(v)
         c[m] += 1
-    n['y'][str(year)] = [s, c]
+    for d, v in (wind or {}).items():
+        m = time.gmtime(D2000 + d * 86400)[1] - 1
+        ws[m] += v
+        wc[m] += 1
+    n['y'][str(year)] = [s, c, [round(x, 1) for x in ws], wc]
     keep = set(str(y) for y in _window(this_year))
     for k in list(n['y']):
         if k not in keep:
@@ -222,7 +269,7 @@ def norm_save(n, name=NFILE):
 def norm_next(n, this_year):
     """The next full year to fetch (newest first), or None when all NYEARS are in."""
     for y in _window(this_year):
-        if str(y) not in n['y']:
+        if len(n['y'].get(str(y)) or ()) < 4:  # (missing, or from before the wind was kept)
             return y
     return None
 
@@ -238,4 +285,18 @@ def norm_view(n, this_year):
         if c < 28 * 3:
             return None
         out.append(round(sum(y[0][m] for y in ys) / c, 2))
+    return out
+
+
+def norm_wind(n, this_year):
+    """The usual mean wind (km/h) for each month over the years in the window that have it, once 3+ do (else None)."""
+    ys = [n['y'][str(y)] for y in _window(this_year) if len(n['y'].get(str(y)) or ()) >= 4]
+    if len(ys) < 3:
+        return None
+    out = []
+    for m in range(12):
+        c = sum(y[3][m] for y in ys)
+        if c < 28 * 3:
+            return None
+        out.append(round(sum(y[2][m] for y in ys) / c, 1))
     return out

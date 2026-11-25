@@ -2764,7 +2764,7 @@ async def handle(r, w):
                 return await send(w, 200, b'', 'application/octet-stream')
         if path == '/api/weather':
             try:
-                return await send_file(w, weather.FFILE if q.get('f') == '1' else weather.FILE, 'application/octet-stream')
+                return await send_file(w, {'1': weather.FFILE, 'w': weather.WFILE, 'fw': weather.FWFILE}.get(q.get('f'), weather.FILE), 'application/octet-stream')
             except OSError:
                 return await send(w, 200, b'', 'application/octet-stream')
         if path == '/api/primary' and method == 'POST':
@@ -3025,7 +3025,7 @@ async def handle(r, w):
 
 
 # ---------- outside temperature (Open-Meteo), to compare use with the weather ----------
-wx_state = {'done': None, 'errs': {}, 'fat': 0, 'norm': None, 'norm_y': None}  # day the history was last
+wx_state = {'done': None, 'errs': {}, 'fat': 0, 'norm': None, 'norm_y': None, 'normw': None}  # day the history was last
 # brought up to date; the last error of each part; when the forecast was last fetched; the usual degree days
 # for each month and the year they were worked out for (norm_y set once all 10 years are in)
 
@@ -3055,7 +3055,7 @@ def wx_view():
     w = cfg.get('wx') or {}
     e = wx_state['errs']
     return {'name': w.get('name'), 'lat': w.get('lat'), 'lon': w.get('lon'),
-            'err': '; '.join('%s: %s' % (k, e[k]) for k in sorted(e)) or None, 'norm': wx_state['norm']}
+            'err': '; '.join('%s: %s' % (k, e[k]) for k in sorted(e)) or None, 'norm': wx_state['norm'], 'normw': wx_state['normw']}
 
 
 def set_location(b):
@@ -3064,7 +3064,7 @@ def set_location(b):
     else:
         name = ''.join(c for c in str(b.get('name') or '') if ' ' <= c and c != '\x7f')[:60]
         cfg['wx'] = {'lat': num(b.get('lat'), -90, 90), 'lon': num(b.get('lon'), -180, 180), 'name': name}
-    for f in (weather.FILE, weather.FFILE, weather.NFILE):
+    for f in (weather.FILE, weather.FFILE, weather.NFILE, weather.WFILE, weather.FWFILE):
         rm(f)  # a new place (or none): its history, forecast and usual weather are fetched afresh
     wx_state['done'] = None
     wx_state['errs'] = {}
@@ -3072,6 +3072,7 @@ def set_location(b):
     wx_state['fat'] = 0
     wx_state['norm'] = None
     wx_state['norm_y'] = None
+    wx_state['normw'] = None
     save_cfg(cfg)
 
 
@@ -3100,7 +3101,10 @@ async def weather_task():
         w = cfg.get('wx')  # the first round of fetching
         if w and wx_state['norm'] is None and time.time() > 1.7e9:
             try:
-                wx_state['norm'] = weather.norm_view(weather.norm_load(w['lat'], w['lon']), time.gmtime()[0])
+                nm = weather.norm_load(w['lat'], w['lon'])
+                wx_state['norm'] = weather.norm_view(nm, time.gmtime()[0])
+                wx_state['normw'] = weather.norm_wind(nm, time.gmtime()[0])
+                nm = None
             except Exception as ex:
                 print('weather normals', ex)
                 break
@@ -3114,44 +3118,48 @@ async def weather_task():
         if ready and wx_state['done'] != today and wx_due('archive'):
             have = None
             try:
-                have = weather.load()
+                have, hw = weather.load(), weather.load_w()
                 first = first_reading()
                 d0 = weather.day_of(first) if first else today - 30
-                todo = weather.plan(have, max(d0, today - 3650), today)
+                todo = weather.plan(have, max(d0, today - 3650), today, wind=hw)  # (days from before the wind was kept: again)
                 for a, b in todo[:6]:  # at most 6 requests a go; the rest 10 minutes later
                     await web_quiet()
                     if cfg.get('wx') is not w:
                         break  # the location changed (or weather was switched off) while waiting
-                    got = with_room(weather.fetch, w['lat'], w['lon'], a, b)
+                    got, gw = with_room(weather.fetch, w['lat'], w['lon'], a, b, 25, True)
                     if cfg.get('wx') is not w:
                         break  # the location changed meanwhile: drop this
                     weather.fill(have, got, a, b)
+                    weather.fill(hw, gw, a, b)
                     weather.save(have)  # keep each batch, so an error later loses nothing
+                    weather.save_w(hw)
                     await asyncio.sleep(1)
                 if cfg.get('wx') is w and len(todo) <= 6:
                     wx_state['done'] = today
                 wx_err('archive', None)
             except Exception as ex:
                 wx_err('archive', ex)
-            have = got = None
+            have = got = hw = gw = None
             gc.collect()
         if ready and cfg.get('wx') is w and time.time() - wx_state['fat'] > 6 * 3600 and wx_due('forecast'):
             try:
                 await web_quiet()
                 got = with_room(weather.forecast, w['lat'], w['lon']) if cfg.get('wx') is w else None
-                if cfg.get('wx') is w and got:
-                    weather.save(got, weather.FFILE)
+                if cfg.get('wx') is w and got and got[0]:
+                    weather.save(got[0], weather.FFILE)
+                    weather.save_w(got[1], weather.FWFILE)  # (replaced whole, as the temperatures: the page takes a day's wind from where it took its temperature)
                     wx_state['fat'] = time.time()
                 wx_err('forecast', None)
             except Exception as ex:
                 wx_err('forecast', ex)
             got = None
             gc.collect()
-        if ready and cfg.get('wx') is w and (wx_state['norm_y'] != yr or wx_state['norm'] is None) and wx_due('normals'):
+        if ready and cfg.get('wx') is w and (wx_state['norm_y'] != yr or wx_state['norm'] is None or wx_state['normw'] is None) and wx_due('normals'):
             nm = None
             try:
                 nm = weather.norm_load(w['lat'], w['lon'])
                 wx_state['norm'] = weather.norm_view(nm, yr)  # what's saved counts now, even if a fetch fails
+                wx_state['normw'] = weather.norm_wind(nm, yr)
                 for _ in range(2):
                     y = weather.norm_next(nm, yr)
                     if y is None:
@@ -3159,15 +3167,16 @@ async def weather_task():
                     await web_quiet()
                     if cfg.get('wx') is not w:
                         break
-                    got = with_room(weather.fetch, w['lat'], w['lon'], weather._day('%d-01-01' % y), weather._day('%d-12-31' % y))
+                    got, gw = with_room(weather.fetch, w['lat'], w['lon'], weather._day('%d-01-01' % y), weather._day('%d-12-31' % y), 25, True)
                     if cfg.get('wx') is not w:
                         break
-                    weather.norm_save(weather.norm_add(nm, y, got, yr))
+                    weather.norm_save(weather.norm_add(nm, y, got, yr, gw))
+                    gw = None
                     await asyncio.sleep(1)
                 if cfg.get('wx') is w:
                     wx_state['norm'] = weather.norm_view(nm, yr)  # re-worked each year, so old years drop out
-                    if weather.norm_next(nm, yr) is None:
-                        wx_state['norm_y'] = yr  # all 10 years in: nothing more until next year
+                    wx_state['normw'] = weather.norm_wind(nm, yr)
+                    wx_state['norm_y'] = yr if weather.norm_next(nm, yr) is None else None  # all 10 years in: nothing more until next year
                 wx_err('normals', None)
             except Exception as ex:
                 wx_err('normals', ex)
@@ -3254,13 +3263,13 @@ def share_due(sh, now):
 
 def share_files():
     return {'deliv': 'deliv.json', 'hist': {m: hist_name(m) for m in cfg['tanks']},
-            'wx': weather.FILE, 'wxf': weather.FFILE, 'prices': price.FILE}
+            'wx': weather.FILE, 'wxf': weather.FFILE, 'wxw': weather.WFILE, 'wxfw': weather.FWFILE, 'prices': price.FILE}
 
 
 def share_size_guess():
     n = 0
     f = share_files()
-    for p in [f['deliv'], f['wx'], f['wxf'], f['prices']] + list(f['hist'].values()):
+    for p in [f['deliv'], f['wx'], f['wxf'], f['wxw'], f['wxfw'], f['prices']] + list(f['hist'].values()):
         try:
             n += os.stat(p)[6]
         except OSError:

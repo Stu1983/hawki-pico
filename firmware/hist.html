@@ -89,7 +89,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
  <svg id="c5" viewBox="0 0 640 150" role="img" aria-label="Daily lowest and highest outside temperature over the last 60 days"></svg>
  <div class="mut" style="margin:12px 0 4px">Each day's use against its average temperature</div>
  <svg id="c6" viewBox="0 0 640 220" role="img" aria-label="Litres used each day plotted against that day's average outside temperature"></svg>
- <div class="mut" id="wxNote" style="min-height:36px;margin-top:6px">&nbsp;</div>
+ <div class="mut" id="wxNote" style="min-height:6em;margin-top:6px">&nbsp;</div>
 </div>
 
 <h2>Use by hour of day</h2>
@@ -207,7 +207,10 @@ let rsT=null,rsW=innerWidth;addEventListener('resize',()=>{if(innerWidth===rsW)r
 // ---------- use and the weather ----------
 let WX=null;  /* 'YYYY-MM-DD' -> [min, max] in C, from /api/weather (Open-Meteo, for the location set in Config) */
 const ymdL=t=>{const d=new Date(t*1000);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
-async function loadWx(g){try{const b=await (await fetch('/api/weather')).arrayBuffer(),v=new DataView(b),m={};if(g!==LG)return;
+let WXW={};  /* 'YYYY-MM-DD' -> the day's mean wind, km/h, for the tooltips: recorded, as the temperatures here are (none from an older Pico) */
+async function loadWx(g){const wget=u=>fetch(u).then(r=>r.ok?r.arrayBuffer():new ArrayBuffer(0)).catch(()=>new ArrayBuffer(0));
+ try{const[b,bw]=await Promise.all([fetch('/api/weather').then(r=>r.arrayBuffer()),wget('/api/weather?f=w')]),v=new DataView(b),m={};if(g!==LG)return;
+ {const mw={};for(const x of[bw]){const vw=new DataView(x);for(let i=0;i+4<=x.byteLength;i+=4){const w=vw.getUint16(i+2,true);if(w===65535)continue;const d=new Date((946684800+vw.getUint16(i,true)*86400)*1000);mw[d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())]=w/10}}WXW=mw}
  for(let i=0;i+6<=b.byteLength;i+=6){const d=new Date((946684800+v.getUint16(i,true)*86400)*1000),k=d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate());if(v.getInt16(i+2,true)!==-32768)m[k]=[v.getInt16(i+2,true)/10,v.getInt16(i+4,true)/10]}
  WX=m}catch(e){if(g!==LG)return;WX={}}drawWeather()}  /* (g: an older load's late answer is dropped) */
 function drawWeather(){drawDow();const c4=$('c4'),c5=$('c5'),c6=$('c6');[c4,c5,c6].forEach(x=>x.textContent='');
@@ -217,19 +220,19 @@ function drawWeather(){drawDow();const c4=$('c4'),c5=$('c5'),c6=$('c6');[c4,c5,c
   note.textContent=S&&S.wx&&S.wx.name?(S.wx.err?'Could not fetch the weather: '+S.wx.err:'Fetching the weather for '+S.wx.name+'…'):'Set your location under Config → Forecast → Weather to compare your use with the outside temperature.';return}
  const t1=midnight(now),t0=addDays(t1,-60),days=[];for(let t=t0;t<t1;t=addDays(t,1))days.push(t);
  const x=t=>ml+(t-t0)/(t1-t0)*pw,bw=Math.max(1,pw/60-2);
- const use=t=>A&&A.days&&A.days[t]!=null?Math.max(0,A.days[t]):null,wx=t=>WX[ymdL(t)]||null;
+ const use=t=>A&&A.days&&A.days[t]!=null?Math.max(0,A.days[t]):null,wx=t=>WX[ymdL(t)]||null,wnd=t=>WXW[ymdL(t)],wTxt=t=>wnd(t)!=null?' · wind '+Math.round(wnd(t))+' km/h':'';
  const xlab=(svg,Hh)=>{let lastX=-1e9;for(let t=t0;t<t1;t=addDays(t,7)){const xx=x(t);if(xx-lastX<54)continue;lastX=xx;el('text',{x:xx,y:Hh-6,'text-anchor':'middle'},svg,fmtD(t))}};
  // litres a day
  {const ph=H4-mt-mb,um=Math.max(1,...days.map(t=>use(t)||0)),st=niceStep(um,3),top=Math.ceil(um/st)*st,y=v=>mt+ph-v/top*ph;
   for(let v=0;v<=top+1e-9;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},c4);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},c4,v+(v+st>top+1e-9?' L':''))}
   for(const t of days){const u=use(t);if(u==null)continue;const h=Math.max(1,mt+ph-y(u)),r=el('path',{d:bar(x(t)+1,mt+ph-h,bw,h),fill:'var(--s1)',class:'bar',tabindex:0},c4),w=wx(t);
-   const lines=[u.toFixed(1)+' L',fmtD(t)+(w?' · '+w[0].toFixed(1)+' to '+w[1].toFixed(1)+' °C':'')];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}
+   const lines=[u.toFixed(1)+' L',fmtD(t)+(w?' · '+w[0].toFixed(1)+' to '+w[1].toFixed(1)+' °C':'')+wTxt(t)];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}
   el('line',{x1:ml,x2:W-mr,y1:mt+ph,y2:mt+ph,class:'ax'},c4);xlab(c4,H4)}
  // temperatures: a band from the day's lowest to its highest
  {const ph=H4-mt-mb,ws=days.map(wx).filter(Boolean),lo=Math.floor(Math.min(0,...ws.map(w=>w[0]))/5)*5,hi=Math.ceil(Math.max(10,...ws.map(w=>w[1]))/5)*5,y=v=>mt+ph-(v-lo)/(hi-lo)*ph;
   for(let v=lo;v<=hi;v+=5){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:v===0?'ax':'gl'},c5);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},c5,v+(v+5>hi?' °C':''))}
   for(const t of days){const w=wx(t);if(!w)continue;const r=el('path',{d:bar(x(t)+1,y(w[1]),bw,Math.max(1,y(w[0])-y(w[1]))),fill:'var(--s2)',class:'bar',tabindex:0},c5);
-   const lines=[w[0].toFixed(1)+' to '+w[1].toFixed(1)+' °C',fmtD(t)+(use(t)!=null?' · '+use(t).toFixed(1)+' L':'')];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}
+   const lines=[w[0].toFixed(1)+' to '+w[1].toFixed(1)+' °C'+wTxt(t),fmtD(t)+(use(t)!=null?' · '+use(t).toFixed(1)+' L':'')];r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip)}
   xlab(c5,H4)}
  // scatter: every day with both figures (all of the history, not just 60 days)
  const pts=[];if(A&&A.days)for(const k in A.days){const t=+k,w=wx(t),u=A.days[k];if(w&&u!=null&&u>=0&&!(A.gap&&A.gap[k]))pts.push([(w[0]+w[1])/2,u,t])}
@@ -243,9 +246,15 @@ function drawWeather(){drawDow();const c4=$('c4'),c5=$('c5'),c6=$('c6');[c4,c5,c
  // straight-line fit: litres a day against temperature
  const n=pts.length,mx=pts.reduce((a,p)=>a+p[0],0)/n,my=pts.reduce((a,p)=>a+p[1],0)/n,sxx=pts.reduce((a,p)=>a+(p[0]-mx)**2,0),sxy=pts.reduce((a,p)=>a+(p[0]-mx)*(p[1]-my),0),b=sxx>0?sxy/sxx:0,a=my-b*mx;
  const syy=pts.reduce((a2,p)=>a2+(p[1]-my)**2,0),r2=sxx>0&&syy>0?sxy*sxy/(sxx*syy):0;
- for(const p of pts){const c=el('circle',{cx:X(p[0]),cy:Y(p[1]),r:4,fill:'var(--s1)','fill-opacity':.55,stroke:'var(--card)','stroke-width':1,tabindex:0},c6),lines=[p[1].toFixed(1)+' L',fmtD(p[2])+' · average '+p[0].toFixed(1)+' °C'];c.addEventListener('pointermove',e=>showTip(e,lines));c.addEventListener('pointerdown',e=>showTip(e,lines));c.addEventListener('pointerleave',hideTip)}
+ for(const p of pts){const c=el('circle',{cx:X(p[0]),cy:Y(p[1]),r:4,fill:'var(--s1)','fill-opacity':.55,stroke:'var(--card)','stroke-width':1,tabindex:0},c6),lines=[p[1].toFixed(1)+' L',fmtD(p[2])+' · average '+p[0].toFixed(1)+' °C'+wTxt(p[2])];c.addEventListener('pointermove',e=>showTip(e,lines));c.addEventListener('pointerdown',e=>showTip(e,lines));c.addEventListener('pointerleave',hideTip)}
  if(n>=14&&sxx>0){const ya=Math.max(0,Math.min(yt,a+b*xl)),yb=Math.max(0,Math.min(yt,a+b*xh));el('line',{x1:X(xl),y1:Y(ya),x2:X(xh),y2:Y(yb),stroke:'var(--s2)','stroke-width':2,'stroke-dasharray':'6 4'},c6)}
- note.textContent=(n>=14&&b<0?'About '+(-b).toFixed(2)+' L a day more for each degree colder (from '+n+' days; the line explains '+Math.round(r2*100)+'% of the day-to-day change). ':n<14?'The trend line appears once there are 14 days with both figures. ':'')+'Weather for '+(S.wx&&S.wx.name||'your location')+' from Open-Meteo.'}
+ /* the wind as the forecast counts it (A.wind: k C colder per km/h over the usual for the time of year): how much of
+    these same days the forecast's heating (degree days, clamped at none) explains without the wind and with it */
+ const wf=A&&A.wind,kw=wf&&wf.k>0?wf.k:0,r2of=(h,q)=>{const m=q.length,x=q.map(p=>h(p[2]+DAY/2)),ax=mean(x),ay=mean(q.map(p=>p[1]));let xx=0,xy=0,yy=0;q.forEach((p,i)=>{xx+=(x[i]-ax)**2;xy+=(x[i]-ax)*(p[1]-ay);yy+=(p[1]-ay)**2});return xx>0&&yy>0&&xy>0?xy*xy/(xx*yy):0};
+ let r2d=null;if(kw&&A.wxh&&A.wxh0){const q=pts.filter(p=>A.wxh.has(p[2]+DAY/2));if(q.length>=14)r2d=[r2of(A.wxh0,q),r2of(A.wxh,q)]}
+ const windTxt=kw?'Windy days count as colder for your house: each 10 km/h over the usual for the time of year (about '+Math.round(wf.wnow)+' km/h now) like '+(10*kw).toFixed(1)+' °C colder (fitted to '+wf.n+' heating days'+(r2d?'; the forecast\'s heating figure explains '+Math.round(r2d[0]*100)+'% of these days on temperature alone, '+Math.round(r2d[1]*100)+'% counting the wind':'')+'). '
+  :wf&&wf.n>=WIND_MIN_DAYS?'Wind makes no clear difference to your use so far ('+wf.n+' heating days). ':'';
+ note.textContent=(n>=14&&b<0?'About '+(-b).toFixed(2)+' L a day more for each degree colder (from '+n+' days; the line explains '+Math.round(r2*100)+'% of the day-to-day change). ':n<14?'The trend line appears once there are 14 days with both figures. ':'')+windTxt+'Weather for '+(S.wx&&S.wx.name||'your location')+' from Open-Meteo.'}
 function drawLevel(svg,Hh){const main=!svg;svg=svg||$('c1');Hh=Hh||240;if(main&&$('lfull').open)lvlFull();
  svg.textContent='';const W=fit(svg,Hh),ml=46,mr=12,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
  const cap=+T.cfg.capacity_l,reserve=T.cfg.reserve_l??200;
@@ -391,7 +400,7 @@ function dayTotals(P,fills,tnow){const m0=addDays(midnight(tnow),-84),{Q,F,brk}=
   if(ok)out.push({t:m,l:Math.max(0,a.l-b.l),dow:(new Date(m*1000).getDay()+6)%7})}
  return out}
 function drawDow(){const svg=$('cdow');if(!svg)return;svg.textContent='';const Hh=200,W=fit(svg,Hh),ml=46,mr=8,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
- const D=dayTotals(P,(A&&A.fills)||[],now),dd=d=>{const w=WX&&WX[ymdL(d.t+DAY/2)];return w?Math.max(0,WX_BASE-(w[0]+w[1])/2):null};
+ const wh=A&&A.wxh,D=dayTotals(P,(A&&A.fills)||[],now),dd=d=>{const m=d.t+DAY/2;if(wh)return wh.has(m)?wh(m)*wh.yr:null;  /* (degree days: wh is per average day) */const w=WX&&WX[ymdL(m)];return w?Math.max(0,WX_BASE-(w[0]+w[1])/2):null};  /* (the forecast's weather, wind and all; on any scale: only the fit's line uses it) */
  /* the weather line: least squares of litres on degree days over the days that have both (a and b kept >= 0) */
  const wd=D.filter(d=>dd(d)!=null);let fitW=null;
  if(wd.length>=10){const n=wd.length,mx=wd.reduce((s,d)=>s+dd(d),0)/n,my=wd.reduce((s,d)=>s+d.l,0)/n,sxx=wd.reduce((s,d)=>s+(dd(d)-mx)**2,0),sxy=wd.reduce((s,d)=>s+(dd(d)-mx)*(d.l-my),0);
@@ -403,7 +412,7 @@ function drawDow(){const svg=$('cdow');if(!svg)return;svg.textContent='';const H
  const short=per.filter(x=>x.n<DOW_MIN),ready=!short.length;
  $('dowNote').textContent=!use.length?'Needs whole days of hourly readings: check back in a week. A day uses only 2-3 sensor steps, so it means something once each day of the week has '+DOW_MIN+' (about '+DOW_MIN+' weeks).'
   :(ready?'':'Faint: fewer than '+DOW_MIN+' of that day so far (under each), too few to mean much: a day uses only 2-3 sensor steps. ')
-  +(fitW?'Litres on a day of average weather over the last '+Math.round(use.length/7)+' weeks: each day set against what that day\'s outside temperature would suggest ('+fitW.a.toFixed(1)+' L plus '+fitW.b.toFixed(2)+' L per degree below '+WX_BASE+' °C), so a cold Monday doesn\'t read as a busy one.'
+  +(fitW?'Litres on a day of average weather over the last '+Math.round(use.length/7)+' weeks: each day set against what that day\'s outside temperature would suggest ('+fitW.a.toFixed(1)+' L plus '+fitW.b.toFixed(2)+' L per degree below '+WX_BASE+' °C'+(wh&&wh.k>0?', a windy day counted as colder':'')+'), so a cold Monday doesn\'t read as a busy one.'
    :'Average litres a day, not yet allowing for the weather ('+(!(WX&&Object.keys(WX).length)?'set your location under Config → Forecast → Weather':wd.length<10?'that needs 10 whole days with temperatures':'no pattern with the temperature yet')+').');
  const vals=per.filter(x=>x.v!=null).map(x=>x.v);
  if(!vals.length){el('text',{x:W/2,y:Hh/2,'text-anchor':'middle'},svg,'Not enough whole days of readings yet');return}

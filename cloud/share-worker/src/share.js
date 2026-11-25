@@ -150,7 +150,7 @@ export function api(u, path, q) {
     case '/api/curve':  // (not a trial capacity: the Pico works those out; the view leaves the capacity check undone)
       return !q.get('tank_l') && u.curves && u.curves[mac] ? json(u.curves[mac]) : err(q.get('tank_l') ? 'not in a shared view' : 'unknown tank', 404);
     case '/api/battlog': return json((u.battlog || {})[mac] || []);
-    case '/api/weather': return bin(unb64((u.files || {})[q.get('f') === '1' ? 'wxf' : 'wx']));
+    case '/api/weather': return bin(unb64((u.files || {})[({'1': 'wxf', w: 'wxw', fw: 'wxfw'})[q.get('f')] || 'wx']));
     case '/api/prices': return q.get('h') === '1' ? null : bin(unb64((u.files || {}).prices));  // (h=1: the older prices, the same for every Pico: from GitHub)
     case '/api/hist': {
       if (!(u.history || {})[mac] && !(u.tanks || {})[mac]) return err('unknown tank', 404);
@@ -184,6 +184,8 @@ export function bundle(u, priceh) {
   }
   B['/api/weather'] = ['b', String(f.wx || '')];
   B['/api/weather?f=1'] = ['b', String(f.wxf || '')];
+  B['/api/weather?f=w'] = ['b', String(f.wxw || '')];
+  B['/api/weather?f=fw'] = ['b', String(f.wxfw || '')];
   B['/api/prices'] = ['b', String(f.prices || '')];
   if (priceh) B['/api/prices?h=1'] = ['b', priceh];
   for (const k of Object.keys(B)) if (B[k][0] === 'b') { const v = B[k][1].replace(/\s+/g, ''); if (/^[A-Za-z0-9+/=]*$/.test(v)) B[k][1] = v; else delete B[k]; }
@@ -192,7 +194,7 @@ export function bundle(u, priceh) {
 // (No backslashes in here: it sits in a template string.)
 const SHIM = `const KEY=u=>{const p=u.pathname,q=u.searchParams,m=(q.get('mac')||'').toLowerCase();
  if(p==='/api/curve'&&q.get('tank_l'))return null;
- return p+(m?'?mac='+m:'')+(q.get('f')==='1'?'?f=1':'')+(q.get('h')==='1'?'?h=1':'')};
+ return p+(m?'?mac='+m:'')+(['1','w','fw'].includes(q.get('f'))?'?f='+q.get('f'):'')+(q.get('h')==='1'?'?h=1':'')};
 const ans=(x)=>{let u;try{u=new URL(typeof x==='string'?x:x.url,location.href)}catch(e){return null}if(u.origin!==location.origin)return null;
  const k=KEY(u),e=k&&B[k];if(!e)return null;
  if(e[0]==='j')return new Response(e[1],{status:200,headers:{'Content-Type':'application/json'}});

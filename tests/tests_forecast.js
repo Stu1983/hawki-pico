@@ -1,7 +1,7 @@
 // node tests/tests_forecast.js  - the seasonal model in firmware/common.js.html, without a browser
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const ctx={};vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;this.wxHeat=wxHeat;this.wxKey=wxKey;this.WX_BASE=WX_BASE;this.howText=howText;this.likeText=likeText;this.hasFc=hasFc;this.yearFor=yearFor;this.fcBody=fcBody;this.combine=combine;this.holdIsolated=holdIsolated;this.flatten=flatten;',ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','firmware','common.js.html'),'utf8')+';this.analyse=analyse;this.hwShape=hwShape;this.heatShape=heatShape;this.wxHeat=wxHeat;this.windFit=windFit;this.wxParseW=wxParseW;this.wxKey=wxKey;this.WX_BASE=WX_BASE;this.howText=howText;this.likeText=likeText;this.hasFc=hasFc;this.yearFor=yearFor;this.fcBody=fcBody;this.combine=combine;this.holdIsolated=holdIsolated;this.flatten=flatten;',ctx);
 let fails=0;const ok=(c,m)=>{console.log((c?'ok   ':'FAIL ')+m);if(!c)fails++};
 const DAY=86400,H=3600,T=(y,m,d)=>new Date(y,m,d,12).getTime()/1000;
 // a household: hot water 0.85 L/day in August (+25 % in Feb), heating only Sep-May
@@ -224,4 +224,27 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  ok(!ctx.analyse(mk([500,500,520,500,500,500]),{now:h+6*H}).fills.length,'one reading 20 L up between others: not a delivery');
  const A=ctx.analyse(mk([500,500,500,520,520,520,520]),{now:h+7*H});ok(A.fills.length===1&&Math.abs(A.fills[0].add-20)<1,'20 L that holds: a delivery of 20 L');
  ok(ctx.analyse(mk([500,500,500,560]),{now:h+4*H}).fills.length===1,'60 L: a delivery at once, as before')}
+// 12. wind: a house that loses heat faster on windy days (each km/h over the usual counts as 0.25 C colder)
+{const norm=[9,8.5,7.5,5.5,3,1,0.3,0.4,1.5,4,6.5,8.5],normw=[22,21,20,18,16,15,14,14,16,18,20,21],now=T(2026,10,16),rec={},fc={},wind={},fwind={};let sd=7;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647;
+ const uw=t=>{const m=new Date(t*1000).getMonth();return normw[m]};  /* (the test's usual wind: the month's; the page blends between months, close enough for k) */
+ for(let t=T(2026,5,1);t<now+16*DAY;t+=DAY){const m=new Date(t*1000).getMonth(),tm=ctx.WX_BASE-norm[m]+(rnd()-0.5)*8,k=ctx.wxKey(t);(t<now?rec:fc)[k]=[tm-3,tm+3];(t<now?wind:fwind)[k]=Math.round((uw(t)-12+rnd()*24)*10)/10}
+ fc[ctx.wxKey(now+3*DAY)]=fc[ctx.wxKey(now+4*DAY)].slice();fwind[ctx.wxKey(now+3*DAY)]=45;fwind[ctx.wxKey(now+4*DAY)]=5;  /* two forecast days alike but for the wind */
+ const H0=ctx.wxHeat(rec,fc,norm,wind,fwind,normw),run=(kTrue,fw)=>{const p=[];let L=1500;for(let t=T(2026,5,1);t<now;t+=H){const k=ctx.wxKey(t),v=rec[k],dd=Math.max(0,ctx.WX_BASE-(v[0]+v[1])/2+kTrue*(wind[k]-H0.wref(t)));
+   L-=(0.85+0.5*dd)/24;p.push([t,L])}return ctx.analyse(p,{now,heat:ctx.wxHeat(rec,fc,norm,wind,fw||fwind,normw),wxName:'Coleraine'})};
+ const A=run(0.25),B=run(0),C=ctx.analyse([[now-30*DAY,900],[now,800]],{now,heat:ctx.wxHeat(rec,fc,norm,wind,fwind,null)});
+ ok(A.wind&&Math.abs(A.wind.k-0.25)<=0.04&&A.wind.n>=28,'windy days cost this house more: fitted '+(A.wind&&A.wind.k.toFixed(2))+' C per km/h (true 0.25) from '+(A.wind&&A.wind.n)+' days');
+ ok(A.rate(now+3*DAY)-A.rate(now+4*DAY)>0.5*0.25*40*0.6,'a windy forecast day (45 km/h) forecasts more than a calm one (5 km/h) as cold, near the 5 L a day it truly costs: '+A.rate(now+3*DAY).toFixed(2)+' vs '+A.rate(now+4*DAY).toFixed(2));
+ ok(B.wind&&B.wind.k===0&&Math.abs(B.rate(now+3*DAY)-B.rate(now+4*DAY))<0.01,'a house the wind makes no difference to: none counted ('+(B.wind&&B.wind.gain.toFixed(2))+')');
+ ok(!(C.wind&&C.wind.k)&&ctx.wxHeat(rec,fc,norm,wind,fwind,null).withWind===undefined&&ctx.wxHeat(rec,fc,norm,wind,fwind,[1,2]).withWind===undefined,'no usual wind yet (an older Pico, a shared view, the 10 years still coming): temperature alone');
+ const fw2={...fwind};for(const k in fw2)fw2[k]=60;const A2=run(0.25,fw2),tp=now-20*DAY,t30=now+30*DAY;
+ ok(A2.wind.k===A.wind.k&&A2.wxh(tp)===A.wxh(tp)&&Math.abs(A2.rate(t30)-A.rate(t30))<1e-9,'a stormier forecast changes neither the fit, nor how past days count, nor the forecast past its 16 days');
+ const recA={...rec};delete recA[ctx.wxKey(now-DAY)];const fcA={...fc,[ctx.wxKey(now-DAY)]:rec[ctx.wxKey(now-DAY)]},wA={...wind,[ctx.wxKey(now-DAY)]:99},fwA={...fwind,[ctx.wxKey(now-DAY)]:7};
+ ok(ctx.wxHeat(recA,fcA,norm,wA,fwA,normw).wind(now-DAY)===7,'a day the archive hasn\'t got yet: its wind from the forecast, as its temperature');
+ const b=new ArrayBuffer(8),v=new DataView(b);v.setUint16(0,9800,true);v.setUint16(2,234,true);v.setUint16(4,9801,true);v.setUint16(6,65535,true);
+ const pw=ctx.wxParseW(b);ok(Object.keys(pw).length===1&&Object.values(pw)[0]===23.4,'wind file: km/h x10, 65535 = none')}
+// 13. a clock change: the 23-hour day in March is a whole day for the wind fit
+{const norm=Array(12).fill(10),normw=Array(12).fill(20),rec={},wind={},days={},gap={};
+ for(let i=0;i<28;i++){const t=new Date(2026,2,2+i).getTime()/1000,k=ctx.wxKey(t+DAY/2),tm=3+i%5;rec[k]=[tm,tm];wind[k]=i%2?30:10;days[t]=2+ctx.WX_BASE-tm+0.2*(wind[k]-20)}
+ const h=ctx.wxHeat(rec,{},norm,wind,{},normw),f=ctx.windFit(days,gap,h,new Date(2026,2,30).getTime()/1000);
+ ok(f.n===28&&Math.abs(f.k-0.2)<0.021,'28 days across the spring clock change all count: '+f.n+' days, k '+f.k)}
 process.exit(fails?1:0);

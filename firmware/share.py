@@ -57,7 +57,7 @@ def clean_state(st, cfg):
     a = area(cfg)
     if wx.get('lat') is not None:
         out['wx'] = {'name': a['pc'] or 'about %.2f, %.2f' % (a['lat'], a['lon']), 'lat': a['lat'], 'lon': a['lon'],
-                     'norm': wx.get('norm'), 'err': None}
+                     'norm': wx.get('norm'), 'normw': wx.get('normw'), 'err': None}
     return out
 
 
@@ -84,7 +84,7 @@ def _b64_file(o, name, chunk=768):
 
 def build(cfg, st, files, curves, battlog, fw, now, out=FILE):
     """Write the upload to `out`: a backup (the format Config -> Backup exports, so it restores the same way) plus what
-    the support view needs. files: {'deliv': path, 'hist': {mac: path}, 'wx': path, 'wxf': path, 'prices': path}.
+    the support view needs. files: {'deliv': path, 'hist': {mac: path}, 'wx': path, 'wxf': path, 'wxw': path, 'wxfw': path, 'prices': path}.
     Returns its size in bytes."""
     tanks = {t['mac']: dict(t.get('cfg') or {}, name=t.get('name')) for t in st.get('tanks') or []}
     with open(out, 'w') as o:
@@ -110,7 +110,7 @@ def build(cfg, st, files, curves, battlog, fw, now, out=FILE):
             first = False
         o.write('},"files":{')
         first = True
-        for k in ('wx', 'wxf', 'prices'):
+        for k in ('wx', 'wxf', 'wxw', 'wxfw', 'prices'):
             if files.get(k) and _size(files[k]):
                 o.write(('' if first else ',') + '"%s":"' % k)
                 _b64_file(o, files[k])

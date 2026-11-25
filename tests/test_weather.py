@@ -33,6 +33,17 @@ ok(h == {t - 31: None, t - 30: (1, 2), t - 29: None}, 'days with no figure are m
 ok(w.plan({**h, **{d: (1, 2) for d in range(t - 28, t + 1)}}, t - 31, t) == [(t - 10, t)], 'missing old days are not asked for again')
 w.save(h, f)
 ok(w.load(f) == {t - 31: None, t - 30: (1.0, 2.0), t - 29: None}, 'missing days survive a save')
+# the day's mean wind, kept beside the temperatures (wxw.bin)
+body = '{"daily":{"time":["2026-11-15","2026-11-16","2026-11-17"],"temperature_2m_min":[4.5,1,2],"temperature_2m_max":[8.5,5.3,9],"wind_speed_10m_mean":[23.4,null,-1]}}'
+ok(w.parse_w(body) == {w._day('2026-11-15'): 23.4} and w.parse_w('{"daily":{"time":["2026-11-15"]}}') == {}, 'wind: missing and impossible figures left out, none asked for: none')
+fw = os.path.join(tempfile.mkdtemp(), 'wxw.bin')
+w.save_w({t: 23.44, t - 1: None, t - 2: 0.0}, fw)
+ok(w.load_w(fw) == {t: 23.4, t - 1: None, t - 2: 0.0} and os.path.getsize(fw) == 12, 'wind save/load to 0.1 km/h, 4 bytes a day, missing kept')
+ok(w.load_w(os.path.join(tempfile.mkdtemp(), 'none.bin')) == {}, 'no wind file yet: none')
+full = {d: (1, 2) for d in range(t - 50, t + 1)}
+ok(w.plan(full, t - 50, t, wind={d: 5 for d in range(t - 20, t + 1)}) == [(t - 10, t), (t - 50, t - 21)], 'days kept from before the wind was: fetched again for it')
+ok(w.plan(full, t - 50, t, wind={d: (5 if d % 2 else None) for d in range(t - 50, t + 1)}) == [(t - 10, t)], 'a day with no wind figure is not asked for again')
+ok('wind_speed_10m_mean' in w.url(55.13, -6.67, t - 5, t, True) and 'wind' not in w.url(55.13, -6.67, t - 5, t), 'wind asked for only when wanted (the normals need none)')
 # the usual weather for each month (normals), one full year at a time
 import os as _os, tempfile as _tf
 weather = w
@@ -56,6 +67,18 @@ weather.norm_add(nm, 2026, year(2026, jan=(12.0, 14.0)), 2027)
 ok(len(nm['y']) == 10 and '2016' not in nm['y'], 'and 2016 dropped: still 10 years')
 v = weather.norm_view(nm, 2027)
 ok(abs(v[0] - ((weather.BASE - 5) * 9 + 0.5) / 10) < 1e-6, 'January averaged over the 10 years: %.2f' % v[0])
+# the usual wind for each month, kept with the normals (years saved before it: fetched again)
+nw = weather.norm_load(55.1, -6.6, name=_os.path.join(_tf.mkdtemp(), 'none.json'))
+nw['y']['2025'] = [[0.0] * 12, [31] * 12]
+ok(weather.norm_next(nw, 2026) == 2025, 'a year saved before the wind was kept: fetched again')
+for y in (2025, 2024, 2023):
+    yd = year(y)
+    weather.norm_add(nw, y, yd, 2026, {d: (30.0 if weather.ymd(d)[5:7] == '01' else 10.0) for d in yd})
+ok(weather.norm_wind(nw, 2026) == [30.0] + [10.0] * 11 and weather.norm_next(nw, 2026) == 2022, 'usual wind by month once 3 years have it: %s' % weather.norm_wind(nw, 2026))
+nw2 = weather.norm_load(55.1, -6.6, name=_os.path.join(_tf.mkdtemp(), 'none.json'))
+for y in (2025, 2024, 2023):
+    weather.norm_add(nw2, y, year(y), 2026)
+ok(weather.norm_wind(nw2, 2026) is None and weather.norm_view(nw2, 2026), 'no wind figures: no usual wind (temperatures as before)')
 p2 = _os.path.join(_tf.mkdtemp(), 'n.json'); weather.norm_save(nm, p2)
 ok(weather.norm_load(55.1, -6.6, p2)['y'] == nm['y'] and weather.norm_load(55.2, -6.6, p2)['y'] == {}, 'saved per place: another place starts again')
 sys.exit(1 if fails else 0)
