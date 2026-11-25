@@ -212,4 +212,16 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  const a=T(2026,9,29),b=T(2026,10,19);let A=ctx.analyse([[a,710],[b,500]],{now:b});ok(A.recent==null&&!ctx.hasFc(A),'one reading 3 weeks after another: no rate yet');
  const p=[[a,710]];for(let t=b;t<b+30*H;t+=H)p.push([t,500-10*(t-b)/DAY]);A=ctx.analyse(p,{now:b+30*H});ok(A.recent==null,'30 hours of readings after the gap: not yet');
  const y=ctx.analyse([[a,710],[b,500]],{now:b,yearL:2000});ok(y.fc&&Number.isFinite(y.rate(b+DAY))&&Number.isFinite(y.fc.ord||0),'...with a typical year given: that forecast, finite')}
+// the steady fall (v1.3.43): readings flickering a 5 mm step (3.6 L) up and down give no negative days and the same total
+{const t0=T(2026,10,10)-12*H,p=[];for(let k=0;k<10*24;k++){const t=t0+k*H,lv=800-7*k/24,q=Math.floor(lv/3.6)*3.6+(k%5===2?3.6:0);p.push([t,q])}
+ const A=ctx.analyse(p,{now:p[p.length-1][0]}),d=Object.values(A.days);
+ ok(d.length>=8&&d.every(v=>v>=0),'flicker: no day reads as oil gained ('+d.map(v=>v.toFixed(1)).join(' ')+')');
+ ok(Math.abs(d.slice(1,-1).reduce((a,b)=>a+b,0)/(d.length-2)-7)<1.5,'flicker: about the 7 L a day used');
+ ok(A.fit.length===p.length&&A.fit.every((f,k)=>!k||f[1]<=A.fit[k-1][1]+1e-9),'out.fit: one per reading, never rising without a delivery')}
+// deliveries under 30 L (a jerry can): only once 2 more readings confirm them; a single spike, or the newest reading alone, never
+{const h=T(2026,10,10),mk=a=>a.map((v,k)=>[h+k*H,v]);
+ ok(!ctx.analyse(mk([500,500,500,500,520]),{now:h+5*H}).fills.length,'the newest reading 20 L up: not a delivery yet');
+ ok(!ctx.analyse(mk([500,500,520,500,500,500]),{now:h+6*H}).fills.length,'one reading 20 L up between others: not a delivery');
+ const A=ctx.analyse(mk([500,500,500,520,520,520,520]),{now:h+7*H});ok(A.fills.length===1&&Math.abs(A.fills[0].add-20)<1,'20 L that holds: a delivery of 20 L');
+ ok(ctx.analyse(mk([500,500,500,560]),{now:h+4*H}).fills.length===1,'60 L: a delivery at once, as before')}
 process.exit(fails?1:0);

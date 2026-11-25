@@ -9,7 +9,10 @@ const HDD=[340,300,280,210,140,75,45,50,90,170,260,320];
 const HEAT=HDD.map(v=>Math.max(0,v-60));
 const HW_SHARE=0.15;      // before a summer of your own data: share of a year's oil assumed to go on hot water
 const MAINS=0.25;         // hot water takes up to 25 % more oil in winter (mains water ~6 °C instead of ~15 °C)
-const REFILL_L=30;        // a rise this big is a delivery, not sensor noise or warm oil
+const REFILL_L=15;        // a rise this big (holding for hours) is a delivery (a 20 L jerry can in an emergency too, read
+                    // 17-22 L by the 5 mm steps), not sensor noise or warm oil: the level only
+                    // falls between deliveries (falls()), so a real top-up under it would read as days of no use. The
+                    // worst flicker seen is 3 steps of 5 mm, about 16 L at most near the top of a tank, and it never holds for hours (30 until v1.3.43)
 
 function parse(buf,h){const v=new DataView(buf),o=[];for(let i=0;i+6<=buf.byteLength;i+=6)o.push([v.getUint32(i,true),v.getUint16(i+4,true)]);
  o.sort((a,b)=>a[0]-b[0]);const u=o.filter((p,i)=>!i||p[0]!==o[i-1][0]);
@@ -86,6 +89,9 @@ function hotWater(days,tnow){const m={};
  return{perDay:per,y:last.y,m:last.m,months:use.length,days:v.length,b0:per/mean(sh)}}  // b0 = hot water L/day on a mid-August day
 
 // pts=[[epoch,litres]] -> deliveries, adjusted level, daily use, months, rates, forecast.
+// The least-squares fit to y that never rises (pool adjacent violators): flicker up and down cancels out.
+function falls(y){const b=[];for(const v of y){b.push([v,1]);while(b.length>1&&b[b.length-2][0]/b[b.length-2][1]<b[b.length-1][0]/b[b.length-1][1]){const[s,n]=b.pop();b[b.length-1][0]+=s;b[b.length-1][1]+=n}}
+ const o=[];for(const[s,n]of b)for(let i=0;i<n;i++)o.push(s/n);return o}
 function analyse(pts,o){
  o=o||{};const tnow=o.now||Date.now()/1000,reserve=o.reserve??200;
  const n=pts.length,out={fills:[],days:{},months:{},n,span:n?(pts[n-1][0]-pts[0][0])/DAY:0};
@@ -96,14 +102,19 @@ function analyse(pts,o){
   if(i>0){  // compare with readings close in time only: imported history can be days apart
    const near=(from,to,dir)=>{const o=[];for(let j=from;j>=0&&j<n&&o.length<4&&Math.abs(pts[j][0]-pts[i][0])<=6*H;j+=dir)o.push(L[j]);return o};
    const bw=near(i-1,0,-1),before=med(bw.length?bw.slice(0,3):[L[i-1]]),after=near(i,0,1);
-   if(L[i]-before>REFILL_L&&med(after)-before>REFILL_L){
+   if(L[i]-before>REFILL_L&&med(after)-before>REFILL_L&&(L[i]-before>30||after.length>=3)){  /* (under 30 L, a jerry can say: only once 2 more readings within 6 h confirm it, so a single misread, or the newest reading alone, is never a delivery) */
     const later=near(i+1,0,1),amt=med(later.length?later:after)-before;
     out.fills.push({t:pts[i][0],add:amt,from:before,to:before+amt});off-=amt;
     const skip=Math.max(1,after.length);for(let j=i;j<Math.min(n,i+skip);j++)adj[j]=L[j]+off;i+=skip;continue}}
   i++}
- // adj = oil that would be left if nothing had been delivered; smooth it (±3 h median) and read it at each midnight
- const sm=adj.map((_,k)=>{const a=[];for(let j=k;j>=0&&pts[k][0]-pts[j][0]<=3*H;j--)a.push(adj[j]);for(let j=k+1;j<n&&pts[j][0]-pts[k][0]<=3*H;j++)a.push(adj[j]);return med(a)});
- out.adj=pts.map((p,k)=>[p[0],sm[k]]);
+ // adj = oil that would be left if nothing had been delivered. Smoothed in two steps, then read at each midnight:
+ // a ±3 h median (a single misread can't move it), then the nearest level that only falls (falls()): readings
+ // flicker a 5 mm step up and down as the oil cools and warms, and that fit cancels it out instead of booking a step
+ // to whichever day the flicker happened to cross midnight (Stu's 22-24 Nov 2026: 12.3, 1.4, 6.8 L a day became
+ // 11.1, 2.6, 6.8; over 9 days the day-to-day spread fell from 3.4 to 2.6 L). Every daily figure, average, month and
+ // forecast comes from this one level; out.fit is it with the deliveries put back (the level chart's second line).
+ const sm=falls(adj.map((_,k)=>{const a=[];for(let j=k;j>=0&&pts[k][0]-pts[j][0]<=3*H;j--)a.push(adj[j]);for(let j=k+1;j<n&&pts[j][0]-pts[k][0]<=3*H;j++)a.push(adj[j]);return med(a)}));
+ out.adj=pts.map((p,k)=>[p[0],sm[k]]);out.fit=pts.map((p,k)=>[p[0],sm[k]-(adj[k]-L[k])]);
  const at=t=>{let lo=0,hi=n-1;while(lo<hi){const m=(lo+hi)>>1;if(pts[m][0]<t)lo=m+1;else hi=m}
   if(pts[lo][0]<t)lo=n;  // t is after the last reading
   const a=lo-1,b=lo;

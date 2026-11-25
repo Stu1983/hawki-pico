@@ -1465,7 +1465,7 @@ def order_by(f, litres, at, reserve):
     return None
 
 
-REFILL_L = 30.0  # (as common.js: a rise bigger than this is a delivery)
+REFILL_L = 15.0  # (as common.js: a rise bigger than this is a delivery)
 
 
 _lvl = {}  # mac -> (what it was worked out from, result): read again only after a new reading or a settings save
@@ -1487,8 +1487,9 @@ def _level_now(mac, t):
     if not ls:
         return None, None
     for i in range(len(ls) - 1, 0, -1):
-        if ls[i][1] - ls[i - 1][1] > REFILL_L:
-            ls = ls[i:]
+        b = ls[i - 1][1]
+        if ls[i][1] - b > REFILL_L and (ls[i][1] - b > 30 or (len(ls) - i >= 3 and all(x[1] - b > REFILL_L for x in ls[i:]))):
+            ls = ls[i:]  # (under 30 L, a jerry can say: only once 2 more readings confirm it, as common.js)
             break
     v = [x[1] for x in ls]
     return (v[-1] if len(v) < 3 else sorted(v[-3:])[1]), ls[-1][0]

@@ -24,6 +24,10 @@ svg{width:100%;height:auto;display:block;touch-action:pan-y;-webkit-user-select:
 svg text{font:11px system-ui,sans-serif;fill:var(--mut)}
 .gl{stroke:var(--grid)}.ax{stroke:var(--line)}
 .ln{fill:none;stroke:var(--s1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.rd{fill:none;stroke:var(--mut);stroke-width:1.2;stroke-linejoin:round;opacity:.7}
+/* the level chart full screen (its Full screen button) */
+#lfull{width:100vw;height:100vh;max-width:none;max-height:none;margin:0;padding:12px;box-sizing:border-box;border:0;border-radius:0;background:var(--bg)}
+#lfull[open]{display:flex;flex-direction:column}#lfull svg{flex:1;min-height:0;width:100%;height:100%}#lfull .row,#lfull .legend{flex:none}
 .gap{fill:none;stroke:var(--s1);stroke-width:1.5;stroke-dasharray:1 4;stroke-linecap:round;opacity:.6}
 .fc{fill:none;stroke:var(--s1);stroke-width:2;stroke-dasharray:5 4;opacity:.75}
 .rsv{stroke:var(--warn);stroke-dasharray:2 3}.rsvt{fill:var(--warn)}
@@ -65,7 +69,8 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 <div class="card">
  <div class="seg" id="rng"></div>
  <svg id="c1" viewBox="0 0 640 240" role="img" aria-label="Litres in the tank over time"></svg>
- <div class="legend"><span><i class="l" style="border-color:var(--s1)"></i>Litres</span><span><i class="d" style="border-color:var(--s1);border-top-style:dotted"></i>No readings</span><span><i class="d" style="border-color:var(--s1)"></i>Forecast</span><span><i class="d" style="border-color:var(--warn)"></i>Reorder level</span><span><i style="background:var(--card);border:2px solid var(--s3);border-radius:50%;width:10px"></i>Delivery</span></div>
+ <div class="legend"><span><i class="l" style="border-color:var(--mut)"></i>Readings</span><span><i class="l" style="border-color:var(--s1)"></i>Steady fall</span><span><i class="d" style="border-color:var(--s1);border-top-style:dotted"></i>No readings</span><span><i class="d" style="border-color:var(--s1)"></i>Forecast</span><span><i class="d" style="border-color:var(--warn)"></i>Reorder level</span><span><i style="background:var(--card);border:2px solid var(--s3);border-radius:50%;width:10px"></i>Delivery</span></div>
+ <div style="display:flex;justify-content:flex-end;margin-top:6px"><button type="button" onclick="lvlFull()">⤢ Full screen</button></div>
 </div>
 
 <h2>Usage by month</h2>
@@ -125,6 +130,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);co
 
 </div>
 
+<dialog id="lfull" onclick="if(event.target===this)this.close()" onclose="lvlBack()"><div class="row"><b>Usable oil in the tank</b><span id="lfullR"></span><button type="button" onclick="$('lfull').close()">Close</button></div><svg id="c1f" role="img" aria-label="Litres in the tank over time, full screen"></svg><div class="legend" id="lfullL"></div></dialog>
 <dialog id="ddlg"><form method="dialog" onsubmit="return saveDel(event)">
 <div class="row"><b id="ddT">Delivery</b><span class="mut" id="ddM"></span></div>
 <div class="grid">
@@ -188,7 +194,7 @@ const fmtDY=t=>new Date(t*1000).toLocaleDateString(undefined,{day:'numeric',mont
 const fmtDT=t=>new Date(t*1000).toLocaleString(undefined,{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 const L0=v=>Math.round(v).toLocaleString()+' L';
 const tip=$('tip');
-function showTip(ev,lines){tip.textContent='';const b=document.createElement('b');b.textContent=lines[0];tip.appendChild(b);
+function showTip(ev,lines){const host=document.querySelector('dialog[open]#lfull')||document.body;if(tip.parentNode!==host)host.appendChild(tip);  /* (inside the full screen while it's open: a modal dialog covers everything else) */tip.textContent='';const b=document.createElement('b');b.textContent=lines[0];tip.appendChild(b);
  for(const s of lines.slice(1)){const d=document.createElement('div');d.textContent=s;tip.appendChild(d)}
  tip.hidden=false;const x=Math.min(innerWidth-tip.offsetWidth-8,ev.clientX+12),y=Math.max(8,ev.clientY-tip.offsetHeight-12);tip.style.left=x+'px';tip.style.top=y+'px'}
 const hideTip=()=>{tip.hidden=true};
@@ -240,14 +246,17 @@ function drawWeather(){drawDow();const c4=$('c4'),c5=$('c5'),c6=$('c6');[c4,c5,c
  for(const p of pts){const c=el('circle',{cx:X(p[0]),cy:Y(p[1]),r:4,fill:'var(--s1)','fill-opacity':.55,stroke:'var(--card)','stroke-width':1,tabindex:0},c6),lines=[p[1].toFixed(1)+' L',fmtD(p[2])+' · average '+p[0].toFixed(1)+' °C'];c.addEventListener('pointermove',e=>showTip(e,lines));c.addEventListener('pointerdown',e=>showTip(e,lines));c.addEventListener('pointerleave',hideTip)}
  if(n>=14&&sxx>0){const ya=Math.max(0,Math.min(yt,a+b*xl)),yb=Math.max(0,Math.min(yt,a+b*xh));el('line',{x1:X(xl),y1:Y(ya),x2:X(xh),y2:Y(yb),stroke:'var(--s2)','stroke-width':2,'stroke-dasharray':'6 4'},c6)}
  note.textContent=(n>=14&&b<0?'About '+(-b).toFixed(2)+' L a day more for each degree colder (from '+n+' days; the line explains '+Math.round(r2*100)+'% of the day-to-day change). ':n<14?'The trend line appears once there are 14 days with both figures. ':'')+'Weather for '+(S.wx&&S.wx.name||'your location')+' from Open-Meteo.'}
-function drawLevel(){
- const svg=$('c1');svg.textContent='';const Hh=240,W=fit(svg,Hh),ml=46,mr=12,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
+function drawLevel(svg,Hh){const main=!svg;svg=svg||$('c1');Hh=Hh||240;if(main&&$('lfull').open)lvlFull();
+ svg.textContent='';const W=fit(svg,Hh),ml=46,mr=12,mt=10,mb=24,pw=W-ml-mr,ph=Hh-mt-mb;
  const cap=+T.cfg.capacity_l,reserve=T.cfg.reserve_l??200;
  if(P.length<2){el('text',{x:W/2,y:Hh/2,'text-anchor':'middle'},svg,'Collecting readings: the first point appears on the hour.');return}
  const last=P[P.length-1][0],first=P[0][0];
  const back=R==='all'?Math.max(DAY,last-first):(+R)*DAY,t0=Math.max(first,last-back),ahead=R==='all'?Math.min(365*DAY,back/3):back/3,t1=last+ahead;
- const x=t=>ml+(t-t0)/(t1-t0)*pw,y=l=>mt+ph-(Math.max(0,l)/cap)*ph;
- const st=niceStep(cap,4);for(let v=0;v<=cap;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},svg);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},svg,v.toLocaleString())}
+ /* full screen: the litres axis from just under the lowest shown to just over the highest, so the 5 mm flicker against the steady fall can be seen */
+ const shown=main?[]:P.filter(p=>p[0]>=t0).map(p=>p[1]).concat(A&&A.fit?A.fit.filter(p=>p[0]>=t0).map(p=>p[1]):[],A&&A.fc?A.fc.path.filter(p=>p[0]<=t1).map(p=>p[1]):[]);
+ let lo=0,hi=cap;if(shown.length){const mn=Math.min(...shown),mx=Math.max(...shown),pad=Math.max(5,(mx-mn)*0.1),s0=niceStep(mx-mn+2*pad,5);lo=Math.max(0,Math.floor((mn-pad)/s0)*s0);hi=Math.ceil((mx+pad)/s0)*s0}
+ const x=t=>ml+(t-t0)/(t1-t0)*pw,y=l=>mt+ph-((Math.max(0,l)-lo)/(hi-lo))*ph;
+ const st=niceStep(hi-lo,main?4:6);for(let v=lo;v<=hi+1e-9;v+=st){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),class:'gl'},svg);el('text',{x:ml-6,y:y(v)+4,'text-anchor':'end'},svg,v.toLocaleString())}
  // x ticks
  const ticks=[],span=t1-t0;
  if(span<=45*DAY){const every=span<=10*DAY?1:7;for(let t=addDays(midnight(t0),1);t<t1;t=addDays(t,every))ticks.push([t,fmtD(t)])}
@@ -257,15 +266,20 @@ function drawLevel(){
  el('line',{x1:ml,x2:W-mr,y1:mt+ph,y2:mt+ph,class:'ax'},svg);
  el('line',{x1:x(last),x2:x(last),y1:mt,y2:mt+ph,class:'gl'},svg);el('text',{x:x(last)+4,y:mt+10},svg,'now');
  // reorder level
- el('line',{x1:ml,x2:W-mr,y1:y(reserve),y2:y(reserve),class:'rsv'},svg);el('text',{x:ml+4,y:y(reserve)-4,class:'rsvt'},svg,'reorder '+reserve+' L');
+ if(reserve>=lo&&reserve<=hi){el('line',{x1:ml,x2:W-mr,y1:y(reserve),y2:y(reserve),class:'rsv'},svg);el('text',{x:ml+4,y:y(reserve)-4,class:'rsvt'},svg,'reorder '+reserve+' L')}
  // the data, thinned to about 2 points per pixel; break the line across gaps of more than 6 h
  const vis=P.filter(p=>p[0]>=t0),step=Math.max(1,Math.floor(vis.length/(pw*2)));let d='',g='',prev=null;
  for(let i=0;i<vis.length;i+=step){const p=vis[i],xy=x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1),gap=prev&&p[0]-prev[0]>Math.max(3*DAY,6*H*step);
   if(gap)g+='M'+x(prev[0]).toFixed(1)+' '+y(prev[1]).toFixed(1)+'L'+xy;d+=(prev==null||gap?'M':'L')+xy;prev=p}
- if(g)el('path',{d:g,class:'gap'},svg);
- el('path',{d,class:'ln'},svg);
- if(A&&A.fc){const fp=A.fc.path.filter(p=>p[0]<=t1);el('path',{d:fp.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1)).join(''),class:'fc'},svg)}
- for(const f of (A&&A.fills)||[])if(f.t>=t0)el('circle',{cx:x(f.t),cy:y(f.to),r:5,class:'fill'},svg);
+ if(!main){const cp=el('clipPath',{id:'lfc'},el('defs',{},svg));el('rect',{x:ml,y:mt,width:pw,height:ph},cp)}
+ const clip=main?{}:{'clip-path':'url(#lfc)'};
+ if(g)el('path',Object.assign({d:g,class:'gap'},clip),svg);
+ /* the readings as they came (5 mm steps, flickering), and the steady fall every figure on the page is worked out from (A.fit, index for index with P) */
+ const FT=A&&A.fit&&A.fit.length===P.length?A.fit:null,off=P.length-vis.length;
+ el('path',Object.assign({d,class:FT?'rd':'ln'},clip),svg);
+ if(FT){let e='',pv=null;for(let i=0;i<vis.length;i+=step){const p=FT[off+i],xy=x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1),gap=pv&&p[0]-pv[0]>Math.max(3*DAY,6*H*step);e+=(pv==null||gap?'M':'L')+xy;pv=p}el('path',Object.assign({d:e,class:'ln'},clip),svg)}
+ if(A&&A.fc){const fp=A.fc.path.filter(p=>p[0]<=t1);el('path',Object.assign({d:fp.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1)).join(''),class:'fc'},clip),svg)}
+ for(const f of (A&&A.fills)||[])if(f.t>=t0&&f.to>=lo&&f.to<=hi)el('circle',{cx:x(f.t),cy:y(f.to),r:5,class:'fill'},svg);
  // crosshair + tooltip
  const xh=el('line',{y1:mt,y2:mt+ph,class:'xh',visibility:'hidden'},svg),dot=el('circle',{r:4,class:'dot',visibility:'hidden'},svg);
  const hit=el('rect',{x:ml,y:mt,width:pw,height:ph,fill:'transparent'},svg);
@@ -273,11 +287,15 @@ function drawLevel(){
   let lines,px,py;
   if(tx>last&&A&&A.fc){const fp=A.fc.path;let b=fp[0];for(const p of fp)if(Math.abs(p[0]-tx)<Math.abs(b[0]-tx))b=p;px=x(b[0]);py=y(b[1]);lines=['≈ '+L0(b[1]),'forecast · '+fmtD(b[0])]}
   else{let lo=0,hi=vis.length-1;while(lo<hi){const m=(lo+hi)>>1;if(vis[m][0]<tx)lo=m+1;else hi=m}
-   const b=lo>0&&Math.abs(vis[lo-1][0]-tx)<Math.abs(vis[lo][0]-tx)?vis[lo-1]:vis[lo];if(!b)return;px=x(b[0]);py=y(b[1]);lines=[L0(b[1]),fmtDT(b[0])+(b[2]!=null?' · '+(b[2]===16382?'nearly empty':b[2]+' mm'):'')]}
+   const b=lo>0&&Math.abs(vis[lo-1][0]-tx)<Math.abs(vis[lo][0]-tx)?vis[lo-1]:vis[lo];if(!b)return;px=x(b[0]);py=y(b[1]);const k=vis.indexOf(b);lines=[L0(b[1])+' read',fmtDT(b[0])+(b[2]!=null?' · '+(b[2]===16382?'nearly empty':b[2]+' mm'):'')].concat(FT&&k>=0?['steady fall '+L0(FT[off+k][1])]:[])}
   xh.setAttribute('x1',px);xh.setAttribute('x2',px);xh.setAttribute('visibility','visible');dot.setAttribute('cx',px);dot.setAttribute('cy',py);dot.setAttribute('visibility','visible');showTip(ev,lines)};
  hit.addEventListener('pointermove',mv);hit.addEventListener('pointerdown',mv);
  hit.addEventListener('pointerleave',()=>{xh.setAttribute('visibility','hidden');dot.setAttribute('visibility','hidden');hideTip()})}
 
+/* (the range buttons go into the full screen while it's open, and back after: one set, one R) */
+function lvlBack(){const g=$('rng'),c=$('c1');if(g.parentNode!==c.parentNode)c.parentNode.insertBefore(g,c)}
+function lvlFull(){const d=$('lfull');if(!d.open){$('lfullL').innerHTML=document.querySelector('#c1').parentNode.querySelector('.legend').innerHTML;$('lfullR').appendChild($('rng'));d.showModal()}
+ requestAnimationFrame(()=>{const sv=$('c1f');if(d.open&&typeof A!=='undefined')drawLevel(sv,Math.max(240,Math.round(sv.getBoundingClientRect().height)||240))})}
 // ---------- chart 2: monthly usage, a bar per year ----------
 function drawMonths(){
  /* an oil year, July to June: the heating season in one piece and the forecast carried past December. Bars: this oil year (used, then forecast). The line across each month: an average year (A.avg) */
@@ -325,15 +343,12 @@ function drawMonths(){
  mo.forEach((q,i)=>{const tr=document.createElement('tr');cell(tr,MON[q.m]);
   prev.forEach(yy=>{const y2=i<6?yy:yy+1,o=M[y2+'-'+q.m];cell(tr,o?usedTxt(o,y2,q.m):'–')});
   cell(tr,(q.o?usedTxt(q.o,q.y,q.m):'')+(q.fc>0?(q.o?' + ':'')+'≈'+Math.round(q.fc)+' L':'')||'–');if(hasAvg)cell(tr,q.avg!=null?Math.round(q.avg)+' L':'–');$('tbl').appendChild(tr)})}
-// Average L/hour for each hour of the day over the last 30 days, from consecutive hourly readings
-// (deliveries skipped). Readings move in 5 mm steps (3-5 L, by the tank and its level) and flicker a step up and
-// down as the oil cools and warms, so they are first fitted with the nearest level that only falls (falls() below)
-// between deliveries: the flicker cancels out and each step lands in the hours it was used.
-function falls(y){const b=[];for(const v of y){b.push([v,1]);while(b.length>1&&b[b.length-2][0]/b[b.length-2][1]<b[b.length-1][0]/b[b.length-1][1]){const[s,n]=b.pop();b[b.length-1][0]+=s;b[b.length-1][1]+=n}}
- const o=[];for(const[s,n]of b)for(let i=0;i<n;i++)o.push(s/n);return o}  /* (pool adjacent violators: the least-squares non-increasing fit) */
-/* the readings from t0 on with the smoothed level (F, index for index) and where a top-up or delivery breaks them */
-function smoothed(P,fills,t0){const Q=P.filter(p=>p[0]>=t0),F=[],brk=(a,c)=>c[1]-a[1]>10||fills.some(f=>f.t>a[0]-6*H&&f.t<=c[0]+6*H);let seg=[];
- Q.forEach((p,i)=>{if(i&&brk(Q[i-1],p)){F.push(...falls(seg));seg=[]}seg.push(p[1])});F.push(...falls(seg));return{Q,F,brk}}
+// Average L/hour for each hour of the day over the last 30 days, from consecutive hourly readings (deliveries
+// skipped). Readings move in 5 mm steps (3-5 L, by the tank and its level) and flicker a step up and down as the oil
+// cools and warms, so this goes by the same smoothed level as every other figure (analyse(): A.adj, the level that
+// only falls, deliveries taken out), index for index with P.
+function smoothed(P,fills,t0){const J=(A&&A.adj)||[],Q=[],F=[];if(J.length===P.length)P.forEach((p,i)=>{if(p[0]>=t0){Q.push(p);F.push(J[i][1])}});
+ const brk=(a,c)=>fills.some(f=>f.t>a[0]-6*H&&f.t<=c[0]+6*H);return{Q,F,brk}}
 const isWE=t=>{const d=new Date(t*1000).getDay();return d===0||d===6};
 function hourly(P,fills,tnow){const mk=()=>Array.from({length:24},()=>({l:0,h:0,n:0})),B={wd:mk(),we:mk()},days={wd:new Set(),we:new Set()};
  const{Q,F,brk}=smoothed(P,fills,tnow-30*DAY-2*H);
