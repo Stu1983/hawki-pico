@@ -247,4 +247,14 @@ function series(from,to,heat){const p=[];let L=1000;for(let t=from;t<to;t+=H){co
  for(let i=0;i<28;i++){const t=new Date(2026,2,2+i).getTime()/1000,k=ctx.wxKey(t+DAY/2),tm=3+i%5;rec[k]=[tm,tm];wind[k]=i%2?30:10;days[t]=2+ctx.WX_BASE-tm+0.2*(wind[k]-20)}
  const h=ctx.wxHeat(rec,{},norm,wind,{},normw),f=ctx.windFit(days,gap,h,new Date(2026,2,30).getTime()/1000);
  ok(f.n===28&&Math.abs(f.k-0.2)<0.021,'28 days across the spring clock change all count: '+f.n+' days, k '+f.k)}
+// 14. the average year in the weather a day really had (the monthly chart's "allowing for the weather")
+{const norm=[9,8.5,7.5,5.5,3,1,0.3,0.4,1.5,4,6.5,8.5],now=T(2026,10,20),rec={},fc={};
+ for(let t=T(2026,5,1);t<now;t+=DAY){const m=new Date(t*1000).getMonth(),tm=ctx.WX_BASE-norm[m]*(m===10?1.5:1);rec[ctx.wxKey(t)]=[tm-2,tm+2]}  /* November half as cold again as usual */
+ const h=ctx.wxHeat(rec,fc,norm),p=[];let L=1500;for(let t=T(2026,5,1);t<now;t+=H){L-=2/24;p.push([t,L])}
+ const A=ctx.analyse(p,{now,heat:h,yearL:2000}),tn=T(2026,10,10),to=T(2026,9,16);  /* (mid-month: the usual weather is the month's own, not blended with the next) */
+ ok(A.avgWx(to)>0&&Math.abs(A.avgWx(to)/A.avg(to)-1)<0.01,'a day of usual weather: the same as the average year ('+A.avgWx(to).toFixed(2)+' vs '+A.avg(to).toFixed(2)+')');
+ ok(A.avgWx(tn)>A.avg(tn)*1.3,'a day half as cold again: the average year needs more heating that day ('+A.avgWx(tn).toFixed(2)+' vs '+A.avg(tn).toFixed(2)+')');
+ ok(A.avgWx(now+30*DAY)===null&&ctx.analyse(p,{now,yearL:2000}).avgWx(tn)===null,'no weather that day (to come, or none set): none')
+ const rec2={...rec};for(let t=now-7*DAY;t<now;t+=DAY)delete rec2[ctx.wxKey(t)];const A2=ctx.analyse(p,{now,heat:ctx.wxHeat(rec2,fc,norm)});
+ ok(A2.avgWx(to)===null,'no typical year, and the last week without weather (the model falls back to the built-in shape): none, never a different baseline')}
 process.exit(fails?1:0);

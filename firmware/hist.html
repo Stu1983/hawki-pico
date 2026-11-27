@@ -306,6 +306,13 @@ function lvlBack(){const g=$('rng'),c=$('c1');if(g.parentNode!==c.parentNode)c.p
 function lvlFull(){const d=$('lfull');if(!d.open){$('lfullL').innerHTML=document.querySelector('#c1').parentNode.querySelector('.legend').innerHTML;$('lfullR').appendChild($('rng'));d.showModal()}
  requestAnimationFrame(()=>{const sv=$('c1f');if(d.open&&typeof A!=='undefined')drawLevel(sv,Math.max(240,Math.round(sv.getBoundingClientRect().height)||240))})}
 // ---------- chart 2: monthly usage, a bar per year ----------
+/* a past month against the average year in the weather it really had: its measured days (no gaps; all of them, else nothing), the heating they called for
+   against the usual (r), and the litres used against the average year's in that weather. Only in the heating season (the
+   usual weather calls for half an average day's heating or more: in summer a few degree days either way are no guide). */
+function wxSplit(q){const wh=A&&A.wxh;if(!wh||!A.avgWx||!q.o||q.avg==null)return null;let u=0,e=0,a=0,b=0,n=0;
+ for(let d=1;d<=q.dim;d++){const t=new Date(q.y,q.m,d).getTime()/1000,m=t+DAY/2,x=A.days[t];if(x==null||A.gap&&A.gap[t])continue;const v=A.avgWx(m);
+  if(v==null)return null;  /* (every measured day or none: a part of the month, picked by what can be compared, could say the opposite of the whole) */u+=Math.max(0,x);e+=v;a+=wh(m);b+=wh.usual(m);n++}
+ return n>=7&&b/n>=0.5&&e>0?{r:a/b,u,e,n}:null}
 function drawMonths(){
  /* an oil year, July to June: the heating season in one piece and the forecast carried past December. Bars: this oil year (used, then forecast). The line across each month: an average year (A.avg) */
  const svg=$('c2');svg.textContent='';$('lg2').textContent='';$('tbl').textContent='';$('c2s').textContent=' ';
@@ -335,6 +342,8 @@ function drawMonths(){
   if(q.est>0.5)lines.push('About '+L0(q.est)+' on '+q.miss+' day'+(q.miss===1?'':'s')+' without readings'+(pc!=null?' · ≈ '+gbp0(q.est*pc/100):''));
   if(q.fc>0)lines.push('Forecast ≈ '+L0(q.fc)+(q.o?' more':'')+(pc!=null?' · ≈ '+gbp0(q.fc*pc/100):''));
   if(q.avg!=null)lines.push('Average year '+L0(q.avg));
+  {const w=wxSplit(q);if(w)lines.push('Weather: '+Math.round(Math.abs(w.r-1)*100)+'% '+(w.r>=1?'colder':'milder')+' than usual'+(A.wind&&A.wind.k>0?' (wind counted)':'')+(w.n<q.dim?' over its '+w.n+' days of readings':''),
+   'Allowing for it: '+Math.round(Math.abs(1-w.u/w.e)*100)+'% '+(w.u<=w.e?'less':'more')+' than the average year')}
   if(lines.length>1){const r=el('rect',{x:ml+i*gw,y:mt,width:gw,height:ph,fill:'transparent',class:'bar',tabindex:0},svg);
    r.addEventListener('pointermove',e=>showTip(e,lines));r.addEventListener('pointerdown',e=>showTip(e,lines));r.addEventListener('pointerleave',hideTip);r.addEventListener('focus',()=>{const b=r.getBoundingClientRect();showTip({clientX:b.right,clientY:b.top},lines)});r.addEventListener('blur',hideTip)}});
  const yl=A&&A.yearL?'the typical year you gave ('+Math.round(A.yearL).toLocaleString()+' L)':'',avgName=src.has('own')?(src.size>1?'Your earlier years; '+(src.has('given')?yl:'the usual weather')+' where there are none':'Your earlier years'):src.has('given')?yl[0].toUpperCase()+yl.slice(1):'Average year (usual weather)';

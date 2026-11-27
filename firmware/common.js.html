@@ -279,6 +279,11 @@ function analyse(pts,o){
  const avgOwn=t=>{const x=doy(t),fx=Math.floor(x),seen=new Set();let n2=0,sm2=0;for(let q=fx-11;q<=fx+11;q++){const kk=((q%366)+366)%366;if(seen.has(kk))continue;seen.add(kk);for(const e of prevD[kk]||[]){const dd=Math.abs(e[0]-x);if(Math.min(dd,365-dd)<=10){n2++;sm2+=e[1]}}}return n2>=10?Math.max(0,sm2/n2):null};
  const avgM=yearL?syn:modelWith(usualHeat);
  out.avg=t=>{const v=avgOwn(t);return v!=null?v:avgM(t)};out.avgSrc=t=>avgOwn(t)!=null?'own':yearL?'given':'model';
+ /* the same average year in the weather a past day really had (wind and all, as the forecast counts it), so a month can be
+    compared like for like: the typical year you gave, else this forecast's model. None from your own earlier years (their
+    figure has no hot water/heating split to put to the weather), without the day's weather, or when the model's usual year
+    isn't this weather's usual (recent days without weather: the built-in shape), so only the weather differs from out.avg. */
+ out.avgWx=t=>wh&&wh.has(t)&&avgOwn(t)==null&&(yearL||usualHeat===wh.usual)?(yearL?synHw(t)+synHeatIn(wxDay)(t):modelWith(wxDay)(t)):null;
  // simulate forward from the current level
  const lf=out.fills.length?out.fills[out.fills.length-1].t:-Infinity,tail=pts.slice(-4).filter(p=>p[0]>=lf).map(p=>p[1]),cur=!tail.length?med(L.slice(-4)):tail.length<3?tail[tail.length-1]:med(tail.slice(-3));out.cur=cur;  // actual level now: the last few readings, none from before the last delivery; with under 3 since it, the newest (one read while the tanker was still pumping would drag a median down) (sm is the delivery-adjusted level)
  const sim=(f,rf)=>{let l=cur,t=tEnd,ord=null,dry=null;const path=[[t,l]];
