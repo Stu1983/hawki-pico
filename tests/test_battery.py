@@ -1,6 +1,6 @@
 """python3 tests/test_battery.py - the low-battery alert (firmware/app.py battery_check)."""
 import ast, asyncio, os, sys, time
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 keep = [n for n in tree.body if isinstance(n, (ast.AsyncFunctionDef, ast.FunctionDef)) and n.name in ('battery_check', 'batt_of', 'starting')
         or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('BATT_LOW', 'BATT_REARM', 'batt_seen') for t in n.targets)]

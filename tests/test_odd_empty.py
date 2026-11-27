@@ -1,6 +1,6 @@
 """python3 tests/test_odd_empty.py - the monitor's 'nearly empty' code when the tank isn't (firmware/app.py odd_empty)."""
 import ast, os, sys
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 keep = [n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name == 'odd_empty'
         or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('EMPTY_NEAR_MM', 'EMPTY_WAIT') for t in n.targets)]
 g = {}

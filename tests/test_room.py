@@ -1,6 +1,6 @@
 """python3 tests/test_room.py - device-list pruning and the TLS out-of-memory retry (firmware/app.py)."""
 import ast, os, sys, time, gc
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 want = {'prune_seen', 'make_room', 'with_room', 'is_oom', 'note_oom'}
 code = ast.Module([n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in want

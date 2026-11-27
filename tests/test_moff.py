@@ -112,7 +112,7 @@ except OSError as ex:
     ok('1978' in str(ex), 'no INTERNAL_OFFSET characteristic: an error, nothing guessed (%s)' % ex)
 
 # ---- app.py: when it's read, and what's kept
-src = open(os.path.join(FW, 'app.py')).read()
+src = open(os.path.join(FW, 'core.py')).read()
 keep = [n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name in ('moff_due', 'moff_set', 'moff_view')
         or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('MOFF_EVERY_S', 'MOFF_AGAIN_S') for t in n.targets)]
 saves = []

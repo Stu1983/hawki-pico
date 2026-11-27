@@ -5,7 +5,7 @@ as such, and the setup Wi-Fi kept up for a while after joining so the phone can 
 """
 import ast, asyncio, json, os, types
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 fails = 0
 

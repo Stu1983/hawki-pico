@@ -5,7 +5,7 @@ weak Wi-Fi (Cache-Control: no-store). Now no-cache + an ETag of version and size
 """
 import ast, asyncio, os, tempfile, types
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 fails = 0
 

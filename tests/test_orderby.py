@@ -7,7 +7,7 @@ A.fc.ord, and readings that follow the forecast keep the date where it was. Runs
 import ast, json, os, subprocess, time, types
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-src = open(os.path.join(ROOT, 'firmware', 'app.py')).read()
+src = open(os.path.join(ROOT, 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 names = ('forecasts', 'fc_saved', 'FC_FILE', 'num', 'set_forecast', 'order_by', 'REFILL_L', '_level_now', 'MODES', 'mode_of', 'reserve_of', 'active_tanks', 'order_by_iso')
 fails = 0

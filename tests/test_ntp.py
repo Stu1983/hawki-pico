@@ -6,7 +6,7 @@ and back to quick tries after a success or a fresh Wi-Fi join.
 """
 import ast, asyncio, os, sys, types
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 names = ('ntp_sync', 'ntp_due', 'NTP_BACKOFF', 'ntp_wait', 'web_busy', 'ntp_ok')
 fails = 0

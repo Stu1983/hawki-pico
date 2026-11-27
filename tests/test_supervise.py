@@ -7,7 +7,7 @@ minutes and copes with a damaged config.json.
 import ast, asyncio, json, os, sys, tempfile, types
 
 FW = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'firmware')
-src = open(os.path.join(FW, 'app.py')).read()
+src = open(os.path.join(FW, 'core.py')).read()
 tree = ast.parse(src)
 fails = 0
 

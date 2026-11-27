@@ -10,7 +10,7 @@ FW = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'firmware')
 sys.path.insert(0, FW)
 import tankcalc
 
-src = open(os.path.join(FW, 'app.py')).read()
+src = open(os.path.join(FW, 'core.py')).read()
 tree = ast.parse(src)
 names = ('MODES', 'MEASURED_KEYS', 'CFG_KEYS', 'isolated_since', 'num', 'check_shape', 'set_tank', 'mode_of', 'reserve_of', 'reorder_alert', 'cfg_view')
 fails = 0

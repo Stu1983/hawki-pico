@@ -5,7 +5,7 @@ set_tank() keeps but cfg_view() leaves out is lost on the next save and missing 
 """
 import ast, os
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 want = {'cfg_view', 'isolated_since'}
 code = ast.Module([n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in want

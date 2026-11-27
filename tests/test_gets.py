@@ -6,7 +6,7 @@ signed-in owner asks (and then not more than every 10 s). The Wi-Fi scan blocks 
 """
 import ast, os
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 names = ('UPD_CACHE_S', 'upd_cache', 'update_check', 'may_setup', 'manifest_fresh')
 fails = 0

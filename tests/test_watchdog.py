@@ -34,7 +34,7 @@ class WDT:
         self.fed += 1
 
 
-src = open(os.path.join(FW, 'app.py')).read()
+src = open(os.path.join(FW, 'core.py')).read()
 names = ('ph_write', 'ph_on', 'ph_off', 'ph_planned', 'wd_read', 'wd_feed', 'freezes', 'freeze_note')
 consts = ('PH', 'WD_SCR', 'ph_n', 'ph_last', 'ph_armed', 'WD_HOLD_S', 'WD_MINUTES', 'wd_hw', 'wd_free', 'wh', 'FREEZE_FILE')
 keep = [n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name in names

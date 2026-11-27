@@ -7,7 +7,7 @@ import ast, asyncio, binascii, json, os, sys, types
 
 FW = os.path.join(os.path.dirname(__file__), '..', 'firmware')
 sys.path.insert(0, FW)
-src = open(os.path.join(FW, 'app.py')).read()
+src = open(os.path.join(FW, 'core.py')).read()
 tree = ast.parse(src)
 fails = 0
 

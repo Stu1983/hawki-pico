@@ -5,7 +5,7 @@ FW = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'firmware')
 sys.path.insert(0, FW)
 import unset
 
-src = open(os.path.join(FW, 'app.py')).read()
+src = open(os.path.join(FW, 'core.py')).read()
 tree = ast.parse(src)
 names = ('hist_name', 'hist_tail', 'merge_hist', 'note_clock', 'unset_step')
 fails = 0

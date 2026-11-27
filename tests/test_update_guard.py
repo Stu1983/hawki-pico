@@ -6,7 +6,7 @@ state API and the main page must answer 200 through the real handle(), or after 
 """
 import ast, asyncio, os, sys, types
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 names = ('_Req', '_Resp', 'web_ok', 'update_guard')
 fails = 0

@@ -1,6 +1,6 @@
 """python3 tests/test_silent.py - the 'monitor gone quiet' alert (firmware/app.py silent_check)."""
 import ast, asyncio, os, sys
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 keep = [n for n in ast.parse(src).body if isinstance(n, ast.AsyncFunctionDef) and n.name == 'silent_check'
         or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('SILENT_H', 'quiet_clock') for t in n.targets)
         or isinstance(n, ast.FunctionDef) and n.name == 'quiet_since_start']

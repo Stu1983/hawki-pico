@@ -29,7 +29,7 @@ for d in range(9824, 11500):
     battlog.add(M, d, 90, 5)
 r = battlog.read(M)
 ok(len(r) == 1100 and r[-1][0] == 11499 and r[0][0] == 11499 - 1099, 'it serves the last 3 years at most (memory on the Pico)')
-src = open(os.path.join(FW, 'app.py')).read()
+src = open(os.path.join(FW, 'core.py')).read()
 ok("battlog.add(mac, weather.day_of(t), batt_of(d), d.get('temperature'))" in src and "path == '/api/battlog'" in src and "if bm in cfg['tanks'] else []" in src and "'%3a'" in src,
    'the app keeps it as each hourly reading is saved (placeholder batteries left out), and serves it at /api/battlog, for its own tanks only')
 sys.exit(1 if fails else 0)

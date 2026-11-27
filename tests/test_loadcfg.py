@@ -5,7 +5,7 @@ real file alone; a damaged one is kept as config.bad before starting afresh.
 """
 import ast, binascii, builtins, json, os, tempfile
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 code = ast.Module([n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ('load_cfg', 'save_cfg', 'load_deliv', 'save_deliv', 'load_json')
                    or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') == 'cfg_gen' for t in n.targets)], [])

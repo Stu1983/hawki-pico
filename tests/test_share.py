@@ -66,7 +66,7 @@ ok(share.area(cfg2) == {'pc': None, 'lat': 55.0, 'lon': -6.5} and share.clean_st
    'no postcode district: the rounded place only; no location at all: nothing')
 
 # ---- app.py: switching on and off, when it uploads, retries, deletes
-src = open(os.path.join(FW, 'app.py')).read()
+src = open(os.path.join(FW, 'core.py')).read()
 names = ('SHARE_EVERY', 'share_host', 'ok_host', 'share_state', 'share_view', 'set_share', 'share_dels', 'share_due', 'share_files', 'share_size_guess', 'share_step')
 keep = [x for x in ast.parse(src).body if isinstance(x, (ast.FunctionDef, ast.AsyncFunctionDef)) and x.name in names
         or isinstance(x, ast.Assign) and getattr(x.targets[0], 'id', None) in names]

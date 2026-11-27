@@ -37,7 +37,7 @@ for k in range(10):
 ok(st['n'] == 6, 'at most 6 times (a monitor that never answers is not kept awake): %d' % st['n'])
 ok(not ask(HALF, st, 50000, 900) and st == {}, 'once it measures hourly again (clock still 0): forgotten')
 ok(not ask(START, st, 60000) and ask(START, st, 60000 + 900), 'stuck again later (another battery change): the same again')
-src = open(os.path.join(FW, 'app.py')).read()
+src = open(os.path.join(FW, 'core.py')).read()
 ok("(poke_task, 'measure now')" in src and 'poke.measure(ble' in src and 'scan_on[0] = True' in src,
    'the app runs it for its tanks, pausing the scan while connected and always starting it again')
 ok("li.get('changed_at') or li.get('heard_from')" in src and "'heard_from': e['first'], 'changed_at': e['chg']" in open(os.path.join(FW, 'listen.py')).read(),

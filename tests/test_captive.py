@@ -5,7 +5,7 @@ the setup page, so the phone opens that page by itself. Nothing changes on the h
 """
 import ast, asyncio, json, os, struct, types
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 fails = 0
 

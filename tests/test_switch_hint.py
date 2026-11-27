@@ -9,7 +9,7 @@ FW = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'firmware')
 sys.path.insert(0, FW)
 import tankcalc
 
-src = open(os.path.join(FW, 'app.py')).read()
+src = open(os.path.join(FW, 'core.py')).read()
 tree = ast.parse(src)
 names = ('MODES', 'mode_of', 'hist_name', 'hist_tail', 'fell_in_a_day', 'SWITCH_FELL_L', 'SWITCH_STEADY_L', '_hint', 'cfg_gen', 'switch_hint')
 fails = 0

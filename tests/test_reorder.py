@@ -6,7 +6,7 @@ measurement every 4 s: a reading only counts once, by its payload.
 """
 import ast, os
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 names = ('low_seen', 'low_confirmed')
 fails = 0

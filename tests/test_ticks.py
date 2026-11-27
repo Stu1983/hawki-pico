@@ -6,7 +6,7 @@ boot grace before the setup network opens) and "a page was loaded lately" must n
 """
 import ast, os
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 want = {'mono_s', 'net_proof', 'net_quiet_s', 'boot_grace_over'}
 PERIOD = 1 << 30

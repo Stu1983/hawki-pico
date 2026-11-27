@@ -6,7 +6,7 @@ whose body isn't a JSON object is a 400, not a dropped connection.
 """
 import ast, asyncio, json, os, types
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 fails = 0
 

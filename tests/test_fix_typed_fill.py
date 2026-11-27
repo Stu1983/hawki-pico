@@ -1,7 +1,7 @@
 """python3 tests/test_fix_typed_fill.py - the one-off fix of the one reading typed in as usable before v1.3.26."""
 import ast, os, struct, sys, tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'firmware'))
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 names = ('FIX_T', 'fix_typed_fill', 'merge_hist', 'hist_name')
 keep = [n for n in ast.parse(src).body if isinstance(n, (ast.FunctionDef, ast.Assign)) and
         (getattr(n, 'name', None) in names or isinstance(n, ast.Assign) and any(getattr(x, 'id', None) in names for x in getattr(n.targets[0], 'elts', [n.targets[0]])))]

@@ -6,7 +6,7 @@ page refuses every new PIN until someone pulls the plug.
 """
 import ast, os
 
-src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'app.py')).read()
+src = open(os.path.join(os.path.dirname(__file__), '..', 'firmware', 'core.py')).read()
 tree = ast.parse(src)
 names = ('FIRST_PIN_SECS', 'first_pin_until', 'may_set_first_pin', 'pin_reset')
 fails = 0
