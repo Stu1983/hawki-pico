@@ -6,7 +6,7 @@ want = {'prune_seen', 'make_room', 'with_room', 'is_oom', 'note_oom'}
 code = ast.Module([n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in want
                    or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('oom_run', 'OOM_UP_S', 'SEEN_MAX', 'SEEN_AGE', 'HAWKI_MAX', 'HAWKI_AGE') for t in n.targets)], [])
 now = time.time()
-g = {'time': time, 'gc': gc, 'mono_s': lambda: 0, 'installing': [False], 'cfg': {'tanks': {'t1': {}}}, 'hawki': {'nb': {'rx': now}},  # (a HAWKi nearby, heard just now)
+g = {**__import__('_phstub').STUB, 'time': time, 'gc': gc, 'mono_s': lambda: 0, 'installing': [False], 'cfg': {'tanks': {'t1': {}}}, 'hawki': {'nb': {'rx': now}},  # (a HAWKi nearby, heard just now)
      'seen': {'t1': {'last': 0}, 'nb': {'last': 0}, 'old': {'last': now - 3600}, 'new': {'last': now}}}
 exec(compile(code, 'app.py', 'exec'), g)
 fails = 0

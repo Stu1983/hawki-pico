@@ -21,6 +21,7 @@ def ok(c, m):
 def pick(*names, **g):
     nodes = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in names
              or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in names for t in n.targets)]
+    g = {**__import__('_phstub').STUB, **g}
     exec(compile(ast.Module(nodes, []), 'app.py', 'exec'), g)
     return g
 

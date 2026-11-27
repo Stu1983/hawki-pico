@@ -99,7 +99,7 @@ except OSError as ex:
 mono = [0]
 sent = []
 res = [{'po': 'error'}]
-g = {'asyncio': asyncio, 'mono_s': lambda: mono[0], 'make_room': lambda: None, 'note_oom': lambda hit: None, 'print': lambda *a: None, 'cfg': {'notify': {}},
+g = {**__import__('_phstub').STUB, 'asyncio': asyncio, 'mono_s': lambda: mono[0], 'make_room': lambda: None, 'note_oom': lambda hit: None, 'print': lambda *a: None, 'cfg': {'notify': {}},
      'notify': types.SimpleNamespace(oom=[False], send=lambda n, t, m, u: sent.append(t) or dict(res[0]))}
 exec(compile(ast.Module([n for n in tree.body if isinstance(n, ast.AsyncFunctionDef) and n.name in ('send_alert', '_send_alert')
                          or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in ('alert_back', 'sending') for t in n.targets)], []), 'app.py', 'exec'), g)
@@ -122,7 +122,7 @@ r = asyncio.run(g['send_alert']('f', 'm'))
 ok(sent[-2:] == ['e', 'f'], 'after a success, no waiting')
 
 # --- weather parts: a failing part waits 20 min, doubling to 6 h; a success resets it
-g = {'mono_s': lambda: mono[0], 'wx_state': {'errs': {}}, 'print': lambda *a: None}
+g = {**__import__('_phstub').STUB, 'mono_s': lambda: mono[0], 'wx_state': {'errs': {}}, 'print': lambda *a: None}
 exec(compile(ast.Module([n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ('wx_err', 'wx_due')
                          or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') == 'wx_back' for t in n.targets)], []), 'app.py', 'exec'), g)
 mono[0] = 0

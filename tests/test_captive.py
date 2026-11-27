@@ -21,7 +21,7 @@ names = ('dns_task', 'handle', 'send', 'parse_q', 'jb', 'BadRequest', '_Req', '_
 AP = types.SimpleNamespace(up=True)
 ap = types.SimpleNamespace(active=lambda: AP.up, ifconfig=lambda: ('192.168.4.1', '255.255.255.0', '192.168.4.1', '8.8.8.8'))
 wlan = types.SimpleNamespace(ifconfig=lambda: ('192.168.1.20', '255.255.255.0', '192.168.1.1', '192.168.1.1'))
-g = {'wlan': wlan, 'time': T, 'asyncio': asyncio, 'json': json, 'os': os, 'gc': __import__('gc'), 'conns': [0], 'ap': ap, 'HOSTNAME': 'hawki-pico',
+g = {**__import__('_phstub').STUB, 'wlan': wlan, 'time': T, 'asyncio': asyncio, 'json': json, 'os': os, 'gc': __import__('gc'), 'conns': [0], 'ap': ap, 'HOSTNAME': 'hawki-pico',
      'on_ap': lambda p: AP.up and p.startswith('192.168.4.'),
      'net_proof': lambda: None, 'page_s': [None], 'mono_s': lambda: 0, 'cfg': {'tanks': {}, 'pin': 'x'}, 'TOKEN': 'tok',
      'authed': lambda a: False, 'save_cfg': lambda c: None, 'print': lambda *a: None,

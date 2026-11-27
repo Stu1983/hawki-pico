@@ -58,7 +58,7 @@ PENDING = [False]
 
 
 def fresh(script, have=None):
-    g = {'binascii': __import__('binascii'), 'time': T, 'json': json, 'os': os, 'gc': __import__('gc'), 'print': lambda *a: None,
+    g = {**__import__('_phstub').STUB, 'binascii': __import__('binascii'), 'time': T, 'json': json, 'os': os, 'gc': __import__('gc'), 'print': lambda *a: None,
          'asyncio': types.SimpleNamespace(sleep=nosleep, wait_for=asyncio.wait_for),
          'network': types.SimpleNamespace(STAT_WRONG_PASSWORD=-3, STAT_NO_AP_FOUND=-2, STAT_CONNECT_FAIL=-1),
          'wlan': Wlan(script), 'led': types.SimpleNamespace(toggle=lambda: None), 'net_apply': lambda: None, 'ap_on': lambda: aps.append(1),

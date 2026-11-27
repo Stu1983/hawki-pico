@@ -33,7 +33,7 @@ def run(handle, wifi=True):
 
     async def nap(s):
         clock[0] += s
-    g = {'asyncio': types.SimpleNamespace(sleep=nap, wait_for=lambda c, t: c), 'os': os, 'print': lambda *a: None,
+    g = {**__import__('_phstub').STUB, 'asyncio': types.SimpleNamespace(sleep=nap, wait_for=lambda c, t: c), 'os': os, 'print': lambda *a: None,
          'mono_s': lambda: clock[0],
          'update_info': lambda: {'pending': True}, 'wlan': types.SimpleNamespace(isconnected=lambda: wifi),
          'cfg': {'ssid': 'home'}, 'machine': types.SimpleNamespace(reset=lambda: (_ for _ in ()).throw(Reset())),

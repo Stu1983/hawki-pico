@@ -30,7 +30,7 @@ def settime():
         raise OSError(-2, 'no DNS')
 ntptime.settime = settime
 sys.modules['ntptime'] = ntptime
-g = {'asyncio': asyncio, 'mono_s': lambda: clock[0], 'net_proof': lambda: None, 'print': lambda *a: None,
+g = {**__import__('_phstub').STUB, 'asyncio': asyncio, 'mono_s': lambda: clock[0], 'net_proof': lambda: None, 'print': lambda *a: None,
      'page_s': [None]}
 exec(compile(ast.Module([n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in names
                          or isinstance(n, ast.Assign) and any(getattr(t, 'id', '') in names for t in n.targets)], []),

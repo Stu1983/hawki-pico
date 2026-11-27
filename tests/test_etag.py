@@ -29,7 +29,7 @@ class W:
 
 os.chdir(tempfile.mkdtemp())
 open('ui.html', 'w').write('x' * 5000)
-g = {'os': os, 'asyncio': types.SimpleNamespace(wait_for=lambda c, t: c), 'VERSION': '1.2.54'}
+g = {**__import__('_phstub').STUB, 'os': os, 'asyncio': types.SimpleNamespace(wait_for=lambda c, t: c), 'VERSION': '1.2.54'}
 exec(compile(ast.Module([n for n in tree.body if isinstance(n, ast.AsyncFunctionDef) and n.name in ('send_file', 'send_page')], []), 'app.py', 'exec'), g)
 w = W()
 asyncio.run(g['send_page'](w, 'ui.html', 'text/html'))

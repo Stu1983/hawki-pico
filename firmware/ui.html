@@ -128,7 +128,8 @@ dialog::backdrop{background:#0008}
 <h2>Software</h2>
 <div class="card"><div class="row"><div><div id="ver">Version …</div><div class="mut" id="ver2">&nbsp;</div></div><button id="updBtn" onclick="updClick()">Check for updates</button></div>
 <div class="mut" id="updBox" style="white-space:pre-wrap;min-height:18px;margin-top:6px"></div>
-<div class="row" style="margin-top:10px"><div><div>Restart the Pico</div><div class="mut" id="rstM">Saves the latest readings first. Back in about 30 seconds.</div></div><button id="rstBtn" onclick="restartPico()">Restart</button></div></div>
+<div class="row" style="margin-top:10px"><div><div>Restart the Pico</div><div class="mut" id="rstM">Saves the latest readings first. Back in about 30 seconds.</div></div><button id="rstBtn" onclick="restartPico()">Restart</button></div>
+<div class="mut" id="frzM" style="margin-top:6px;min-height:2.6em">&nbsp;</div></div>
 
 <h2>Wi-Fi &amp; network</h2>
 <div class="card"><div class="row"><div><div id="wifi">…</div><div class="mut" id="wifi2">&nbsp;</div></div><button onclick="openWifi()">Change</button></div>
@@ -362,6 +363,10 @@ async function rdLoad(m){const t=S.tanks.find(x=>x.mac===m);if(!t)return;const m
   RD[m]={key,at:Date.now(),html:h}}catch(e){RD[m]={key:'',at:0,html:'Could not load them: '+e.message}}
  const el=document.querySelector('details.rd[data-mac="'+m+'"] .rdb');if(el)el.innerHTML=RD[m].html}
 /* the monitor's own clock: how far from the Pico's (NTP), or that it isn't set (the Pico sets it) */
+/* the latest time the watchdog had to restart the Pico (it froze), and what it was doing then */
+function frzTxt(s){const f=s&&s.freeze;if(!f)return 'If it ever freezes, it restarts itself within about 10 minutes, and says so here.';
+ const at=f.at?new Date(f.at*1000).toLocaleString([],{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'at a time unknown (its clock was not set)',what=(f.busy&&f.busy.length?f.busy:f.last?[f.last]:[]).join(', ');
+ return 'Last froze '+(f.at?'around ':'')+at+(f.soft?' (the software stopped)':'')+(what?', during: '+what:'')+'. It restarted itself.'+(s.freezes>1?' '+s.freezes+' kept on record.':'')}
 function clockTxt(t){const off=t.listen&&t.listen.offset,cs=t.clock_set||{},at=cs.at?' at '+new Date(cs.at*1000).toLocaleString([],{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
  if(off!=null)return ' Monitor clock: '+(Math.abs(off)<60?'right':Math.round(Math.abs(off)/60)+' min '+(off>0?'slow':'fast'))+(cs.got?' (set by the Pico'+at+')':'')+'.';
  return cs.err?' Monitor clock not set: the Pico will try again (last try'+at+': '+esc(cs.err)+').':''}
@@ -377,7 +382,7 @@ function render(){
  if(suCheck())return;
  $('status').textContent=S.ap&&!S.ssid?'Setup mode: connect this Pico to your Wi-Fi below':'Updated '+new Date().toLocaleTimeString();
  if(S.update){const u=S.update,l=u.last;$('ver').textContent='Version '+u.version;
-  $('ver2').textContent=u.pending?'Just updated: checking it runs properly…':u.why==='memory'?'Restarted by itself to free up memory.':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':l.stage==='install'?'The update to '+l.to+' could not be installed: '+l.reason:'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
+  $('frzM').textContent=frzTxt(S);$('ver2').textContent=u.pending?'Just updated: checking it runs properly…':u.why==='memory'?'Restarted by itself to free up memory.':l?(l.ok?'Updated from '+l.from+' to '+l.to+'.':l.stage==='install'?'The update to '+l.to+' could not be installed: '+l.reason:'The update to '+l.to+' would not start, so the Pico went back to '+l.from+'.'):' '}
  secRender();netRender();notifyRender();wxRender();yrRender();prRender();shRender();mqRender();navHist();if(!$('p_dash').hidden)dash();
  $('wifi').textContent=S.ssid?('Connected to '+S.ssid):'Not connected';$('wifi2').textContent=S.ip?('Address '+S.ip+(S.wifi_rssi!=null?' · signal '+S.wifi_rssi+' dBm ('+(S.wifi_rssi>=-67?'good':S.wifi_rssi>=-75?'OK':S.wifi_rssi>=-82?'weak':'very weak')+')':'')):(S.ap?'Setup network: '+S.ap:' ');
  $('tanks').innerHTML=(S.tanks.length>1?`<div class="card"><div class="row" style="min-height:34px"><div><b>Both tanks together</b><div class="mut">Oil, use and forecast for the tanks combined</div></div>${S.primary==='all'?'<span class="pill">On the dashboard</span>':`<button onclick="setPrimary('all')">Show on dashboard</button>`}</div></div>`:'')+(S.tanks.length?S.tanks.map(t=>{/* the Tanks page shows ALL the oil in the tank (the dashboard shows the usable oil): usable + what's below the outlet */

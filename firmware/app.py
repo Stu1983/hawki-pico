@@ -34,7 +34,7 @@
 #
 # No Wi-Fi configured, or it can't connect for 60 s: the Pico also opens a setup network
 # "HAWKi-Setup-XXXX" (password: oiltanks); browse to http://192.168.4.1/
-import bluetooth, binascii, json, time, network, machine, asyncio, gc, os, struct
+import bluetooth, binascii, json, time, network, machine, asyncio, gc, os, struct, sys
 from hawki_decode import decode, mfr_from_adv
 from tankcalc import reading, litres, litres_many, link, restore_groups, SHAPES, below, above, tank_equiv, total, whole
 import histstore
@@ -118,6 +118,86 @@ except (TypeError, ValueError):
 cfg['boots'] = BOOT
 save_cfg(cfg)
 led = machine.Pin('LED', machine.Pin.OUT)
+
+# ---- what was under way, for after a freeze. The chip's watchdog scratch registers keep their value through a
+# watchdog restart (not a power cut): SCRATCH0 = 0x4B << 24 | the last step begun << 16 | bit 15: the watchdog was on
+# (wd_start; a restart before that, after a crash while starting, is no freeze) | the steps under way (a bit each),
+# SCRATCH1 = the time of the main loop's last beat. Read once at the start, before anything writes them.
+# (SCRATCH2-7: the boot ROM's and the SDK's own.) Last step 0xFE: a planned restart; 0xFD: the main loop's own check.
+PH = ('Bluetooth scan', 'Bluetooth connection', 'Wi-Fi scan', 'Wi-Fi join', 'network check', 'clock sync',
+      'internet fetch', 'alert', 'online backup', 'MQTT', 'web page', 'saving readings', 'update', 'tidying history')
+WD_SCR = (0x400d8000 if 'RP2350' in getattr(sys.implementation, '_machine', '') else 0x40058000) + 0x0c
+ph_n = [0] * len(PH)
+ph_last = [0xFF]
+ph_armed = [0]  # 0x8000 once the watchdog is on
+
+
+def ph_write():
+    m = 0
+    for i in range(len(PH)):
+        if ph_n[i]:
+            m |= 1 << i
+    try:
+        machine.mem32[WD_SCR] = 0x4B000000 | (ph_last[0] & 0xFF) << 16 | ph_armed[0] | m
+    except Exception:
+        pass
+
+
+def ph_on(k):
+    ph_n[k] += 1
+    ph_last[0] = k
+    ph_write()
+
+
+def ph_off(k):
+    ph_n[k] = max(0, ph_n[k] - 1)
+    ph_write()
+
+
+def ph_planned(code=0xFE):
+    ph_last[0] = code
+    ph_write()
+
+
+def phased(k, is_async=False):
+    # a function marked as step k while it runs (is_async: a coroutine, marked until it has finished)
+    def deco(fn):
+        if is_async:
+            async def run(*a):
+                ph_on(k)
+                try:
+                    return await fn(*a)
+                finally:
+                    ph_off(k)
+        else:
+            def run(*a):
+                ph_on(k)
+                try:
+                    return fn(*a)
+                finally:
+                    ph_off(k)
+        return run
+    return deco
+
+
+def wd_read():
+    # the freeze the watchdog restarted from, if that's how this start came about: {'at', 'last', 'busy', 'soft'} or None
+    try:
+        s0, s1 = machine.mem32[WD_SCR] & 0xFFFFFFFF, machine.mem32[WD_SCR + 4] & 0xFFFFFFFF
+        if s0 >> 24 != 0x4B or machine.reset_cause() != machine.WDT_RESET:
+            return None  # (a power cut or the reset button: the registers start again)
+        last = (s0 >> 16) & 0xFF
+        if last == 0xFE or not (s0 & 0x8000 or last == 0xFD):
+            return None  # (planned; or before the watchdog was on, which isn't a freeze it caught)
+        return {'at': s1 if s1 > 1700000000 else None, 'last': PH[last] if last < len(PH) else None,
+                'busy': [PH[i] for i in range(len(PH)) if s0 >> i & 1 and i < 15], 'soft': last == 0xFD}
+    except Exception as ex:
+        print('wd read', ex)
+        return None
+
+
+wd_prev = wd_read()
+ph_write()  # (from here on, this start's own)
 hawki = {}   # mac -> latest decoded reading
 seen = {}    # mac -> BLE devices heard lately (debug + names); pruned, see prune_seen()
 SEEN_MAX = 60
@@ -205,6 +285,7 @@ def take_note(name):
     return d if isinstance(d, dict) else None
 
 
+@phased(6)
 def with_room(fn, *a):
     # one retry when the heap was too chopped up for TLS
     make_room()
@@ -432,18 +513,22 @@ ble.irq(irq)
 def start_scan():
     if scan_mode[0] and scan_on[0] and not scan_running[0]:
         scan_running[0] = True
+        ph_on(0)
         try:
             ble.gap_scan(0, 60000, 30000, scan_mode[0] == 'active')  # until stopped, 50% duty
         except Exception as ex:
             scan_running[0] = False  # the scheduler tries again in 2 s
             print('scan start err', ex)
+        ph_off(0)
 
 
 def stop_scan():
+    ph_on(0)
     try:
         ble.gap_scan(None)  # SCAN_DONE then restarts it in the wanted mode (or leaves it off)
     except Exception as ex:
         print('scan stop err', ex)  # still running: the scheduler tries again in 2 s
+    ph_off(0)
 
 
 def want_scan(mode):
@@ -589,6 +674,7 @@ def net_quiet_s():
     return mono_s() - (net_ok_s[0] if net_ok_s[0] is not None else 0)
 
 
+@phased(4, True)
 async def net_check():
     # A saved fixed address that reaches nothing (a new router, a changed network): joined, but for 15 minutes
     # no browser has got through, and the router doesn't answer. Then the setup network comes up, so the address
@@ -636,6 +722,7 @@ def ntp_due():
 ntp_ok = [False]  # the clock has been set from a time server since this start (not just a plausible RTC)
 
 
+@phased(5, True)
 async def ntp_sync():
     import ntptime
     for host in ('pool.ntp.org', 'time.google.com'):
@@ -673,12 +760,14 @@ def ap_on():
     if not ap.active():
         ch = None
         if not wlan.isconnected():  # (joined: it runs on the home channel anyway)
+            ph_on(2)
             try:
                 nets = wlan.scan()
                 note_seen(nets)
                 ch = ap_channel(nets, (cfg.get('ssid') or '').encode())
             except Exception as ex:
                 print('ap scan', ex)
+            ph_off(2)
         if ch:
             ap.config(channel=ch)
         ap.config(essid=AP_NAME, password=AP_PASSWORD)
@@ -829,12 +918,16 @@ def join_wifi(ssid, pw, hit, on_channel=False):
     # iPhone's sign-in window gives up) - ONLY for the setup join: a join told its channel leaves big transfers
     # crawling or stalled (a 100 KB page took 20 s+, measured; the same join without it: half a second).
     # Finish's restart then rejoins without it.
-    if hit and on_channel:
-        wlan.connect(ssid, pw, bssid=hit[2], channel=hit[1])
-    elif hit:
-        wlan.connect(ssid, pw, bssid=hit[2])
-    else:
-        wlan.connect(ssid, pw)
+    ph_on(3)
+    try:
+        if hit and on_channel:
+            wlan.connect(ssid, pw, bssid=hit[2], channel=hit[1])
+        elif hit:
+            wlan.connect(ssid, pw, bssid=hit[2])
+        else:
+            wlan.connect(ssid, pw)
+    finally:
+        ph_off(3)
 
 
 async def try_join(j):
@@ -918,10 +1011,12 @@ async def wifi_keeper():
             try:
                 wlan.disconnect()  # (a connect still under way from the last try: never a second on top)
                 net_apply()
+                ph_on(2)
                 try:
                     note_seen(wlan.scan())  # (~2 s: which of its access points is nearest, before every join)
                 except Exception as ex:
                     print('scan err', ex)
+                ph_off(2)
                 wifi_try[0] += 1
                 if wifi_try[0] % 3 == 0:  # (every third try: any access point, in case the nearest one is the trouble)
                     keeper_hit[:] = [None, True]
@@ -1041,7 +1136,11 @@ def fix_typed_fill():
 async def compact_all(now):
     for mac in list(cfg['tanks']):  # ~2 s per 2-year file; let BLE/HTTP run in between
         try:
-            print('compact', mac, histstore.compact(hist_name(mac), now - KEEP_HOURLY_DAYS * 86400))
+            ph_on(13)
+            try:
+                print('compact', mac, histstore.compact(hist_name(mac), now - KEEP_HOURLY_DAYS * 86400))
+            finally:
+                ph_off(13)
         except Exception as ex:
             print('compact err', mac, ex)
         await asyncio.sleep(0)
@@ -1105,6 +1204,7 @@ def save_clk():
         pending_clk.pop(0)
 
 
+@phased(11)
 def save_pending():
     # write queued readings now, a planned restart is coming (the recorder only gets to them every 10 s, and after
     # the restart the same reading is only a baseline: that hour would be missing)
@@ -1131,6 +1231,7 @@ def restart():
         save_pending()
     except Exception as ex:
         print('save err', ex)
+    ph_planned()
     machine.reset()
 
 
@@ -1673,7 +1774,11 @@ async def _send_alert(title, msg, urgent, force, mark):
         return {'held': 'waiting after a failed send'}
     await asyncio.sleep(0)
     make_room()
-    res = notify.send(cfg.get('notify'), title, msg, urgent)  # blocks ~1-2 s per channel (TLS)
+    ph_on(7)
+    try:
+        res = notify.send(cfg.get('notify'), title, msg, urgent)  # blocks ~1-2 s per channel (TLS)
+    finally:
+        ph_off(7)
     print('notify', title, res)
     if 'ok' in res.values():
         alert_back[0] = alert_back[1] = 0
@@ -2148,7 +2253,7 @@ def state(peer=''):
         found.append({'mac': m, 'name': d.get('name', ''), 'rssi': d.get('rssi'),
                       'age': now - d['rx'], 'level': d.get('level')})
     found.sort(key=lambda f: -(f['rssi'] or -999))
-    return {'tanks': tanks, 'found': found, 'switch': switch_hint(now),
+    return {'tanks': tanks, 'found': found, 'switch': switch_hint(now), 'freeze': freeze_last[0], 'freezes': freeze_count[0],
             'ssid': cfg.get('ssid') if wlan.isconnected() else None,
             'ip': wlan.ifconfig()[0] if wlan.isconnected() else None,
             'wifi_rssi': wlan.status('rssi') if wlan.isconnected() else None,
@@ -2474,6 +2579,7 @@ installing = [False]
 hist_busy = [False]
 
 
+@phased(10, True)
 async def handle(r, w):
     conns[0] += 1
     me = isinstance(w, _Resp)  # the Pico checking its own pages after an update (web_ok): no side effects
@@ -2801,10 +2907,12 @@ async def handle(r, w):
                     return await send(w, 400, json.dumps('Already up to date'))
                 make_room()
                 wd_hold[0] += 1
+                ph_on(12)
                 try:
                     v = updater.install(m, VERSION)
                 finally:
                     wd_hold[0] -= 1
+                    ph_off(12)
             except Exception as ex:
                 gc.collect()
                 installing[0] = False  # updater.install() undoes its own half-done swap
@@ -2885,7 +2993,11 @@ async def handle(r, w):
             if not may_setup(auth, peer):  # (it blocks for seconds: not for anyone on the Wi-Fi to repeat)
                 return await send(w, 401, json.dumps({'auth': 'login'}))
             nets = {}
-            found_nets = wlan.scan()
+            ph_on(2)
+            try:
+                found_nets = wlan.scan()
+            finally:
+                ph_off(2)
             note_seen(found_nets)
             for n in found_nets:
                 s = n[0].decode('utf-8', 'replace')
@@ -3291,6 +3403,7 @@ def share_build(now):
     return share.build(cfg, state(), share_files(), curves, bl, VERSION, now)
 
 
+@phased(8, True)
 async def share_step():
     host, now = share_host(), time.time()
     if not host or now < 1.7e9 or not wlan.isconnected() or installing[0]:
@@ -3411,7 +3524,11 @@ async def mqtt_task():
             continue
         gen, w, wait = mqtt_state['gen'], None, 1
         try:
-            r, w = await asyncio.wait_for(asyncio.open_connection(c['host'], c['port']), 10)
+            ph_on(9)
+            try:
+                r, w = await asyncio.wait_for(asyncio.open_connection(c['host'], c['port']), 10)
+            finally:
+                ph_off(9)
 
             async def put(b):  # (a stalled broker must not hold the task up forever: timeout -> reconnect)
                 w.write(b)
@@ -3564,6 +3681,7 @@ MOFF_AGAIN_S = 3600
 async def gatt_turn(mac, info, job):
     # one Bluetooth connection to a monitor, scanning paused meanwhile; the outcome in info[mac]
     radio_busy[0] = True  # (a /run experiment waits for it)
+    ph_on(1)
     try:
         scan_on[0] = False
         stop_scan()
@@ -3572,6 +3690,7 @@ async def gatt_turn(mac, info, job):
     except Exception as ex:
         info[mac] = {'at': int(time.time()), 'err': str(ex) or repr(ex)}
     finally:  # (whatever happens, cancelled too: the hook off, the scan back on)
+        ph_off(1)
         hook[0] = None
         radio_busy[0] = False
         scan_on[0] = True
@@ -3700,7 +3819,70 @@ def wd_check(_t=None):
         return
     wd[1] += 1
     if wd[1] >= WD_MINUTES:
+        ph_planned(0xFD)
         machine.reset()
+
+
+# Hardware watchdog (2026-11-27: the whole chip froze, Wi-Fi and Bluetooth too, LED on, for 2 hours: the soft check
+# above runs as a scheduled callback, which never comes while the interpreter is stuck inside the radio driver).
+# The chip resets itself 8 s after it was last fed. A hard timer (an interrupt: it runs even then) feeds it every
+# second, as long as the main loop has beaten within WD_MINUTES (WD_HOLD_S during a long job on purpose: a hold that
+# was never let go can't keep a stuck Pico up for ever). If the interrupts are what's stuck, nothing feeds it: reset.
+# Once the app has stopped (main.py runs the rescue server after a crash), it is fed for good, as before.
+WD_HW_MS = 8000
+WD_HOLD_S = 2 * 3600  # (longer than any update can take: each of its files has 2 minutes)
+wd_hw = [None]
+wd_free = [False]
+wh = [0, 0]  # beat last seen, seconds it hasn't changed (ints only: no allocation in an interrupt)
+
+
+def wd_feed(_t):
+    w = wd_hw[0]
+    if w is None:
+        return
+    if not wd_free[0]:
+        if beat[0] != wh[0]:
+            wh[0] = beat[0]
+            wh[1] = 0
+        else:
+            wh[1] += 1
+        if wh[1] >= (WD_HOLD_S if wd_hold[0] else WD_MINUTES * 60):
+            return
+    w.feed()
+
+
+def wd_start():
+    try:  # (the feeding first: a watchdog started with nothing to feed it would restart the Pico every 8 s)
+        wd_hw.append(machine.Timer(mode=machine.Timer.PERIODIC, period=1000, callback=wd_feed, hard=True))
+        wd_hw[0] = machine.WDT(timeout=WD_HW_MS)
+        ph_armed[0] = 0x8000
+        ph_write()
+    except Exception as ex:  # (an older MicroPython: the soft check alone)
+        print('hardware watchdog', repr(ex))
+
+
+FREEZE_FILE = 'freeze.json'
+freeze_last = [None]  # the latest freeze the watchdog restarted from (for the Config page), and how many are kept
+freeze_count = [0]
+
+
+def freezes():
+    try:
+        with open(FREEZE_FILE) as f:
+            v = json.load(f)
+        return v if isinstance(v, list) else []
+    except (OSError, ValueError):
+        return []
+
+
+def freeze_note(p):
+    # the freeze this start came from, kept with the last 9 before it (the Config page shows the latest)
+    v = freezes()[-9:] + [p]
+    try:
+        with open(FREEZE_FILE, 'w') as f:
+            json.dump(v, f)
+    except OSError as ex:
+        print('freeze note', ex)
 
 
 async def boot_install(w):
@@ -3755,11 +3937,26 @@ async def main():
         asyncio.create_task(keep(fn, name))
     await asyncio.start_server(handle, '0.0.0.0', 80)
     wd_timer = machine.Timer(mode=machine.Timer.PERIODIC, period=60000, callback=wd_check)  # noqa: F841 (kept)
+    wd_start()
     while True:
         for _ in range(2):
             await asyncio.sleep(30)
             beat[0] = (beat[0] + 1) & 0xffff
+            try:
+                machine.mem32[WD_SCR + 4] = int(time.time()) & 0x7FFFFFFF  # (the time of this beat: when a freeze began)
+            except Exception:
+                pass
         gc.collect()
 
 
-asyncio.run(main())
+if wd_prev:
+    print('restarted by the watchdog', wd_prev)
+    freeze_note(wd_prev)
+_fz = freezes()
+freeze_last[0], freeze_count[0] = (_fz[-1] if _fz else None), len(_fz)
+_fz = None
+try:
+    asyncio.run(main())
+finally:
+    wd_free[0] = True  # (stopped: main.py's rescue server runs on, the watchdog fed for it)
+    ph_planned()  # (and whatever restart follows, from main.py or the rescue server, is no freeze)

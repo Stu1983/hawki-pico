@@ -26,7 +26,7 @@ class Reset(BaseException):
 
 M = 'c0:04:56:c4:0c:71'
 os.chdir(tempfile.mkdtemp())
-g = {'os': os, 'struct': struct, 'unset': unset, 'BOOT': 3, 'mono_s': lambda: 5000,
+g = {**__import__('_phstub').STUB, 'os': os, 'struct': struct, 'unset': unset, 'BOOT': 3, 'mono_s': lambda: 5000,
      'time': types.SimpleNamespace(ticks_ms=lambda: 2000, ticks_diff=lambda a, b: a - b),
      'cfg': {'tanks': {M: {}}}, 'pending': [(M, 1795400000, 701)], 'pending_unset': [(M, 1000, 0, 702)], 'pending_clk': [(M, 1795400000, 1795400010, 1795399990)],
      'clocklog': __import__('clocklog'),

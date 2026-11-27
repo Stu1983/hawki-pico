@@ -21,7 +21,7 @@ ms = [0]
 T = types.SimpleNamespace(ticks_ms=lambda: ms[0], ticks_add=lambda a, b: a + b, ticks_diff=lambda a, b: a - b, time=lambda: 1795400000)
 names = ('handle', 'send', 'parse_q', 'jb', 'BadRequest', '_Req', '_Resp', 'LOADS', 'ICON_PATHS', 'WEB_MANIFEST', 'MUTATING', 'read_body_to')
 saved = []
-g = {'time': T, 'asyncio': asyncio, 'json': json, 'os': os, 'gc': __import__('gc'), 'conns': [0], 'on_ap': lambda p: False,
+g = {**__import__('_phstub').STUB, 'time': T, 'asyncio': asyncio, 'json': json, 'os': os, 'gc': __import__('gc'), 'conns': [0], 'on_ap': lambda p: False,
      'net_proof': lambda: None, 'page_s': [None], 'mono_s': lambda: 0, 'cfg': {'tanks': {}, 'pin': 'x'}, 'TOKEN': 'tok',
      'authed': lambda a: a == 'good', 'save_cfg': lambda c: saved.append(dict(c)), 'print': lambda *a: None,
      'unset': types.SimpleNamespace(clear=lambda m: None), 'last_saved': {}, 'poke_st': {}, 'poke_info': {}, 'clock_st': {}, 'clock_info': {}, 'radio_busy': [False],

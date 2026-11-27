@@ -109,7 +109,7 @@ async def quiet():
     pass
 
 
-g = {'cfg': {'tanks': {'aa:bb:cc:dd:ee:01': {}}}, 'share': Sh, 'time': type('t', (), {'time': staticmethod(lambda: T[0])}), 'wlan': W(),
+g = {**__import__('_phstub').STUB, 'cfg': {'tanks': {'aa:bb:cc:dd:ee:01': {}}}, 'share': Sh, 'time': type('t', (), {'time': staticmethod(lambda: T[0])}), 'wlan': W(),
      'mono_s': lambda: M[0], 'web_quiet': quiet, 'wd_hold': [0], 'with_room': lambda f, *a: f(*a), 'save_cfg': lambda c: saved.append(1),
      'installing': [False], 'free_bytes': lambda: 10 ** 7, 'rm': lambda n: None, 'share_build': lambda now: 1234, 'os': os, 'hist_name': lambda m: 'h.bin',
      'weather': type('w', (), {'FILE': 'wx.bin', 'FFILE': 'wxf.bin', 'WFILE': 'wxw.bin', 'FWFILE': 'wxfw.bin'}), 'price': type('p', (), {'FILE': 'p.bin'})}

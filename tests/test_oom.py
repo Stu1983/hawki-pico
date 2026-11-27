@@ -47,7 +47,7 @@ def restart():
     raise Reset()
 
 
-g = {'time': T, 'asyncio': types.SimpleNamespace(sleep=nap, wait_for=wait_for), 'json': json, 'os': os, 'gc': __import__('gc'),
+g = {**__import__('_phstub').STUB, 'time': T, 'asyncio': types.SimpleNamespace(sleep=nap, wait_for=wait_for), 'json': json, 'os': os, 'gc': __import__('gc'),
      'conns': [0], 'on_ap': lambda p: False, 'net_proof': lambda: None, 'page_s': [None], 'mono_s': lambda: up[0],
      'cfg': {'tanks': {}, 'pin': 'x'}, 'TOKEN': 'tok', 'authed': lambda a: a == 'good', 'save_cfg': lambda c: None,
      'print': lambda *a: None, 'make_room': lambda: log.append('room'), 'restart': restart, 'BOOT': 9,
