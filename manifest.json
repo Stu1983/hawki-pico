@@ -1,19 +1,31 @@
 {
- "version": "1.3.47",
- "ref": "v1.3.47",
- "notes": "Updates install before the app loads (app.py is now a small front door, the app is core.py): a Pico whose memory is in pieces can still update; month tooltips allow for the weather",
+ "version": "1.3.48",
+ "ref": "v1.3.48",
+ "notes": "Ready-built modules: the Pico no longer turns its source into code at every start, leaving far more memory in one piece (biggest free blocks 14, 8, 5 KB before; 20-33, 19-26 KB after).",
  "files": {
   "app.py": [
-   "4ba6f77191b252845b71a17fdbc0dc2fb287d90218d012846943579db9d68711",
-   5141
+   "56aea4c13f7868cb16eebd246aee43ae8d10ba2847605d1a8e1db4cfba0f154e",
+   8385
+  ],
+  "battlog.mpy.html": [
+   "21639bbc68b794fb516790242a6f7afb82cf5539d4f8bd33ebc00e9a1761af05",
+   919
   ],
   "battlog.py": [
    "ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de",
    2558
   ],
+  "built.py": [
+   "796ad9e8b04db92f1e600e02b5a64a8bc86e6afa4a654d1ca6dd0633915275ce",
+   2918
+  ],
   "ca.pem": [
    "d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841",
    7065
+  ],
+  "clocklog.mpy.html": [
+   "07c10f51d760630c16b948c0d09ae3673eb53d71a1c1a1af5b6e1cd7705efdb0",
+   1048
   ],
   "clocklog.py": [
    "0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41",
@@ -23,13 +35,25 @@
    "80197e371ccc39fdea83c2c477296af5f35b14217b8072cdb8d6fc4d6a4e98b8",
    42395
   ],
+  "core.mpy.html": [
+   "661d94a974f68c0c3c828be75973e4920f657b9e028cc7664856a95511df4adf",
+   64300
+  ],
   "core.py": [
-   "d8e0c974d9163bba22a0c05c24f7c24cfe17d8fc9db7db3dfc21502f3d37af0d",
-   179778
+   "34bde1811d707466dbd90abffe42cc2688a59927f08bde8daa557b8f19eedd35",
+   180196
+  ],
+  "drops.mpy.html": [
+   "29c64dfd11a3bc8f6ebf50fd2a7bf3158e51d30a830d5688151a06c7619d8691",
+   447
   ],
   "drops.py": [
    "7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062",
    2186
+  ],
+  "hawki_decode.mpy.html": [
+   "2edf9584049c222ce7337763f6cb2625c4faea631bcf94ac18148a76652b8cbc",
+   805
   ],
   "hawki_decode.py": [
    "09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328",
@@ -39,41 +63,81 @@
    "d7ff62e69a3c49befaddaad00334c6b99906ab0a21d13fb5cc23ad9cac4b625a",
    80486
   ],
+  "histstore.mpy.html": [
+   "75519db4ca626cfe2e87530ca8fefb005bc67fdc4958e9be627db22d744bda61",
+   743
+  ],
   "histstore.py": [
    "bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80",
    2943
+  ],
+  "icon.mpy.html": [
+   "231a8bd74d04b4cacf1d7dd1bb4fb328ffb3c7c7951fc0cd13d2a5c9b970bbee",
+   5453
   ],
   "icon.py": [
    "e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9",
    6004
   ],
+  "listen.mpy.html": [
+   "060db723a9d095ea84abe9da9c5d1976ff7d2819d1b16c31d7af52144083e2e9",
+   1771
+  ],
   "listen.py": [
    "d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9",
    8886
+  ],
+  "mqtt.mpy.html": [
+   "cf8149c19d8d214798115b2793bfcc73060e1d15ef1028af8ea3fd4e0e467d54",
+   4065
   ],
   "mqtt.py": [
    "e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92",
    7953
   ],
+  "netcfg.mpy.html": [
+   "5a4c6c7ae54cc2f34faa8bd9a8c1268bb701778b0943334a52ed7d2c5f5c48dd",
+   1489
+  ],
   "netcfg.py": [
    "a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34",
    3101
+  ],
+  "notify.mpy.html": [
+   "f643327e0ed55edf9b7b39f9e5ad7f2ea425429ea0d5aa3e8a20374fb01f834b",
+   2805
   ],
   "notify.py": [
    "19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09",
    5451
   ],
+  "poke.mpy.html": [
+   "10bf90491e3c8d7815d2833a1a1e584079b6ded3e041b58fe0ec11d2ef455a67",
+   3936
+  ],
   "poke.py": [
    "963366b902d47f648c043e86a4adfba56a9c67153a00e4a10e6e89011bd14dc2",
    13306
+  ],
+  "price.mpy.html": [
+   "e9db605b69151d8b9c31102be61f03a2bd314bdfc82b08366f40343145e13e2f",
+   1517
   ],
   "price.py": [
    "b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90",
    3981
   ],
+  "share.mpy.html": [
+   "0dcb2d2e8ef2f0ccadf09cd612a83ba475d505cc8a6d318e19152b5f3e5f902b",
+   3518
+  ],
   "share.py": [
    "0bac93aa3b1f7b4df803123a591d5607bc3aa989562b91f324956be419e32bfc",
    7748
+  ],
+  "tankcalc.mpy.html": [
+   "a53c6f22184c699e25a64770380810056745ed096b1efd84611649ad10adc125",
+   4372
   ],
   "tankcalc.py": [
    "6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229",
@@ -83,17 +147,29 @@
    "45bf24cfad5c429c4cd00d9d7b79d04a3d0dd7fca5459bc2d755dafd8ea13a2e",
    152456
   ],
+  "unset.mpy.html": [
+   "b9af512274257b85fe6b9e6399b4ac8b2e0139712ee9b778686191de495c3d88",
+   921
+  ],
   "unset.py": [
    "9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c",
    3165
+  ],
+  "updater.mpy.html": [
+   "d4dd3c24cc18d6851cbd139a956b5e57191879a225c592f7bbffc85521ae8fe9",
+   5645
   ],
   "updater.py": [
    "1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370",
    13431
   ],
   "version.py": [
-   "8be0aaec62888c1293c8bcacd25c9aa8c06fbe38751a3903558ce197c8a84e39",
+   "fa35de42b9ac2af86be62230d4bc76fdff9bfd1d78133a3b5a538ddff897d479",
    19
+  ],
+  "weather.mpy.html": [
+   "024fb85e49ea61ea2672b6a4a5dacd56dbe3cf5853c94e02cb9335a501c25360",
+   4591
   ],
   "weather.py": [
    "092602221da2a7e7013a540cc303dd5c4783a5b84d5f05ebf24287ad2201a655",
@@ -105,7 +181,7 @@
   ]
  },
  "signed": {
-  "body": "{\"files\": {\"app.py\": [\"4ba6f77191b252845b71a17fdbc0dc2fb287d90218d012846943579db9d68711\", 5141], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"80197e371ccc39fdea83c2c477296af5f35b14217b8072cdb8d6fc4d6a4e98b8\", 42395], \"core.py\": [\"d8e0c974d9163bba22a0c05c24f7c24cfe17d8fc9db7db3dfc21502f3d37af0d\", 179778], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"d7ff62e69a3c49befaddaad00334c6b99906ab0a21d13fb5cc23ad9cac4b625a\", 80486], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.py\": [\"963366b902d47f648c043e86a4adfba56a9c67153a00e4a10e6e89011bd14dc2\", 13306], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"share.py\": [\"0bac93aa3b1f7b4df803123a591d5607bc3aa989562b91f324956be419e32bfc\", 7748], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"45bf24cfad5c429c4cd00d9d7b79d04a3d0dd7fca5459bc2d755dafd8ea13a2e\", 152456], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"8be0aaec62888c1293c8bcacd25c9aa8c06fbe38751a3903558ce197c8a84e39\", 19], \"weather.py\": [\"092602221da2a7e7013a540cc303dd5c4783a5b84d5f05ebf24287ad2201a655\", 11372], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Updates install before the app loads (app.py is now a small front door, the app is core.py): a Pico whose memory is in pieces can still update; month tooltips allow for the weather\", \"ref\": \"v1.3.47\", \"version\": \"1.3.47\"}",
-  "sig": "61e234c78b22779df19e9ee875b1283d10dd4fd50f603f5a59bc932cdf1b0adf5b1c3028bd2f3600b2b6249f5fda4c5d0ddafdc8e6bbe91b5e71961841fb07582402cc1494da603a7453582fb465e64b93c9eb0cebd329856f921a6a8f343308381a678707f988a8bdcfb781692689d3f6bcd81dd783fa2c7c5146a24521b67d4391a3186d8093be6dd9132546bae7529d2122ca495360e28f772bb62454cce9a852a964fb83a11078a024cb6f8e844be3578fec5f718be5c58f8955d24469f5ec2cdcf88b3c65ce172b98910e02dbfa7e460ceefc7a2db60ba36baeb8b8900d1a907dc6bef2d1b606e05fd8c3614f1d11f06313a129ae58ec5a8305006a4a77"
+  "body": "{\"files\": {\"app.py\": [\"56aea4c13f7868cb16eebd246aee43ae8d10ba2847605d1a8e1db4cfba0f154e\", 8385], \"battlog.mpy.html\": [\"21639bbc68b794fb516790242a6f7afb82cf5539d4f8bd33ebc00e9a1761af05\", 919], \"battlog.py\": [\"ecc1a35975746c9a6b987f0f77b9113b635a6392f7ce287a08f45b76397814de\", 2558], \"built.py\": [\"796ad9e8b04db92f1e600e02b5a64a8bc86e6afa4a654d1ca6dd0633915275ce\", 2918], \"ca.pem\": [\"d0ab53d287ad4b7d2e5615392e45df092d8eb4ebb87513ffd895f2ca19e6a841\", 7065], \"clocklog.mpy.html\": [\"07c10f51d760630c16b948c0d09ae3673eb53d71a1c1a1af5b6e1cd7705efdb0\", 1048], \"clocklog.py\": [\"0856dc56577e0d2880c42e8ecf3f5bb3e5d657968a723505c1c2ce342618db41\", 3546], \"common.js.html\": [\"80197e371ccc39fdea83c2c477296af5f35b14217b8072cdb8d6fc4d6a4e98b8\", 42395], \"core.mpy.html\": [\"661d94a974f68c0c3c828be75973e4920f657b9e028cc7664856a95511df4adf\", 64300], \"core.py\": [\"34bde1811d707466dbd90abffe42cc2688a59927f08bde8daa557b8f19eedd35\", 180196], \"drops.mpy.html\": [\"29c64dfd11a3bc8f6ebf50fd2a7bf3158e51d30a830d5688151a06c7619d8691\", 447], \"drops.py\": [\"7c455aa5a7fce194328644438b811a29b38ce218553c850f7e05ed10a32d5062\", 2186], \"hawki_decode.mpy.html\": [\"2edf9584049c222ce7337763f6cb2625c4faea631bcf94ac18148a76652b8cbc\", 805], \"hawki_decode.py\": [\"09f0f1c410fd552c6c64ac4366f4ec3a40d3941cd26dc50d7133c759efe00328\", 2612], \"hist.html\": [\"d7ff62e69a3c49befaddaad00334c6b99906ab0a21d13fb5cc23ad9cac4b625a\", 80486], \"histstore.mpy.html\": [\"75519db4ca626cfe2e87530ca8fefb005bc67fdc4958e9be627db22d744bda61\", 743], \"histstore.py\": [\"bda02ec38965ec80e7ec6c740bdac9a5fe889f35f1ff64eb12465b1e0dc6ba80\", 2943], \"icon.mpy.html\": [\"231a8bd74d04b4cacf1d7dd1bb4fb328ffb3c7c7951fc0cd13d2a5c9b970bbee\", 5453], \"icon.py\": [\"e55efba09ed648829290cd467c6b1eff120793d31fff2ebe5468bd6aaf918db9\", 6004], \"listen.mpy.html\": [\"060db723a9d095ea84abe9da9c5d1976ff7d2819d1b16c31d7af52144083e2e9\", 1771], \"listen.py\": [\"d76fe1a9528be773d08d189a81c8e138c62bebf69b76911dabcddc833e3a57d9\", 8886], \"mqtt.mpy.html\": [\"cf8149c19d8d214798115b2793bfcc73060e1d15ef1028af8ea3fd4e0e467d54\", 4065], \"mqtt.py\": [\"e508ee1d4f0292d1b7218a5b91ab12faacbde757056a84f31291c34e43c6ac92\", 7953], \"netcfg.mpy.html\": [\"5a4c6c7ae54cc2f34faa8bd9a8c1268bb701778b0943334a52ed7d2c5f5c48dd\", 1489], \"netcfg.py\": [\"a27495840a32cc7fa395d98c89a8cb3f24b2acf036bb0338f9714d82bdb45b34\", 3101], \"notify.mpy.html\": [\"f643327e0ed55edf9b7b39f9e5ad7f2ea425429ea0d5aa3e8a20374fb01f834b\", 2805], \"notify.py\": [\"19c8228329645c51c5afb2560fe81846360ec56c991f0356179aa0ba36ebee09\", 5451], \"poke.mpy.html\": [\"10bf90491e3c8d7815d2833a1a1e584079b6ded3e041b58fe0ec11d2ef455a67\", 3936], \"poke.py\": [\"963366b902d47f648c043e86a4adfba56a9c67153a00e4a10e6e89011bd14dc2\", 13306], \"price.mpy.html\": [\"e9db605b69151d8b9c31102be61f03a2bd314bdfc82b08366f40343145e13e2f\", 1517], \"price.py\": [\"b9dd67ddf34e85e467eeb56e4c14c8b3e76ecb4b7a3322d5a2ebf87cea7dae90\", 3981], \"share.mpy.html\": [\"0dcb2d2e8ef2f0ccadf09cd612a83ba475d505cc8a6d318e19152b5f3e5f902b\", 3518], \"share.py\": [\"0bac93aa3b1f7b4df803123a591d5607bc3aa989562b91f324956be419e32bfc\", 7748], \"tankcalc.mpy.html\": [\"a53c6f22184c699e25a64770380810056745ed096b1efd84611649ad10adc125\", 4372], \"tankcalc.py\": [\"6022157ff3f0e4d865a884e02f72af37ec278d51da065679e21b73852e1b2229\", 14435], \"ui.html\": [\"45bf24cfad5c429c4cd00d9d7b79d04a3d0dd7fca5459bc2d755dafd8ea13a2e\", 152456], \"unset.mpy.html\": [\"b9af512274257b85fe6b9e6399b4ac8b2e0139712ee9b778686191de495c3d88\", 921], \"unset.py\": [\"9001612aab352bccac044b28a3ace2a8dbfad979e7aaf7905bcb7841d429f20c\", 3165], \"updater.mpy.html\": [\"d4dd3c24cc18d6851cbd139a956b5e57191879a225c592f7bbffc85521ae8fe9\", 5645], \"updater.py\": [\"1eef1e7753d1ef329d6930df4e668b69f80043e97e6107105e913be8cf84c370\", 13431], \"version.py\": [\"fa35de42b9ac2af86be62230d4bc76fdff9bfd1d78133a3b5a538ddff897d479\", 19], \"weather.mpy.html\": [\"024fb85e49ea61ea2672b6a4a5dacd56dbe3cf5853c94e02cb9335a501c25360\", 4591], \"weather.py\": [\"092602221da2a7e7013a540cc303dd5c4783a5b84d5f05ebf24287ad2201a655\", 11372], \"widget.js.html\": [\"5056ae7e019faed1a8719f31d1b41b7b610633394addd9f6b9f63cdcb55d6b4d\", 7193]}, \"notes\": \"Ready-built modules: the Pico no longer turns its source into code at every start, leaving far more memory in one piece (biggest free blocks 14, 8, 5 KB before; 20-33, 19-26 KB after).\", \"ref\": \"v1.3.48\", \"version\": \"1.3.48\"}",
+  "sig": "0963adaf028830021dfe8338dde95131269de10df180d7ac61bd70d275c553a7b9f67ffb40cb57969f2e80576b63b68b6cc6962e8fcbadccbd4624cdb9e8507394df80856b0905a9b47887809835a2808cb129b6d12beb2a81150db46a264b30a4918d71d7908ad21e1017918f9685049c890be5b12cdac7eef1790d1c3a8371046e97a2da652985705c1a7d12b7992de538a3331b223a6d71cfdf29b110c516ebc88cee787b0ccb44749929a28cd363187760a3bc2de528a039d688b0bada84fd015fe681250020b448aee078eefec467c9ad0c7ebbd06c31aeb84e9ec45efccd2941c32caaa60f78c377c2641ab586fea98c374bab3db5e923166d530f1324"
  }
 }

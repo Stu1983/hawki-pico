@@ -130,9 +130,105 @@ def install(w):
     machine.reset()
 
 
+B = 'b'  # the ready-built modules, searched before the sources (sys.path)
+
+
+def _rm(n):
+    # True once n is gone (False: still there, e.g. a directory or a flash error)
+    try:
+        os.remove(n)
+    except OSError:
+        pass
+    try:
+        os.stat(n)
+        return False
+    except OSError as ex:
+        return bool(ex.args) and ex.args[0] == 2  # (only "no such file" says it's gone: a flash error says nothing)
+
+
+def _sha(n):
+    import hashlib, binascii
+    h, buf = hashlib.sha256(), bytearray(1024)
+    try:
+        with open(n, 'rb') as f:
+            while True:
+                k = f.readinto(buf)
+                if not k:
+                    break
+                h.update(buf if k == len(buf) else buf[:k])
+    except OSError:
+        return None
+    return binascii.hexlify(h.digest()).decode()
+
+
+def _runs_here(n, m):
+    # a built file this MicroPython loads: bytecode only (no machine code), its .mpy version, small ints that fit
+    try:
+        with open(n, 'rb') as f:
+            h = f.read(4)
+    except OSError:
+        return False
+    return len(h) == 4 and h[0] == 77 and h[1] == m & 0xff and h[2] == 0 and h[3] <= 31
+
+
+def built(path):
+    """Put b/X.mpy in place for each module whose source here (X.py) is the one its X.mpy.html was built from
+    (built.py: the sha-256 of both): one put back by hand, a rollback, an older release's files all run as source. Returns how many
+    are used; path (sys.path) gets b first if any are."""
+    import sys
+    try:
+        from built import SRC
+    except Exception:  # (no index: a release from before the built copies, or a hand-made set of files)
+        SRC = {}
+    m = getattr(sys.implementation, '_mpy', 0)
+    try:
+        os.mkdir(B)
+    except OSError:
+        pass
+    stuck = False  # a file that should be gone and isn't: b/ never searched (it could hold an old module)
+    for n in os.listdir(B):  # (a module that's gone, or a copy cut off part-way)
+        if not n.endswith('.mpy') or n[:-4] + '.py' not in SRC:
+            stuck = not _rm(B + '/' + n) or stuck
+    used = 0
+    for n, (sha, bsha) in SRC.items():
+        x, b = n[:-3] + '.mpy.html', '%s/%s.mpy' % (B, n[:-3])
+        ok = m and _sha(n) == sha and _runs_here(x, m)
+        have = ok and _sha(b) == bsha
+        if ok and not have and _sha(x) == bsha:
+            with open(x, 'rb') as f, open(b + '.tmp', 'wb') as g:
+                buf = bytearray(1024)
+                while True:
+                    k = f.readinto(buf)
+                    if not k:
+                        break
+                    g.write(buf if k == len(buf) else buf[:k])
+            os.rename(b + '.tmp', b)
+            have = _sha(b) == bsha  # (flash full part-way: never a damaged copy)
+        if not have:
+            stuck = not _rm(b) or stuck
+            continue
+        used += 1
+    if stuck:
+        if '/' + B in path:
+            path.remove('/' + B)
+        return 0
+    if used and '/' + B not in path:
+        path.insert(0, '/' + B)
+    return used
+
+
 _w = _take('upd.want')
 if _w:
     install(_w)
 _w = None
+try:
+    import sys
+    print('built modules:', built(sys.path))
+except Exception as ex:  # (whatever it is: the sources)
+    print('built err', repr(ex))
+    try:
+        sys.path.remove('/' + B)
+    except ValueError:
+        pass
 gc.collect()
 import core  # noqa: E402,F401  (runs for ever)

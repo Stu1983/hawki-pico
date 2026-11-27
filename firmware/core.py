@@ -2664,6 +2664,10 @@ async def handle(r, w):
                 if got != clen:
                     return await send(w, 400, '"short upload %d/%d"' % (got, clen))
                 os.rename(name + '.part', name)
+                if name.endswith('.py'):  # a module put on by hand: its ready-built copy (app.py's b/) never used
+                    rm('b/%s.mpy' % name[:-3])  # instead (the next start sees it changed), and for the rest of this
+                    if '/b' in sys.path:        # run every module still to be imported comes from source (even if
+                        sys.path.remove('/b')   # that removal failed)
             finally:
                 rm(name + '.part')
             return await send(w, 200, '"wrote %d"' % got)
